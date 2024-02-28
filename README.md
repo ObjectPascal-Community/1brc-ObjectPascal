@@ -29,7 +29,12 @@ The task is to write an Object Pascal program which reads the file, calculates t
 {Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
 ```
 
-Submissions will be, preferably, as a `GIT` `submodule`
+Submissions will be, preferably, as a `GIT` `submodule`.
+They must contain the source and a Linux `ELF` binary in 64 bits in a folder named `bin` from the `root` folder.
+
+In order to produce the One Billion Rows of text, we are providing the source code for the official generator, so we all have the same entry data.
+> **NOTE**
+> Generator will come shortly.
 
 Submit your implementation and become part of the leader board!
 
