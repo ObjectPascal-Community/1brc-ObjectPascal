@@ -60,7 +60,7 @@ Results are determined by running the program on:
 - 250GB SSD
 - 1TB HDD
 
-Each contender is run five times in a row for both `SSD` and `HDD`.
+Each contender is run five times in a row for both `SSD` and `HDD` using `hyperfine` for the time taking.
 The slowest and the fastest runs are discarded.
 The mean value of the remaining three runs is the result for that contender and will be added to the results table above.
 The exact same `measurements.txt` file is used for evaluating all contenders.
