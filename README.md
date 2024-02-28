@@ -74,6 +74,9 @@ This is being run for bragging rights only and the fun of such a challenge.
 _Q: Can I copy code from other submissions?_\
 A: Yes, you can. The primary focus of the challenge is about learning something new, rather than "winning". When you do so, please give credit to the relevant source submissions. Please don't re-submit other entries with no or only trivial improvements.
 
+_Q: What is the encoding of the measurements.txt file?_\
+A: The file is encoded with UTF-8.
+
 _Q: Which operating system is used for evaluation?_\
 A: Ubuntu 23.10.
 
