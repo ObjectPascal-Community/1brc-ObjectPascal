@@ -29,6 +29,8 @@ The task is to write an Object Pascal program which reads the file, calculates t
 {Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
 ```
 
+## Entering The Challenge
+
 Submissions will be, preferably, as a `GIT` `submodule`.
 They must contain the source and a Linux `ELF` binary in 64 bits in a folder named `bin` from the `root` folder.
 
@@ -41,7 +43,7 @@ Submit your implementation and become part of the leader board!
 ## Results
 
 These are the results from running all entries into the challenge on my personal computer:
-- Ryzen 9 5950x 16 core
+- Ryzen 9 5950x 16 cores
 - 32GB RAM
 - 250GB SSD
 - 1TB HDD
@@ -49,3 +51,37 @@ These are the results from running all entries into the challenge on my personal
 | # | Result (m:s.ms): SSH | Result (m:s.ms): HDD | Submitter     | Notes     | Certificates |
 |---|----------------------|----------------------|---------------|-----------|--------------|
 |?|?|?|?|?|?|
+
+## Evaluating Results
+
+Results are determined by running the program on:
+- Ryzen 9 5950x 16 core
+- 32GB RAM
+- 250GB SSD
+- 1TB HDD
+
+Each contender is run five times in a row for both `SSD` and `HDD`.
+The slowest and the fastest runs are discarded.
+The mean value of the remaining three runs is the result for that contender and will be added to the results table above.
+The exact same `measurements.txt` file is used for evaluating all contenders.
+
+## Prize
+
+This is being run for bragging rights only and the fun of such a challenge.
+
+## FAQ
+
+_Q: Can I copy code from other submissions?_\
+A: Yes, you can. The primary focus of the challenge is about learning something new, rather than "winning". When you do so, please give credit to the relevant source submissions. Please don't re-submit other entries with no or only trivial improvements.
+
+_Q: Which operating system is used for evaluation?_\
+A: Ubuntu 23.10.
+
+## License
+
+This code base is available under the MIT License.
+
+## Code of Conduct
+
+Be excellent to each other!
+More than winning, the purpose of this challenge is to have fun and learn something new.
