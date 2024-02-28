@@ -38,6 +38,9 @@ In order to produce the One Billion Rows of text, we are providing the source co
 > **NOTE**
 > Generator will come shortly.
 
+For those that are using a Delphi version that is not able to produce a Linux executable binary, please make that known on your `README.md` file.
+I'll then compile the source code on my Windows `VM` with Delphi 12.1 and use the generated executable for the benchmark.
+
 Submit your implementation and become part of the leader board!
 
 ## Results
