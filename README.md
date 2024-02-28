@@ -48,7 +48,7 @@ These are the results from running all entries into the challenge on my personal
 - 250GB SSD
 - 1TB HDD
 
-| # | Result (m:s.ms): SSH | Result (m:s.ms): HDD | Submitter     | Notes     | Certificates |
+| # | Result (m:s.ms): SSD | Result (m:s.ms): HDD | Submitter     | Notes     | Certificates |
 |---|----------------------|----------------------|---------------|-----------|--------------|
 |?|?|?|?|?|?|
 
