@@ -14,18 +14,22 @@ uses
 
 const
   cVersion = {$I version.inc};
-  cSeed: LongInt = 46668267; // '1BRC' in ASCII
 
-  cShortOptHelp    = 'h';
-  cLongOptHelp     = 'help';
-  cShortOptVersion = 'v';
-  cLongOptVersion  = 'version';
-  cShortOptInput   = 'i:';
-  cLongOptInput    = 'input-file:';
-  cShortOptOutput  = 'o:';
-  cLongOptOutput   = 'output-file:';
-  cShortOptNumner  = 'n:';
-  cLongOptNumber   = 'line-count:';
+  cShortOptHelp: Char    = 'h';
+  cLongOptHelp           = 'help';
+  cShortOptVersion: Char = 'v';
+  cLongOptVersion        = 'version';
+  cShortOptInput: Char   = 'i';
+  cLongOptInput          = 'input-file';
+  cShortOptOutput: Char  = 'o';
+  cLongOptOutput         = 'output-file';
+  cShortOptNumner: Char  = 'n';
+  cLongOptNumber         = 'line-count';
+
+var
+  inputFilename: String = '';
+  outputFilename: String = '';
+  lineCount: Int64 = 0;
 
 type
 
@@ -33,6 +37,7 @@ type
 
   TOneBRCGenerator = class(TCustomApplication)
   private
+    FGenerator: TGenerator;
   protected
     procedure DoRun; override;
   public
@@ -47,9 +52,10 @@ type
 procedure TOneBRCGenerator.DoRun;
 var
   ErrorMsg: String;
+  tmpLineCount: String;
 begin
   // quick check parameters
-  ErrorMsg:= CheckOptions(Format('%s%s%s%s%s',[
+  ErrorMsg:= CheckOptions(Format('%s%s%s:%s:%s:',[
       cShortOptHelp,
       cShortOptVersion,
       cShortOptInput,
@@ -59,32 +65,105 @@ begin
     [
       cLongOptHelp,
       cLongOptVersion,
-      cLongOptInput,
-      cLongOptOutput,
-      cLongOptNumber
+      cLongOptInput+':',
+      cLongOptOutput+':',
+      cLongOptNumber+':'
     ]
   );
-  if ErrorMsg<>'' then begin
+  if ErrorMsg<>'' then
+  begin
     //ShowException(Exception.Create(ErrorMsg));
-    WriteLn(ErrorMsg);
+    WriteLn('ERROR: ', ErrorMsg);
     Terminate;
     Exit;
   end;
 
   // parse parameters
-  if HasOption(cShortOptHelp, cLongOptHelp) then begin
+  if HasOption(cShortOptHelp, cLongOptHelp) then
+  begin
     WriteHelp;
     Terminate;
     Exit;
   end;
 
-  if HasOption(cShortOptVersion, cLongOptVersion) then begin
+  if HasOption(cShortOptVersion, cLongOptVersion) then
+  begin
     WriteLn('generator v', cVersion);
     Terminate;
     Exit;
   end;
 
-  { add your program here }
+  if HasOption(cShortOptInput, cLongOptInput) then
+  begin
+    inputFilename:= GetOptionValue(
+      cShortOptInput,
+      cLongOptInput
+    );
+  end
+  else
+  begin
+    WriteLn('ERROR: Missing input file flag');
+    Terminate;
+    Exit;
+  end;
+
+  if HasOption(cShortOptOutput, cLongOptOutput) then
+  begin
+    outputFilename:= GetOptionValue(
+      cShortOptOutput,
+      cLongOptOutput
+    );
+  end
+  else
+  begin
+    WriteLn('ERROR: Missing output file flag');
+    Terminate;
+    Exit;
+  end;
+
+  if HasOption(cShortOptNumner, cLongOptNumber) then
+  begin
+    tmpLineCount:=GetOptionValue(
+      cShortOptNumner,
+      cLongOptNumber
+    );
+    tmpLineCount:= StringReplace(tmpLineCount, '_', '', [rfReplaceAll]);
+    if not TryStrToInt64(tmpLineCount, lineCount) then
+    begin
+      WriteLn('ERROR: Invalid integer "',tmpLineCount,'"');
+      Terminate;
+      Exit;
+    end;
+  end
+  else
+  begin
+    WriteLn('ERROR: Missing line count flag');
+    Terminate;
+    Exit;
+  end;
+
+
+  inputFilename:= ExpandFileName(inputFilename);
+  outputFilename:= ExpandFileName(outputFilename);
+
+  WriteLn('Input File : ', inputFilename);
+  WriteLn('Output File: ', outputFilename);
+  WriteLn('Line Count : ', FormatFLoat('#'+DefaultFormatSettings.ThousandSeparator+'##0', lineCount));
+  WriteLn;
+
+  FGenerator:= TGenerator.Create(inputFilename, outputFilename, lineCount);
+  try
+    try
+      FGenerator.Generate;
+    except
+      on E: Exception do
+      begin
+        WriteLn('ERROR: ', E.Message);
+      end;
+    end;
+  finally
+    FGenerator.Free;
+  end;
 
   // stop program loop
   Terminate;

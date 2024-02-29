@@ -107,6 +107,11 @@
       <OtherUnitFiles Value="../../Common"/>
       <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf3"/>
+      </Debugging>
+    </Linking>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
