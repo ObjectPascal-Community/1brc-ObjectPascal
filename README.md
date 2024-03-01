@@ -7,7 +7,7 @@ Grab all your threads, reach out to SIMD,  or pull any other trick, and create t
 
 <img src="img/1brc.png" alt="1BRC" style="display: block; margin-left: auto; margin-right: auto; margin-bottom:1em; width: 50%;">
 
-The text file contains temperature values for a range of weather stations. Each row is one measurement in the format `<string: station name>;<double: measurement>``, with the measurement value having exactly one fractional digit.
+The text file contains temperature values for a range of weather stations. Each row is one measurement in the format `<string: station name>;<double: measurement>`, with the measurement value having exactly one fractional digit.
 The following shows ten rows as an example:
 
 ```
@@ -28,6 +28,13 @@ The task is to write an Object Pascal program which reads the file, calculates t
 ```
 {Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
 ```
+
+## Links
+
+The original repository: https://github.com/gunnarmorling/1brc
+
+I found out about it by watching this video about an attempt in Go: https://www.youtube.com/watch?v=cYng524S-MA
+The blog post in question: https://www.bytesizego.com/blog/one-billion-row-challenge-go
 
 ## Entering The Challenge
 
