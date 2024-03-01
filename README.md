@@ -34,6 +34,7 @@ The task is to write an Object Pascal program which reads the file, calculates t
 The original repository: https://github.com/gunnarmorling/1brc
 
 I found out about it by watching this video about an attempt in Go: https://www.youtube.com/watch?v=cYng524S-MA
+
 The blog post in question: https://www.bytesizego.com/blog/one-billion-row-challenge-go
 
 ## Entering The Challenge
