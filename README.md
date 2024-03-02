@@ -44,7 +44,8 @@ They must contain the source and a Linux `ELF` binary in 64 bits in a folder nam
 
 In order to produce the One Billion Rows of text, we are providing the source code for the official generator, so we all have the same entry data.
 > **NOTE**
-> Generator will come shortly.
+> Generator for Lazarus is now done!
+> Generator for Delphi will come shortly.
 
 For those that are using a Delphi version that is not able to produce a Linux executable binary, please make that known on your `README.md` file.
 I'll then compile the source code on my Windows `VM` with Delphi 12.1 and use the generated executable for the benchmark.
