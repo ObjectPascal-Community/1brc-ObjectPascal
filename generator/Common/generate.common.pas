@@ -37,6 +37,14 @@ type
 
 implementation
 
+uses
+  Math,
+  bufstream
+;
+
+const
+  batchPercent = 10;
+
 { TGenerator }
 
 constructor TGenerator.Create(
@@ -115,10 +123,11 @@ end;
 
 procedure TGenerator.Generate;
 var
-  index: Int64;
+  index, progressBatch: Int64;
   stationId: Int64;
   randomTemp: Double;
-  outputStream: TFileStream;
+  outputFileStream: TFileStream;
+  outputBufWriter: TWriteBufStream;
   line: String;
 begin
   // Randomize sets this variable depending on the current time
@@ -128,23 +137,37 @@ begin
   // Build list of station names
   BuildStationNames;
 
-  outputStream:= TFileStream.Create(FOutPutFile, fmCreate);
+  outputFileStream:= TFileStream.Create(FOutPutFile, fmCreate);
+
+  progressBatch:= floor(FLineCount * (batchPercent / 100));
+
   try
-    // Generate the file
-    for index:= 1 to FLineCount do
-    begin
-      stationId:= Random(FStationNames.Count);
-      randomTemp:= Random * (2 * cHottestTemp) - cHottestTemp;
-      line:= Format('%s;%s'#13#10, [
-        FStationNames[stationId],
-        FormatFloat('#0.0', randomTemp)
-      ]);
-      //Write(line);
-      outputStream.WriteBuffer(line[1], Length(line));
-      Write(GenerateProgressBar(index, FLineCount, 50), #13);
+    outputBufWriter:= TWriteBufStream.Create(outputFileStream, 20*1024*1024);
+    try
+      Write(GenerateProgressBar(1, FLineCount, 50), #13);
+      // Generate the file
+      for index:= 1 to FLineCount do
+      begin
+        stationId:= Random(FStationNames.Count);
+        randomTemp:= Random * (2 * cHottestTemp) - cHottestTemp;
+        line:= Format('%s;%s'#13#10, [
+          FStationNames[stationId],
+          FormatFloat('#0.0', randomTemp)
+        ]);
+        //Write(line);
+        outputFileStream.WriteBuffer(line[1], Length(line));
+        Dec(progressBatch);
+        if progressBatch = 0 then
+        begin
+          Write(GenerateProgressBar(index, FLineCount, 50), #13);
+          progressBatch:= floor(FLineCount * (batchPercent / 100));
+        end;
+      end;
+    finally
+      outputBufWriter.Free;
     end;
   finally
-    outputStream.Free;
+    outputFileStream.Free;
   end;
   WriteLn;
 end;

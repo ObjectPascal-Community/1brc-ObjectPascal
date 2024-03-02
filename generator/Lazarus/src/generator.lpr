@@ -134,6 +134,12 @@ begin
       Terminate;
       Exit;
     end;
+    if not (lineCount > 0) then
+    begin
+      WriteLn('ERROR: Number of lines should be a positive number, greater than 0.');
+      Terminate;
+      Exit;
+    end;
   end
   else
   begin
