@@ -148,13 +148,12 @@ begin
     Exit;
   end;
 
-
   inputFilename:= ExpandFileName(inputFilename);
   outputFilename:= ExpandFileName(outputFilename);
 
   WriteLn('Input File : ', inputFilename);
   WriteLn('Output File: ', outputFilename);
-  WriteLn('Line Count : ', FormatFLoat('#'+DefaultFormatSettings.ThousandSeparator+'##0', lineCount));
+  WriteLn('Line Count : ', Format('%.0n', [lineCount * 1.0]));
   WriteLn;
 
   FGenerator:= TGenerator.Create(inputFilename, outputFilename, lineCount);
