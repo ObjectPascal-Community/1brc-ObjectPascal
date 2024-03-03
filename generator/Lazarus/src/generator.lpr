@@ -153,7 +153,7 @@ begin
 
   WriteLn('Input File : ', inputFilename);
   WriteLn('Output File: ', outputFilename);
-  WriteLn('Line Count : ', Format('%.0n', [lineCount * 1.0]));
+  WriteLn('Line Count : ', Format('%.0n', [ Double(lineCount) ]));
   WriteLn;
 
   FGenerator:= TGenerator.Create(inputFilename, outputFilename, lineCount);
