@@ -187,7 +187,7 @@ begin
       4: randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' + randomTempStr[4];
     end;
     temperatureArray[i * 2 - 1] := randomTempFinal;
-    temperatureArray[i * 2 - 1] := '-' + randomTempFinal;
+    temperatureArray[i * 2] := '-' + randomTempFinal;
   end;
   //
 
