@@ -77,6 +77,7 @@ var
   streamReader: TStreamReader;
   entry: String;
   count: Int64 = 0;
+  start, stop: QWord;
 begin
   WriteLn('Building Weather Stations...');
   // Load the Weather Station names
@@ -86,6 +87,7 @@ begin
     try
       streamReader:= TStreamReader.Create(inputStream);
       try
+        start:= GetTickCount64;
         while not streamReader.Eof do
         begin
           entry:= streamReader.ReadLine;
@@ -97,6 +99,7 @@ begin
             Inc(count);
           end;
         end;
+        stop:= GetTickCount64;
       finally
         streamReader.Free;
       end;
@@ -108,7 +111,11 @@ begin
   begin
     raise Exception.Create(Format('File "%s" not found.', [ FInputFile ]));
   end;
-  WriteLn('Done.');
+  WriteLn(Format('Done: Processed %d entries from a total of %d weather stations in %d ms', [
+    count,
+    FStationNames.Count,
+    stop-start
+  ]));
   WriteLn;
 end;
 
@@ -147,7 +154,8 @@ begin
   progressBatch:= floor(FLineCount * (batchPercent / 100));
 
   try
-    outputBufWriter:= TWriteBufStream.Create(outputFileStream, 20*1024*1024);
+    //outputBufWriter:= TWriteBufStream.Create(outputFileStream, 4*1024);
+    outputBufWriter:= TWriteBufStream.Create(outputFileStream, 64*1024);
     try
       Write(GenerateProgressBar(1, FLineCount, 50), #13);
       // Generate the file
