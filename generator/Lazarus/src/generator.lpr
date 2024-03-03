@@ -9,27 +9,12 @@ uses
   Classes
 , SysUtils
 , CustApp
+, Generate.Console
 , Generate.Common
 ;
 
 const
   cVersion = {$I version.inc};
-
-  cShortOptHelp: Char    = 'h';
-  cLongOptHelp           = 'help';
-  cShortOptVersion: Char = 'v';
-  cLongOptVersion        = 'version';
-  cShortOptInput: Char   = 'i';
-  cLongOptInput          = 'input-file';
-  cShortOptOutput: Char  = 'o';
-  cLongOptOutput         = 'output-file';
-  cShortOptNumner: Char  = 'n';
-  cLongOptNumber         = 'line-count';
-
-var
-  inputFilename: String = '';
-  outputFilename: String = '';
-  lineCount: Int64 = 0;
 
 type
 
@@ -43,7 +28,6 @@ type
   public
     constructor Create(TheOwner: TComponent); override;
     destructor Destroy; override;
-    procedure WriteHelp; virtual;
   published
   end;
 
@@ -73,7 +57,7 @@ begin
   if ErrorMsg<>'' then
   begin
     //ShowException(Exception.Create(ErrorMsg));
-    WriteLn('ERROR: ', ErrorMsg);
+    WriteLn(Format(rsErrorMessage, [ ErrorMsg ]));
     Terminate;
     Exit;
   end;
@@ -88,7 +72,7 @@ begin
 
   if HasOption(cShortOptVersion, cLongOptVersion) then
   begin
-    WriteLn('generator v', cVersion);
+    WriteLn(Format(rsGeneratorVersion, [ cVersion ]));
     Terminate;
     Exit;
   end;
@@ -102,7 +86,7 @@ begin
   end
   else
   begin
-    WriteLn('ERROR: Missing input file flag');
+    WriteLn(Format(rsErrorMessage, [ rsMissingInputFlag ]));
     Terminate;
     Exit;
   end;
@@ -116,7 +100,7 @@ begin
   end
   else
   begin
-    WriteLn('ERROR: Missing output file flag');
+    WriteLn(Format(rsErrorMessage, [ rsMissingOutputFlag ]));
     Terminate;
     Exit;
   end;
@@ -130,20 +114,20 @@ begin
     tmpLineCount:= StringReplace(tmpLineCount, '_', '', [rfReplaceAll]);
     if not TryStrToInt64(tmpLineCount, lineCount) then
     begin
-      WriteLn('ERROR: Invalid integer "',tmpLineCount,'"');
+      WriteLn(Format(rsInvalidInteger, [ tmpLineCount ]));
       Terminate;
       Exit;
     end;
     if not (lineCount > 0) then
     begin
-      WriteLn('ERROR: Number of lines should be a positive number, greater than 0.');
+      WriteLn(Format(rsErrorMessage, [ rsInvalidLineNumber ]));
       Terminate;
       Exit;
     end;
   end
   else
   begin
-    WriteLn('ERROR: Missing line count flag');
+    WriteLn(Format(rsErrorMessage, [ rsMissingLineCountFlag ]));
     Terminate;
     Exit;
   end;
@@ -151,9 +135,9 @@ begin
   inputFilename:= ExpandFileName(inputFilename);
   outputFilename:= ExpandFileName(outputFilename);
 
-  WriteLn('Input File : ', inputFilename);
-  WriteLn('Output File: ', outputFilename);
-  WriteLn('Line Count : ', Format('%.0n', [ Double(lineCount) ]));
+  WriteLn(Format(rsInputFile, [ inputFilename ]));
+  WriteLn(Format(rsOutputFile, [ outputFilename ]));
+  WriteLn(Format(rsLineCount, [ Double(lineCount) ]));
   WriteLn;
 
   FGenerator:= TGenerator.Create(inputFilename, outputFilename, lineCount);
@@ -163,7 +147,7 @@ begin
     except
       on E: Exception do
       begin
-        WriteLn('ERROR: ', E.Message);
+        WriteLn(Format(rsErrorMessage, [ E.Message ]));
       end;
     end;
   finally
@@ -185,27 +169,11 @@ begin
   inherited Destroy;
 end;
 
-procedure TOneBRCGenerator.WriteHelp;
-begin
-  { add your help code here }
-  WriteLn('Generates the measurement file with the specified number of lines');
-  WriteLn;
-  WriteLn('USAGE');
-  WriteLn('  generator <flags>');
-  WriteLn;
-  WriteLn('FLAGS');
-  WriteLn('  -h|--help                      Writes this help message and exits');
-  WriteLn('  -v|--version                   Writes the version and exits');
-  WriteLn('  -i|--input-file <filename>     The file containing the Weather Stations');
-  WriteLn('  -o|--output-file <filename>    The file that will contain the generated lines');
-  WriteLn('  -n|--line-count <number>       The amount of lines to be generated');
-end;
-
 var
   Application: TOneBRCGenerator;
 begin
   Application:=TOneBRCGenerator.Create(nil);
-  Application.Title:='One Billion Row Challenge Generator';
+  Application.Title:= rsAppTitle;
   Application.Run;
   Application.Free;
 end.

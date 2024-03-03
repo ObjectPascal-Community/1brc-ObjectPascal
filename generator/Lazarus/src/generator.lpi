@@ -131,7 +131,7 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="2">
+    <Units Count="3">
       <Unit0>
         <Filename Value="generator.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -141,6 +141,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="Generate.Common"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="../../Common/generate.console.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Generate.Console"/>
+      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
