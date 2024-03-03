@@ -111,9 +111,9 @@ begin
   begin
     raise Exception.Create(Format('File "%s" not found.', [ FInputFile ]));
   end;
-  WriteLn(Format('Done: Processed %d entries from a total of %d weather stations in %d ms', [
-    count,
-    FStationNames.Count,
+  WriteLn(Format('Done: Processed %.n entries from a total of %.n weather stations in %d ms', [
+    Double(count),
+    Double(FStationNames.Count),
     stop-start
   ]));
   WriteLn;
@@ -130,7 +130,7 @@ begin
   Result:= '[';
   Result:= Result + StringOfChar('#', filled);
   Result:= Result + StringOfChar('-', ALength - filled);
-  Result:= Result + Format('] %5.2f %% done.', [ percentDone ]);
+  Result:= Result + Format('] %5.2f %%', [ percentDone ]);
 end;
 
 procedure TGenerator.Generate;
