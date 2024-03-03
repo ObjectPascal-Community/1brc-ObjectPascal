@@ -25,7 +25,10 @@ type
     FStationNames: TStringList;
 
     procedure BuildStationNames;
-    function GenerateProgressBar(APosition, AMax, ALength:Int64):String;
+    function GenerateProgressBar(
+      APBPosition, APBMax, APBWIdth, AFileSize:Int64;
+      ATimeElapsed: TDateTime
+    ):String;
   protected
   public
     constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64);
@@ -119,28 +122,37 @@ begin
   WriteLn;
 end;
 
-function TGenerator.GenerateProgressBar(APosition, AMax, ALength: Int64
-  ): String;
+function TGenerator.GenerateProgressBar(
+  APBPosition, APBMax, APBWIdth, AFileSize: Int64;
+  ATimeElapsed: TDateTime
+): String;
 var
   percentDone: Double;
   filled: Integer;
 begin
-  percentDone:= (100 * APosition) / AMax;
-  filled:= (ALength * APosition ) div AMax;
+  percentDone:= (100 * APBPosition) / APBMax;
+  filled:= (APBWIdth * APBPosition ) div APBMax;
   Result:= '[';
   Result:= Result + StringOfChar('#', filled);
-  Result:= Result + StringOfChar('-', ALength - filled);
+  Result:= Result + StringOfChar('-', APBWIdth - filled);
   Result:= Result + Format('] %5.2f %%', [ percentDone ]);
+  Result:= Result + Format(' lines: %.n, file size: %.n, elapsed: %s    ', [
+    Double(APBPosition),
+    Double(AFileSize),
+    FormatDateTime('n" min, "s" sec"', ATimeElapsed)
+  ]);
 end;
 
 procedure TGenerator.Generate;
 var
   index, progressBatch: Int64;
   stationId: Int64;
-  randomTemp: Double;
+  randomTemp: Integer;
+  randomTempStr: String[4];
   outputFileStream: TFileStream;
   outputBufWriter: TWriteBufStream;
-  line: String;
+  line, randomTempFinal: String;
+  start: TDateTime;
 begin
   // Randomize sets this variable depending on the current time
   // We just set it to our own value
@@ -157,32 +169,61 @@ begin
     //outputBufWriter:= TWriteBufStream.Create(outputFileStream, 4*1024);
     outputBufWriter:= TWriteBufStream.Create(outputFileStream, 64*1024);
     try
-      Write(GenerateProgressBar(1, FLineCount, 50), #13);
+      start:= Now;
+      Write(GenerateProgressBar(1, FLineCount, 50, 0, Now - start), #13);
       // Generate the file
       for index:= 1 to FLineCount do
       begin
         stationId:= Random(FStationNames.Count);
-        randomTemp:= Random * (2 * cHottestTemp) - cHottestTemp;
-        line:= Format('%s;%s'#13#10, [
-          FStationNames[stationId],
-          FormatFloat('#0.0', randomTemp)
-        ]);
+        // This is all paweld magic:
+        // From here
+        randomTemp:= Random(1000);
+        randomTempStr:= IntToStr(randomTemp);
+        case Ord(randomTempStr[0]) of
+          1: randomTempFinal := '0.' + randomTempStr;
+          2: randomTempFinal := randomTempStr[1] + '.' + randomTempStr[2];
+          3: randomTempFinal := randomTempStr[1] + randomTempStr[2] + '.' + randomTempStr[3];
+          4: randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' + randomTempStr[4];
+        end;
+        if (randomTemp <> 0) and (Random(2) = 1) then
+          randomTempFinal := '-' + randomTempFinal;
+        line := line + FStationNames[stationId] + ';' + randomTempFinal + #13#10;
         //Write(line);
-        outputBufWriter.WriteBuffer(line[1], Length(line));
+        if index mod 10000 = 0 then
+        begin
+          outputFileStream.WriteBuffer(line[1], Length(line));
+          line := '';
+        end;
+        // To here
         Dec(progressBatch);
         if progressBatch = 0 then
         begin
-          Write(GenerateProgressBar(index, FLineCount, 50), #13);
+          Write(GenerateProgressBar(
+            index,
+            FLineCount,
+            50,
+            outputFileStream.Size,
+            Now - start
+          ), #13);
           progressBatch:= floor(FLineCount * (batchPercent / 100));
         end;
+      end;
+      if line <> '' then
+      begin
+        outputFileStream.WriteBuffer(line[1], Length(line));
       end;
     finally
       outputBufWriter.Free;
     end;
   finally
+    WriteLn;
+    WriteLn;
+    WriteLn(Format('Done: file size: %.n, elapsed: %s', [
+      Double(outputFileStream.Size),
+      FormatDateTime('n" min, "s" sec"', Now - start)
+    ]));
     outputFileStream.Free;
   end;
-  WriteLn;
 end;
 
 end.
