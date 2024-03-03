@@ -1,6 +1,7 @@
 # 1BRC project specific
 /bin
 /data/measurements*.txt
+/profiling
 
 # Compiled l10n files: .mo should be ignored
 *.mo

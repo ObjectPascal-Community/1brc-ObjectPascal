@@ -58,6 +58,9 @@ begin
   FLineCount:= ALineCount;
 
   FStationNames:= TStringList.Create;
+  FStationNames.Capacity:= 50000;
+  //FStationNames.CaseSensitive:= False;
+  FStationNames.UseLocale:= False;
   FStationNames.Duplicates:= dupIgnore;
   FStationNames.Sorted:= True;
 end;
@@ -75,7 +78,7 @@ var
   entry: String;
   count: Int64 = 0;
 begin
-  //WriteLn('Reading "',FInputFile,'"');
+  WriteLn('Building Weather Stations...');
   // Load the Weather Station names
   if FileExists(FInputFile) then
   begin
@@ -105,6 +108,8 @@ begin
   begin
     raise Exception.Create(Format('File "%s" not found.', [ FInputFile ]));
   end;
+  WriteLn('Done.');
+  WriteLn;
 end;
 
 function TGenerator.GenerateProgressBar(APosition, AMax, ALength: Int64
@@ -155,7 +160,7 @@ begin
           FormatFloat('#0.0', randomTemp)
         ]);
         //Write(line);
-        outputFileStream.WriteBuffer(line[1], Length(line));
+        outputBufWriter.WriteBuffer(line[1], Length(line));
         Dec(progressBatch);
         if progressBatch = 0 then
         begin
