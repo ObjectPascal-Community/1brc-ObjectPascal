@@ -152,6 +152,8 @@ var
   outputFileStream: TFileStream;
   outputBufWriter: TWriteBufStream;
   line, randomTempFinal: String;
+  stationArray, temperatureArray: TStringArray;
+  i, stationsCount, temperaturesCount: Integer;
   start: TDateTime;
 begin
   // Randomize sets this variable depending on the current time
@@ -164,30 +166,46 @@ begin
   outputFileStream:= TFileStream.Create(FOutPutFile, fmCreate);
 
   progressBatch:= floor(FLineCount * (batchPercent / 100));
+  start:= Now;
+
+  //based on code @domasz from lazarus forum, github: PascalVault
+  stationsCount := FStationNames.Count;
+  SetLength(stationArray, stationsCount);
+  for i := 0 to stationsCount - 1 do
+    stationArray[i] := FStationNames[i];
+
+  temperaturesCount := 1999;
+  SetLength(temperatureArray, temperaturesCount);
+  temperatureArray[0] := '0.0';
+  for i := 1 to 999 do
+  begin
+    randomTempStr := IntToStr(i);
+    case Ord(randomTempStr[0]) of
+      1: randomTempFinal := '0.' + randomTempStr;
+      2: randomTempFinal := randomTempStr[1] + '.' + randomTempStr[2];
+      3: randomTempFinal := randomTempStr[1] + randomTempStr[2] + '.' + randomTempStr[3];
+      4: randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' + randomTempStr[4];
+    end;
+    temperatureArray[i * 2 - 1] := randomTempFinal;
+    temperatureArray[i * 2 - 1] := '-' + randomTempFinal;
+  end;
+  //
+
+  line := '';
 
   try
     //outputBufWriter:= TWriteBufStream.Create(outputFileStream, 4*1024);
     outputBufWriter:= TWriteBufStream.Create(outputFileStream, 64*1024);
     try
-      start:= Now;
       Write(GenerateProgressBar(1, FLineCount, 50, 0, Now - start), #13);
       // Generate the file
       for index:= 1 to FLineCount do
       begin
-        stationId:= Random(FStationNames.Count);
+        stationId:= Random(stationsCount);
         // This is all paweld magic:
         // From here
-        randomTemp:= Random(1000);
-        randomTempStr:= IntToStr(randomTemp);
-        case Ord(randomTempStr[0]) of
-          1: randomTempFinal := '0.' + randomTempStr;
-          2: randomTempFinal := randomTempStr[1] + '.' + randomTempStr[2];
-          3: randomTempFinal := randomTempStr[1] + randomTempStr[2] + '.' + randomTempStr[3];
-          4: randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' + randomTempStr[4];
-        end;
-        if (randomTemp <> 0) and (Random(2) = 1) then
-          randomTempFinal := '-' + randomTempFinal;
-        line := line + FStationNames[stationId] + ';' + randomTempFinal + #13#10;
+        randomTemp:= Random(temperaturesCount);
+        line := line + stationArray[stationId] + ';' + temperatureArray[randomTemp] + #13#10;
         //Write(line);
         if index mod 10000 = 0 then
         begin
