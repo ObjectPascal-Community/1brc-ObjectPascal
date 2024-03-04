@@ -153,7 +153,8 @@ var
   outputBufWriter: TWriteBufStream;
   line, randomTempFinal: String;
   stationArray, temperatureArray: TStringArray;
-  i, stationsCount, temperaturesCount: Integer;
+  LenStationArray, LenTemperatureArray: Array of Integer;
+  i, count, len, stationsCount, temperaturesCount: Integer;
   start: TDateTime;
 begin
   // Randomize sets this variable depending on the current time
@@ -171,12 +172,18 @@ begin
   //based on code @domasz from lazarus forum, github: PascalVault
   stationsCount := FStationNames.Count;
   SetLength(stationArray, stationsCount);
+  SetLength(LenStationArray, stationsCount);
   for i := 0 to stationsCount - 1 do
-    stationArray[i] := FStationNames[i];
+  begin
+    stationArray[i] := FStationNames[i] + ';';
+    LenStationArray[i] := Length(stationArray[i]);
+  end;
 
   temperaturesCount := 1999;
   SetLength(temperatureArray, temperaturesCount);
-  temperatureArray[0] := '0.0';
+  SetLength(LenTemperatureArray, temperaturesCount);
+  temperatureArray[0] := '0.0' + #13#10;
+  LenTemperatureArray[0] := Length(temperatureArray[0]);
   for i := 1 to 999 do
   begin
     randomTempStr := IntToStr(i);
@@ -186,12 +193,16 @@ begin
       3: randomTempFinal := randomTempStr[1] + randomTempStr[2] + '.' + randomTempStr[3];
       4: randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' + randomTempStr[4];
     end;
-    temperatureArray[i * 2 - 1] := randomTempFinal;
-    temperatureArray[i * 2] := '-' + randomTempFinal;
+    temperatureArray[i * 2 - 1] := randomTempFinal + #13#10;
+    LenTemperatureArray[i * 2 - 1] := Length(temperatureArray[i * 2 - 1]);
+    temperatureArray[i * 2] := '-' + randomTempFinal + #13#10;
+    LenTemperatureArray[i * 2] := LenTemperatureArray[i * 2 - 1] + 1;
   end;
   //
 
-  line := '';
+  count := 0;
+  len := 0;
+  SetLength(line, 1024 * 1024 * 20);
 
   try
     //outputBufWriter:= TWriteBufStream.Create(outputFileStream, 4*1024);
@@ -205,12 +216,17 @@ begin
         // This is all paweld magic:
         // From here
         randomTemp:= Random(temperaturesCount);
-        line := line + stationArray[stationId] + ';' + temperatureArray[randomTemp] + #13#10;
-        //Write(line);
-        if index mod 10000 = 0 then
+        Move(stationArray[stationId][1], line[len + 1], LenStationArray[stationId]);
+        Inc(len, LenStationArray[stationId]);
+        Move(temperatureArray[randomTemp][1], line[len + 1], LenTemperatureArray[randomTemp]);
+        Inc(len, LenTemperatureArray[randomTemp]);
+
+        Inc(count);
+        if count = 10000 then
         begin
-          outputBufWriter.WriteBuffer(line[1], Length(line));
-          line := '';
+          outputBufWriter.WriteBuffer(line[1], len);
+          count := 0;
+          len := 0;
         end;
         // To here
         Dec(progressBatch);
@@ -226,9 +242,9 @@ begin
           progressBatch:= floor(FLineCount * (batchPercent / 100));
         end;
       end;
-      if line <> '' then
+      if count > 0 then
       begin
-        outputBufWriter.WriteBuffer(line[1], Length(line));
+        outputBufWriter.WriteBuffer(line[1], len);
       end;
     finally
       outputBufWriter.Free;
