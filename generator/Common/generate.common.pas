@@ -1,22 +1,28 @@
 unit Generate.Common;
 
+{$IFDEF FPC}
 {$mode ObjFPC}{$H+}
+{$ENDIF}
 
 interface
 
 uses
-  Classes
-, SysUtils
-, streamex
-;
+  Classes, SysUtils, Math
+  {$IFDEF FPC}
+    , streamex, bufstream
+  {$ELSE}
+    , System.Diagnostics
+  {$ENDIF}
+    ;
 
 const
   cSeed: LongInt = 46668267; // '1BRC' in ASCII
   cColdestTemp = -99.9;
   cHottestTemp = 99.9;
+  cLineBreak = #13#10;
 
 type
-{ TGenerator }
+  { TGenerator }
   TGenerator = class(TObject)
   private
     FInputFile: String;
@@ -25,10 +31,8 @@ type
     FStationNames: TStringList;
 
     procedure BuildStationNames;
-    function GenerateProgressBar(
-      APBPosition, APBMax, APBWIdth, AFileSize:Int64;
-      ATimeElapsed: TDateTime
-    ):String;
+    function GenerateProgressBar(APBPosition, APBMax, APBWIdth, AFileSize: Int64;
+      ATimeElapsed: TDateTime): String;
   protected
   public
     constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64);
@@ -38,34 +42,31 @@ type
   published
   end;
 
-implementation
+  {$IFNDEF FPC}
 
-uses
-  Math,
-  bufstream
-;
+  TStringArray = array of string;
+  TWriteBufStream = TFileStream;
+  {$ENDIF}
+
+implementation
 
 const
   batchPercent = 10;
 
-{ TGenerator }
+  { TGenerator }
 
-constructor TGenerator.Create(
-  AInputFile,
-  AOutputFile: String;
-  ALineCount: Int64
-);
+constructor TGenerator.Create(AInputFile, AOutputFile: String; ALineCount: Int64);
 begin
-  FInputFile:= AInputFile;
-  FOutPutFile:= AOutputFile;
-  FLineCount:= ALineCount;
+  FInputFile := AInputFile;
+  FOutPutFile := AOutputFile;
+  FLineCount := ALineCount;
 
-  FStationNames:= TStringList.Create;
-  FStationNames.Capacity:= 50000;
-  //FStationNames.CaseSensitive:= False;
-  FStationNames.UseLocale:= False;
-  FStationNames.Duplicates:= dupIgnore;
-  FStationNames.Sorted:= True;
+  FStationNames := TStringList.Create;
+  FStationNames.Capacity := 50000;
+  // FStationNames.CaseSensitive:= False;
+  FStationNames.UseLocale := False;
+  FStationNames.Duplicates := dupIgnore;
+  FStationNames.Sorted := True;
 end;
 
 destructor TGenerator.Destroy;
@@ -79,30 +80,46 @@ var
   inputStream: TFileStream;
   streamReader: TStreamReader;
   entry: String;
-  count: Int64 = 0;
-  start, stop: QWord;
+  count: Int64;
+  start, stop: {$IFDEF FPC}QWord{$ELSE}Int64{$ENDIF};
 begin
   WriteLn('Building Weather Stations...');
   // Load the Weather Station names
   if FileExists(FInputFile) then
   begin
-    inputStream:= TFileStream.Create(FInputFile, fmOpenRead);
+    inputStream := TFileStream.Create(FInputFile, fmOpenRead);
     try
-      streamReader:= TStreamReader.Create(inputStream);
+      streamReader := TStreamReader.Create(inputStream);
       try
-        start:= GetTickCount64;
+        {$IFDEF FPC}
+        start := GetTickCount64;
         while not streamReader.Eof do
         begin
-          entry:= streamReader.ReadLine;
+          entry := streamReader.ReadLine;
           if entry[1] <> '#' then
           begin
-            entry:= entry.Split(';')[0];
+            entry := entry.Split(';')[0];
             FStationNames.Add(entry);
-            //WriteLn('Got: ', entry);
+            // WriteLn('Got: ', entry);
             Inc(count);
           end;
         end;
-        stop:= GetTickCount64;
+        stop := GetTickCount64;
+        {$ELSE}
+        start := TStopwatch.GetTimeStamp;
+        while not streamReader.EndOfStream do
+        begin
+          entry := streamReader.ReadLine;
+          if entry[1] <> '#' then
+          begin
+            entry := entry.Split([';'])[0];
+            FStationNames.Add(entry);
+            // WriteLn('Got: ', entry);
+            Inc(count);
+          end;
+        end;
+        stop := TStopwatch.GetTimeStamp;
+        {$ENDIF}
       finally
         streamReader.Free;
       end;
@@ -112,35 +129,29 @@ begin
   end
   else
   begin
-    raise Exception.Create(Format('File "%s" not found.', [ FInputFile ]));
+    raise Exception.Create(Format('File "%s" not found.', [FInputFile]));
   end;
-  WriteLn(Format('Done: Processed %.n entries from a total of %.n weather stations in %d ms', [
-    Double(count),
-    Double(FStationNames.Count),
-    stop-start
-  ]));
+  WriteLn(Format
+    ('Done: Processed %.n entries from a total of %.n weather stations in %d ms',
+    [Double(count), Double(FStationNames.count), stop - start]));
   WriteLn;
 end;
 
-function TGenerator.GenerateProgressBar(
-  APBPosition, APBMax, APBWIdth, AFileSize: Int64;
-  ATimeElapsed: TDateTime
-): String;
+function TGenerator.GenerateProgressBar(APBPosition, APBMax, APBWIdth, AFileSize: Int64;
+  ATimeElapsed: TDateTime): String;
 var
   percentDone: Double;
   filled: Integer;
 begin
-  percentDone:= (100 * APBPosition) / APBMax;
-  filled:= (APBWIdth * APBPosition ) div APBMax;
-  Result:= '[';
-  Result:= Result + StringOfChar('#', filled);
-  Result:= Result + StringOfChar('-', APBWIdth - filled);
-  Result:= Result + Format('] %5.2f %%', [ percentDone ]);
-  Result:= Result + Format(' lines: %.n, file size: %.n, elapsed: %s    ', [
-    Double(APBPosition),
-    Double(AFileSize),
-    FormatDateTime('n" min, "s" sec"', ATimeElapsed)
-  ]);
+  percentDone := (100 * APBPosition) / APBMax;
+  filled := (APBWIdth * APBPosition) div APBMax;
+  Result := '[';
+  Result := Result + StringOfChar('#', filled);
+  Result := Result + StringOfChar('-', APBWIdth - filled);
+  Result := Result + Format('] %5.2f %%', [percentDone]);
+  Result := Result + Format(' lines: %.n, file size: %.n, elapsed: %s    ',
+    [Double(APBPosition), Double(AFileSize), FormatDateTime('n" min, "s" sec"',
+    ATimeElapsed)]);
 end;
 
 procedure TGenerator.Generate;
@@ -158,18 +169,18 @@ var
 begin
   // Randomize sets this variable depending on the current time
   // We just set it to our own value
-  RandSeed:= cSeed;
+  RandSeed := cSeed;
 
   // Build list of station names
   BuildStationNames;
 
-  outputFileStream:= TFileStream.Create(FOutPutFile, fmCreate);
+  outputFileStream := TFileStream.Create(FOutPutFile, fmCreate);
 
-  progressBatch:= floor(FLineCount * (batchPercent / 100));
-  start:= Now;
+  progressBatch := floor(FLineCount * (batchPercent / 100));
+  start := Now;
 
-  //based on code @domasz from lazarus forum, github: PascalVault
-  stationsCount := FStationNames.Count;
+  // based on code @domasz from lazarus forum, github: PascalVault
+  stationsCount := FStationNames.count;
   SetLength(stationArray, stationsCount);
   for i := 0 to stationsCount - 1 do
     stationArray[i] := FStationNames[i];
@@ -181,10 +192,15 @@ begin
   begin
     randomTempStr := IntToStr(i);
     case Ord(randomTempStr[0]) of
-      1: randomTempFinal := '0.' + randomTempStr;
-      2: randomTempFinal := randomTempStr[1] + '.' + randomTempStr[2];
-      3: randomTempFinal := randomTempStr[1] + randomTempStr[2] + '.' + randomTempStr[3];
-      4: randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' + randomTempStr[4];
+      1:
+        randomTempFinal := '0.' + randomTempStr;
+      2:
+        randomTempFinal := randomTempStr[1] + '.' + randomTempStr[2];
+      3:
+        randomTempFinal := randomTempStr[1] + randomTempStr[2] + '.' + randomTempStr[3];
+      4:
+        randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' +
+          randomTempStr[4];
     end;
     temperatureArray[i * 2 - 1] := randomTempFinal;
     temperatureArray[i * 2] := '-' + randomTempFinal;
@@ -194,55 +210,60 @@ begin
   line := '';
 
   try
-    //outputBufWriter:= TWriteBufStream.Create(outputFileStream, 4*1024);
-    outputBufWriter:= TWriteBufStream.Create(outputFileStream, 64*1024);
+    // outputBufWriter:= TWriteBufStream.Create(outputFileStream, 4*1024);
+    {$IFDEF FPC}
+    outputBufWriter := TWriteBufStream.Create(outputFileStream, 64 * 1024);
+    {$ENDIF}
     try
-      Write(GenerateProgressBar(1, FLineCount, 50, 0, Now - start), #13);
+      Write(GenerateProgressBar(1, FLineCount, 50, 0, Now - start), cLineBreak);
       // Generate the file
-      for index:= 1 to FLineCount do
+      for index := 1 to FLineCount do
       begin
-        stationId:= Random(stationsCount);
+        stationId := Random(stationsCount);
         // This is all paweld magic:
         // From here
-        randomTemp:= Random(temperaturesCount);
-        line := line + stationArray[stationId] + ';' + temperatureArray[randomTemp] + #13#10;
-        //Write(line);
+        randomTemp := Random(temperaturesCount);
+        line := line + stationArray[stationId] + ';' + temperatureArray[randomTemp] +
+          cLineBreak;
+        // Write(line);
         if index mod 10000 = 0 then
         begin
+          {$IFNDEF FPC}
+          outputFileStream.WriteBuffer(line[1], Length(line));
+          {$ELSE}
           outputBufWriter.WriteBuffer(line[1], Length(line));
+          {$ENDIF}
           line := '';
         end;
         // To here
         Dec(progressBatch);
         if progressBatch = 0 then
         begin
-          Write(GenerateProgressBar(
-            index,
-            FLineCount,
-            50,
-            outputFileStream.Size,
-            Now - start
-          ), #13);
-          progressBatch:= floor(FLineCount * (batchPercent / 100));
+          Write(GenerateProgressBar(index, FLineCount, 50, outputFileStream.Size,
+            Now - start), cLineBreak);
+          progressBatch := floor(FLineCount * (batchPercent / 100));
         end;
       end;
       if line <> '' then
       begin
+        {$IFNDEF FPC}
+        outputFileStream.WriteBuffer(line[1], Length(line));
+        {$ELSE}
         outputBufWriter.WriteBuffer(line[1], Length(line));
+        {$ENDIF}
       end;
     finally
+      {$IFDEF FPC}
       outputBufWriter.Free;
+      {$ENDIF}
     end;
   finally
     WriteLn;
     WriteLn;
-    WriteLn(Format('Done: file size: %.n, elapsed: %s', [
-      Double(outputFileStream.Size),
-      FormatDateTime('n" min, "s" sec"', Now - start)
-    ]));
+    WriteLn(Format('Done: file size: %.n, elapsed: %s', [Double(outputFileStream.Size),
+      FormatDateTime('n" min, "s" sec"', Now - start)]));
     outputFileStream.Free;
   end;
 end;
 
 end.
-

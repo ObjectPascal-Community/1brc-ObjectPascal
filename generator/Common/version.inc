@@ -1,1 +1,2 @@
-'0.3'
+const
+  cVersion = '0.3';
