@@ -209,7 +209,7 @@ begin
         //Write(line);
         if index mod 10000 = 0 then
         begin
-          outputFileStream.WriteBuffer(line[1], Length(line));
+          outputBufWriter.WriteBuffer(line[1], Length(line));
           line := '';
         end;
         // To here
@@ -228,7 +228,7 @@ begin
       end;
       if line <> '' then
       begin
-        outputFileStream.WriteBuffer(line[1], Length(line));
+        outputBufWriter.WriteBuffer(line[1], Length(line));
       end;
     finally
       outputBufWriter.Free;
