@@ -5,8 +5,8 @@ program generator;
 uses
   Classes,
   SysUtils,
-  generate.common in '..\Common\generate.common.pas',
-  generate.console in '..\Common\generate.console.pas';
+  generate.common in '..\..\Common\generate.common.pas',
+  generate.console in '..\..\Common\generate.console.pas';
 
 {$I version.inc}
 

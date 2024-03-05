@@ -189,9 +189,8 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="..\Common\generate.common.pas"/>
-        <DCCReference Include="..\Common\generate.console.pas"/>
-        <None Include="..\Common\version.inc"/>
+        <DCCReference Include="..\..\Common\generate.common.pas"/>
+        <DCCReference Include="..\..\Common\generate.console.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -235,18 +234,6 @@
                 </DeployFile>
                 <DeployFile LocalName="..\Common\version.inc" Configuration="Debug" Class="ProjectFile">
                     <Platform Name="Linux64">
-                        <RemoteDir>.\</RemoteDir>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="..\Common\version.inc" Configuration="Debug" Class="ProjectFile">
-                    <Platform Name="Win32">
-                        <RemoteDir>.\</RemoteDir>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="C:\Users\onemo\Desktop\exemplos Delphi_Lazarus\1brc-ObjectPascal\generator\Common\version.inc" Configuration="Debug" Class="ProjectFile">
-                    <Platform Name="Win32">
                         <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
