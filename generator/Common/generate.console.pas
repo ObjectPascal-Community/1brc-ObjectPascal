@@ -44,7 +44,7 @@ resourcestring
 var
   inputFilename: String = '';
   outputFilename: String = '';
-  lineCount: Int64 = 0;
+  lineCount: Integer = 0;
 
 procedure WriteHelp;
 

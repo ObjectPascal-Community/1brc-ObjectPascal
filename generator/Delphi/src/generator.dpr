@@ -8,7 +8,7 @@ uses
   generate.common in '..\..\Common\generate.common.pas',
   generate.console in '..\..\Common\generate.console.pas';
 
-{$I version.inc}
+{$I '..\..\Common\version.inc'}
 
 type
 
@@ -193,7 +193,7 @@ begin
     begin
       tmpLineCount := FParams.ValueFromIndex[J].Replace('_', '', [rfReplaceAll]);
 
-      if not TryStrToInt64(tmpLineCount, lineCount) then
+      if not TryStrToInt(tmpLineCount, lineCount) then
       begin
         WriteLn(Format(rsInvalidInteger, [tmpLineCount]));
         inc(invalid);
