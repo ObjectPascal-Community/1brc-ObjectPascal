@@ -29,9 +29,11 @@ The task is to write an Object Pascal program which reads the file, calculates t
 {Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
 ```
 
-## Honout Mentions
+## Honour Mentions
 
 I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a woping 3m, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 2 minutes.
+
+I'd like to thank [mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator
 
 ## Links
 
@@ -44,14 +46,15 @@ The blog post in question: https://www.bytesizego.com/blog/one-billion-row-chall
 ## Entering The Challenge
 
 Submissions will be, preferably, as a `GIT` `submodule`.
+
 They must contain the source and a Linux `ELF` binary in 64 bits in a folder named `bin` from the `root` folder.
 
 In order to produce the One Billion Rows of text, we are providing the source code for the official generator, so we all have the same entry data.
-> **NOTE**
-> Generator for Lazarus is now done!
-> Generator for Delphi will come shortly.
+
+We now have both a Lazarus version and a Delphi version of the generator.
 
 For those that are using a Delphi version that is not able to produce a Linux executable binary, please make that known on your `README.md` file.
+
 I'll then compile the source code on my Windows `VM` with Delphi 12.1 and use the generated executable for the benchmark.
 
 Submit your implementation and become part of the leader board!

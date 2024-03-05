@@ -22,11 +22,7 @@ const
   cLongOptOutput         = 'output-file';
   cShortOptNumber: Char  = 'n';
   cLongOptNumber         = 'line-count';
-  {$IFDEF FPC}
-  cShortOptions: array of char = ('h', 'v', 'i', 'o', 'n');
-  cLongOptions: array of string = ('help', 'version', 'input-file', 'output-file',
-                                   'line-count');
-  {$ELSE}
+  {$IFNDEF FPC}
   cShortOptions: array of char = ['h', 'v', 'i', 'o', 'n'];
   cLongOptions: array of string = ['help', 'version', 'input-file', 'output-file',
                                    'line-count'];
