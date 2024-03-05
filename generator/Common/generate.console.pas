@@ -1,6 +1,8 @@
 unit Generate.Console;
 
+{$IFDEF FPC}
 {$mode ObjFPC}{$H+}
+{$ENDIF}
 
 interface
 

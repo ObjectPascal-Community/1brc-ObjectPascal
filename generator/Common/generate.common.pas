@@ -1,13 +1,17 @@
 unit Generate.Common;
 
+{$IFDEF FPC}
 {$mode ObjFPC}{$H+}
+{$ENDIF}
 
 interface
 
 uses
   Classes
 , SysUtils
-, streamex
+{$IFDEF FPC}
+{$ELSE}
+{$ENDIF}
 ;
 
 const
@@ -41,12 +45,21 @@ type
 implementation
 
 uses
-  Math,
-  bufstream
+  Math
+{$IFDEF FPC}
+, streamex
+, bufstream
+{$ELSE}
+, System.Diagnostics
+{$ENDIF}
 ;
 
 const
-  batchPercent = 10;
+  linesPercent = 10;
+  stationsCapacity = 50000;
+  chunkBatch = 10000;
+  chunkCapacity = 20 * 1024 * 1024;
+  lineEnding = #13#10;
 
 { TGenerator }
 
@@ -61,8 +74,7 @@ begin
   FLineCount:= ALineCount;
 
   FStationNames:= TStringList.Create;
-  FStationNames.Capacity:= 50000;
-  //FStationNames.CaseSensitive:= False;
+  FStationNames.Capacity:= stationsCapacity;
   FStationNames.UseLocale:= False;
   FStationNames.Duplicates:= dupIgnore;
   FStationNames.Sorted:= True;
@@ -80,7 +92,7 @@ var
   streamReader: TStreamReader;
   entry: String;
   count: Int64 = 0;
-  start, stop: QWord;
+  start, stop: Int64;
 begin
   WriteLn('Building Weather Stations...');
   // Load the Weather Station names
@@ -90,19 +102,27 @@ begin
     try
       streamReader:= TStreamReader.Create(inputStream);
       try
+        {$IFDEF FPC}
         start:= GetTickCount64;
         while not streamReader.Eof do
+        {$ELSE}
+        start := TStopwatch.GetTimeStamp;
+        while not streamReader.EndOfStream do
+        {$ENDIF}
         begin
           entry:= streamReader.ReadLine;
           if entry[1] <> '#' then
           begin
             entry:= entry.Split(';')[0];
             FStationNames.Add(entry);
-            //WriteLn('Got: ', entry);
             Inc(count);
           end;
         end;
+        {$IFDEF FPC}
         stop:= GetTickCount64;
+        {$ELSE}
+        stop := TStopwatch.GetTimeStamp;
+        {$ENDIF}
       finally
         streamReader.Free;
       end;
@@ -149,12 +169,11 @@ var
   stationId: Int64;
   randomTemp: Integer;
   randomTempStr: String[4];
-  outputFileStream: TFileStream;
-  outputBufWriter: TWriteBufStream;
-  line, randomTempFinal: String;
+  outputFileStream: TBufferedFileStream;
+  chunkLine, randomTempFinal: String;
   stationArray, temperatureArray: TStringArray;
   LenStationArray, LenTemperatureArray: Array of Integer;
-  i, count, len, stationsCount, temperaturesCount: Integer;
+  chunkCount, chunkLen, stationsCount, temperaturesCount: Integer;
   start: TDateTime;
 begin
   // Randomize sets this variable depending on the current time
@@ -164,90 +183,88 @@ begin
   // Build list of station names
   BuildStationNames;
 
-  outputFileStream:= TFileStream.Create(FOutPutFile, fmCreate);
+  outputFileStream:= TBufferedFileStream.Create(FOutPutFile, fmCreate);
 
-  progressBatch:= floor(FLineCount * (batchPercent / 100));
+  progressBatch:= floor(FLineCount * (linesPercent / 100));
   start:= Now;
 
+  // This is all paweld magic:
+  // From here
   //based on code @domasz from lazarus forum, github: PascalVault
   stationsCount := FStationNames.Count;
   SetLength(stationArray, stationsCount);
   SetLength(LenStationArray, stationsCount);
-  for i := 0 to stationsCount - 1 do
+  for index := 0 to stationsCount - 1 do
   begin
-    stationArray[i] := FStationNames[i] + ';';
-    LenStationArray[i] := Length(stationArray[i]);
+    stationArray[index] := FStationNames[index] + ';';
+    LenStationArray[index] := Length(stationArray[index]);
   end;
 
   temperaturesCount := 1999;
   SetLength(temperatureArray, temperaturesCount);
   SetLength(LenTemperatureArray, temperaturesCount);
-  temperatureArray[0] := '0.0' + #13#10;
+  temperatureArray[0] := '0.0' + lineEnding;
   LenTemperatureArray[0] := Length(temperatureArray[0]);
-  for i := 1 to 999 do
+  for index := 1 to 999 do
   begin
-    randomTempStr := IntToStr(i);
+    randomTempStr := IntToStr(index);
     case Ord(randomTempStr[0]) of
       1: randomTempFinal := '0.' + randomTempStr;
       2: randomTempFinal := randomTempStr[1] + '.' + randomTempStr[2];
       3: randomTempFinal := randomTempStr[1] + randomTempStr[2] + '.' + randomTempStr[3];
       4: randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' + randomTempStr[4];
     end;
-    temperatureArray[i * 2 - 1] := randomTempFinal + #13#10;
-    LenTemperatureArray[i * 2 - 1] := Length(temperatureArray[i * 2 - 1]);
-    temperatureArray[i * 2] := '-' + randomTempFinal + #13#10;
-    LenTemperatureArray[i * 2] := LenTemperatureArray[i * 2 - 1] + 1;
+    temperatureArray[index * 2 - 1] := randomTempFinal + lineEnding;
+    LenTemperatureArray[index * 2 - 1] := Length(temperatureArray[index * 2 - 1]);
+    temperatureArray[index * 2] := '-' + randomTempFinal + lineEnding;
+    LenTemperatureArray[index * 2] := LenTemperatureArray[index * 2 - 1] + 1;
   end;
-  //
 
-  count := 0;
-  len := 0;
-  SetLength(line, 1024 * 1024 * 20);
+  chunkCount := chunkBatch;
+  chunkLen := 0;
+  SetLength(chunkLine, chunkCapacity);
+  // To here
 
   try
-    //outputBufWriter:= TWriteBufStream.Create(outputFileStream, 4*1024);
-    outputBufWriter:= TWriteBufStream.Create(outputFileStream, 64*1024);
-    try
-      Write(GenerateProgressBar(1, FLineCount, 50, 0, Now - start), #13);
-      // Generate the file
-      for index:= 1 to FLineCount do
-      begin
-        stationId:= Random(stationsCount);
-        // This is all paweld magic:
-        // From here
-        randomTemp:= Random(temperaturesCount);
-        Move(stationArray[stationId][1], line[len + 1], LenStationArray[stationId]);
-        Inc(len, LenStationArray[stationId]);
-        Move(temperatureArray[randomTemp][1], line[len + 1], LenTemperatureArray[randomTemp]);
-        Inc(len, LenTemperatureArray[randomTemp]);
+    // Print first state of the progress bar
+    Write(GenerateProgressBar(1, FLineCount, 50, 0, Now - start), #13);
+    // Generate the file
+    for index:= 1 to FLineCount do
+    begin
+      stationId:= Random(stationsCount);
+      // This is all paweld magic:
+      // From here
+      randomTemp:= Random(temperaturesCount);
+      Move(stationArray[stationId][1], chunkLine[chunkLen + 1], LenStationArray[stationId]);
+      Inc(chunkLen, LenStationArray[stationId]);
+      Move(temperatureArray[randomTemp][1], chunkLine[chunkLen + 1], LenTemperatureArray[randomTemp]);
+      Inc(chunkLen, LenTemperatureArray[randomTemp]);
 
-        Inc(count);
-        if count = 10000 then
-        begin
-          outputBufWriter.WriteBuffer(line[1], len);
-          count := 0;
-          len := 0;
-        end;
-        // To here
-        Dec(progressBatch);
-        if progressBatch = 0 then
-        begin
-          Write(GenerateProgressBar(
-            index,
-            FLineCount,
-            50,
-            outputFileStream.Size,
-            Now - start
-          ), #13);
-          progressBatch:= floor(FLineCount * (batchPercent / 100));
-        end;
-      end;
-      if count > 0 then
+      Dec(chunkCount);
+      if chunkCount = 0 then
       begin
-        outputBufWriter.WriteBuffer(line[1], len);
+        outputFileStream.WriteBuffer(chunkLine[1], chunkLen);
+        chunkCount := chunkBatch;
+        chunkLen := 0;
       end;
-    finally
-      outputBufWriter.Free;
+      // To here
+      Dec(progressBatch);
+      if progressBatch = 0 then
+      begin
+        Write(GenerateProgressBar(
+          index,
+          FLineCount,
+          50,
+          outputFileStream.Size,
+          Now - start
+        ), #13);
+        progressBatch:= floor(FLineCount * (linesPercent / 100));
+      end;
+    end;
+    if chunkCount > 0 then
+    begin
+      outputFileStream.WriteBuffer(chunkLine[1], chunkLen);
+      outputFileStream.Flush;
     end;
   finally
     WriteLn;
