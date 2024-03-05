@@ -36,7 +36,7 @@ type
 
   {$IFNDEF FPC}
   TStringArray = array of string;
-  TWriteBufStream = TBufferedFileStream;
+  TWriteBufStream = TFileStream;
   {$ENDIF}
 
 implementation
@@ -161,11 +161,11 @@ end;
 
 procedure TGenerator.Generate;
 var
-  index, progressBatch: Int64;
+  index, progressCount, progressBatch: Int64;
   stationId: Int64;
   randomTemp: Integer;
   randomTempStr: String[4];
-  outputFileStream: TBufferedFileStream;
+  outputFileStream: TFileStream;
   chunkLine, randomTempFinal: String;
   stationArray, temperatureArray: TStringArray;
   LenStationArray, LenTemperatureArray: Array of Integer;
@@ -179,7 +179,7 @@ begin
   // Build list of station names
   BuildStationNames;
 
-  outputFileStream := TBufferedFileStream.Create(FOutPutFile, fmCreate);
+  outputFileStream := TFileStream.Create(FOutPutFile, fmCreate);
 
   progressBatch := floor(FLineCount * (linesPercent / 100));
   start := Now;
@@ -224,6 +224,7 @@ begin
   chunkCount := chunkBatch;
   chunkLen := 0;
   SetLength(chunkLine, chunkCapacity);
+  progressCount := progressBatch;
   // To here
 
   try
@@ -251,23 +252,18 @@ begin
         chunkLen := 0;
       end;
       // To here
-      Dec(progressBatch);
-      if progressBatch = 0 then
+      Dec(progressCount);
+      if progressCount = 0 then
       begin
         Write(GenerateProgressBar(index, FLineCount, 50, outputFileStream.Size,
           Now - start), lineBreak);
-        progressBatch := floor(FLineCount * (linesPercent / 100));
+        progressCount := progressBatch;
       end;
     end;
 
     if chunkCount > 0 then
     begin
       outputFileStream.WriteBuffer(chunkLine[1], chunkLen);
-      {$IFDEF FPC}
-      outputFileStream.Flush;
-      {$ELSE}
-      outputFileStream.FlushBuffer;
-      {$ENDIF}
     end;
   finally
     WriteLn;
