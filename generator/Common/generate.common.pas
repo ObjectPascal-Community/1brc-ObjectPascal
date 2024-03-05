@@ -7,13 +7,9 @@ unit Generate.Common;
 interface
 
 uses
-  Classes, SysUtils, Math
-  {$IFDEF FPC}
-    , streamex, bufstream
-  {$ELSE}
-    , System.Diagnostics
-  {$ENDIF}
-    ;
+  Classes
+, SysUtils
+;
 
 type
 
@@ -44,6 +40,16 @@ type
   {$ENDIF}
 
 implementation
+
+uses
+  Math
+{$IFDEF FPC}
+, streamex
+, bufstream
+{$ELSE}
+, System.Diagnostics
+{$ENDIF}
+;
 
 const
   cSeed: LongInt = 46668267; // '1BRC' in ASCII
