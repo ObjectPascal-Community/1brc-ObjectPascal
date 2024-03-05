@@ -107,7 +107,7 @@ begin
   if HasOption(cShortOptNumber, cLongOptNumber) then
   begin
     tmpLineCount:=GetOptionValue(
-      cShortOptNumner,
+      cShortOptNumber,
       cLongOptNumber
     );
     tmpLineCount:= StringReplace(tmpLineCount, '_', '', [rfReplaceAll]);
