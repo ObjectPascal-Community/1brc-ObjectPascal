@@ -111,7 +111,7 @@ begin
       cLongOptNumber
     );
     tmpLineCount:= StringReplace(tmpLineCount, '_', '', [rfReplaceAll]);
-    if not TryStrToInt64(tmpLineCount, lineCount) then
+    if not TryStrToInt(tmpLineCount, lineCount) then
     begin
       WriteLn(Format(rsInvalidInteger, [ tmpLineCount ]));
       Terminate;

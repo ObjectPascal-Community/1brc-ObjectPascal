@@ -24,8 +24,8 @@ type
     FStationNames: TStringList;
 
     procedure BuildStationNames;
-    function GenerateProgressBar(APBPosition, APBMax, APBWIdth, AFileSize: Int64;
-      ATimeElapsed: TDateTime): String;
+    function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer;
+      AFileSize: Int64; ATimeElapsed: TDateTime): String;
     function Rng1brc(Range: longint): longint;
   protected
   public
@@ -37,7 +37,7 @@ type
   end;
 
   {$IFNDEF FPC}
-  TStringArray = array of string;
+  TStringArray = array of Utf8String;
   TWriteBufStream = TFileStream;
   {$ENDIF}
 
@@ -48,7 +48,8 @@ uses
 {$IFDEF FPC}
 , streamex
 {$ELSE}
-, System.Diagnostics
+, System.Diagnostics 
+{$IF defined(MSWINDOWS)}, Winapi.Windows{$ENDIF}
 {$ENDIF}
 ;
 
@@ -113,7 +114,7 @@ begin
         end;
         stop := GetTickCount64;
         {$ELSE}
-        start := TStopwatch.GetTimeStamp;
+        start := {$IF defined(MSWINDOWS)}GetTickCount64{$ELSE}TStopwatch.GetTimeStamp{$ENDIF};
         while not streamReader.EndOfStream do
         begin
           entry := streamReader.ReadLine;
@@ -124,7 +125,7 @@ begin
             Inc(count);
           end;
         end;
-        stop := TStopwatch.GetTimeStamp;
+        stop := {$IF defined(MSWINDOWS)}GetTickCount64{$ELSE}TStopwatch.GetTimeStamp{$ENDIF};
         {$ENDIF}
       finally
         streamReader.Free;
@@ -143,14 +144,13 @@ begin
   WriteLn;
 end;
 
-function TGenerator.GenerateProgressBar(APBPosition, APBMax, APBWIdth, AFileSize: Int64;
-  ATimeElapsed: TDateTime): String;
+function TGenerator.GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer; AFileSize: Int64; ATimeElapsed: TDateTime): String;
 var
   percentDone: Double;
   filled: Integer;
 begin
-  percentDone := (100 * APBPosition) / APBMax;
-  filled := (APBWIdth * APBPosition) div APBMax;
+  percentDone := 100 * (APBPosition / APBMax);
+  filled := trunc(APBWIdth * (percentDone / 100));
   Result := '[';
   Result := Result + StringOfChar('#', filled);
   Result := Result + StringOfChar('-', APBWIdth - filled);
@@ -178,12 +178,11 @@ end;
 
 procedure TGenerator.Generate;
 var
-  index, progressCount, progressBatch: Int64;
-  stationId: Int64;
-  randomTemp: Integer;
+  index, progressCount, progressBatch: Integer;
+  stationId, randomTemp: Integer;
   randomTempStr: String[4];
   outputFileStream: TFileStream;
-  chunkLine, randomTempFinal: String;
+  chunkLine, randomTempFinal: Utf8String;
   stationArray, temperatureArray: TStringArray;
   LenStationArray, LenTemperatureArray: Array of Integer;
   chunkCount, chunkLen, stationsCount, temperaturesCount: Integer;
