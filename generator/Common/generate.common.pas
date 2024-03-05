@@ -160,16 +160,20 @@ begin
     ATimeElapsed)]);
 end;
 
-function TGenerator.Rng1brc(Range: longint): longint;
+function TGenerator.Rng1brc(Range: Integer): Integer;
 var
   s0, s1, s2: Cardinal;
+  i0, i1: Int64;
 begin
   s0 := rndState[0];
   s1 := rndState[1] xor s0;
-  s2 := ((s1 * 3) xor 5) * 7;
-  Result := longint(Int64(s2 * range) shr 32);
+  i0 := ((Int64(s1) * 3) xor 5) * 7;
+  s2 := i0 and $FFFFFFFF;
+  i1 := Int64(s2) * range;
+  Result := Integer(i1 shr 32);
   rndState[0] := s2;
-  rndState[1] := s0 xor (s1 shl 9);
+  i0 := s0 xor (Int64(s1) shl 9);
+  rndState[1] := i0 and $FFFFFFFF;
 end;
 
 procedure TGenerator.Generate;
