@@ -13,8 +13,7 @@ uses
 , Generate.Common
 ;
 
-const
-  cVersion = {$I version.inc};
+{$I version.inc}
 
 type
 
@@ -44,7 +43,7 @@ begin
       cShortOptVersion,
       cShortOptInput,
       cShortOptOutput,
-      cShortOptNumner
+      cShortOptNumber
     ]),
     [
       cLongOptHelp,
@@ -105,7 +104,7 @@ begin
     Exit;
   end;
 
-  if HasOption(cShortOptNumner, cLongOptNumber) then
+  if HasOption(cShortOptNumber, cLongOptNumber) then
   begin
     tmpLineCount:=GetOptionValue(
       cShortOptNumner,

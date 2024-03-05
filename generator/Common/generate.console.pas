@@ -20,9 +20,11 @@ const
   cLongOptInput          = 'input-file';
   cShortOptOutput: Char  = 'o';
   cLongOptOutput         = 'output-file';
-  cShortOptNumner: Char  = 'n';
+  cShortOptNumber: Char  = 'n';
   cLongOptNumber         = 'line-count';
-
+  cShortOptions: array of char = ['h', 'v', 'i', 'o', 'n'];
+  cLongOptions: array of string = ['help', 'version', 'input-file', 'output-file',
+                                   'line-count'];
 
 resourcestring
   rsAppTitle = 'One Billion Row Challenge Generator';
