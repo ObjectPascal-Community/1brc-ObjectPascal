@@ -17,6 +17,7 @@ type
 
   TGenerator = class(TObject)
   private
+    rndState: Array [0..1] of Cardinal;
     FInputFile: String;
     FOutPutFile: String;
     FLineCount: Int64;
@@ -160,17 +161,15 @@ begin
 end;
 
 function TGenerator.Rng1brc(Range: longint): longint;
-const
-  state: Array [0..1] of DWord = (cSeed, 7266);
 var
-  s0, s1, s2: DWord;
+  s0, s1, s2: Cardinal;
 begin
-  s0 := state[0];
-  s1 := state[1] xor s0;
+  s0 := rndState[0];
+  s1 := rndState[1] xor s0;
   s2 := ((s1 * 3) xor 5) * 7;
   Result := longint(Int64(s2 * range) shr 32);
-  state[0] := s2;
-  state[1] := s0 xor (s1 shl 9);
+  rndState[0] := s2;
+  rndState[1] := s0 xor (s1 shl 9);
 end;
 
 procedure TGenerator.Generate;
@@ -186,6 +185,9 @@ var
   chunkCount, chunkLen, stationsCount, temperaturesCount: Integer;
   start: TDateTime;
 begin
+  //random init
+  rndState[0] := cSeed;
+  rndState[1] := 7266;
   // Build list of station names
   BuildStationNames;
 
