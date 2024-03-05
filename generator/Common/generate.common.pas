@@ -45,7 +45,6 @@ uses
   Math
 {$IFDEF FPC}
 , streamex
-, bufstream
 {$ELSE}
 , System.Diagnostics
 {$ENDIF}
