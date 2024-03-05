@@ -52,7 +52,7 @@ uses
 ;
 
 const
-  cSeed: LongInt = 46668267; // '1BRC' in ASCII
+  cSeed = 46668267; // '1BRC' in ASCII
   linesPercent = 10;
   stationsCapacity = 50000;
   chunkBatch = 10000;
@@ -161,13 +161,13 @@ end;
 
 function TGenerator.Rng1brc(Range: longint): longint;
 const
-  state: Array [0..1] of DWord = (46668267, 7266);
+  state: Array [0..1] of DWord = (cSeed, 7266);
 var
   s0, s1, s2: DWord;
 begin
   s0 := state[0];
   s1 := state[1] xor s0;
-  s2 := RolDWord(s1 * 3, 5) * 7;
+  s2 := ((s1 * 3) xor 5) * 7;
   Result := longint(Int64(s2 * range) shr 32);
   state[0] := s2;
   state[1] := s0 xor (s1 shl 9);
@@ -186,10 +186,6 @@ var
   chunkCount, chunkLen, stationsCount, temperaturesCount: Integer;
   start: TDateTime;
 begin
-  // Randomize sets this variable depending on the current time
-  // We just set it to our own value
-  RandSeed := cSeed;
-
   // Build list of station names
   BuildStationNames;
 
