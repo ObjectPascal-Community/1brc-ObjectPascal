@@ -25,6 +25,7 @@ type
     procedure BuildStationNames;
     function GenerateProgressBar(APBPosition, APBMax, APBWIdth, AFileSize: Int64;
       ATimeElapsed: TDateTime): String;
+    function Rng1brc(Range: longint): longint;
   protected
   public
     constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64);
@@ -158,6 +159,20 @@ begin
     ATimeElapsed)]);
 end;
 
+function TGenerator.Rng1brc(Range: longint): longint;
+const
+  state: Array [0..1] of DWord = (46668267, 7266);
+var
+  s0, s1, s2: DWord;
+begin
+  s0 := state[0];
+  s1 := state[1] xor s0;
+  s2 := RolDWord(s1 * 3, 5) * 7;
+  Result := longint(Int64(s2 * range) shr 32);
+  state[0] := s2;
+  state[1] := s0 xor (s1 shl 9);
+end;
+
 procedure TGenerator.Generate;
 var
   index, progressCount, progressBatch: Int64;
@@ -232,10 +247,8 @@ begin
     // Generate the file
     for index := 1 to FLineCount do
     begin
-      stationId := Random(stationsCount);
-      // This is all paweld magic:
-      // From here
-      randomTemp := Random(temperaturesCount);
+      stationId := Rng1brc(stationsCount);
+      randomTemp := Rng1brc(temperaturesCount);
       Move(stationArray[stationId][1], chunkLine[chunkLen + 1],
         LenStationArray[stationId]);
       Inc(chunkLen, LenStationArray[stationId]);
