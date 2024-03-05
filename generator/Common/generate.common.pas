@@ -161,9 +161,9 @@ end;
 
 function TGenerator.Rng1brc(Range: longint): longint;
 const
-  state: Array [0..1] of DWord = (46668267, 7266);
+  state: Array [0..1] of Cardinal = (46668267, 7266);
 var
-  s0, s1, s2: DWord;
+  s0, s1, s2: Cardinal;
 begin
   s0 := state[0];
   s1 := state[1] xor s0;
