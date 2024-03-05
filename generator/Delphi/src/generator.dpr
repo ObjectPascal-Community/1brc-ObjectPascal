@@ -8,7 +8,7 @@ uses
   generate.common in '..\..\Common\generate.common.pas',
   generate.console in '..\..\Common\generate.console.pas';
 
-{$I version.inc}
+{$I ..\..\Common\Version.inc}
 
 type
 
