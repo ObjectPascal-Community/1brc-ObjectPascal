@@ -31,9 +31,9 @@ The task is to write an Object Pascal program which reads the file, calculates t
 
 ## Honour Mentions
 
-I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a woping 3m, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 2 minutes.
+I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a whopping ~25s, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 4 amd a half minutes.
 
-I'd like to thank [mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator.
+I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator.
 
 ## Links
 
@@ -45,17 +45,24 @@ The blog post in question: https://www.bytesizego.com/blog/one-billion-row-chall
 
 ## Entering The Challenge
 
-Submissions will be, preferably, as a `GIT` `submodule`.
+Submissions will be via a `PR`( Pull Request ) to this repository.
 
-They must contain the source and a Linux `ELF` binary in 64 bits in a folder named `bin` from the `root` folder.
+When creating your entry, please do as follows:
+1. Create a folder under `entries` with your first initial and last name, e.g., for Gustavo Carreno: `entries/gcarreno`.
+2. Create a `README.md` with some content about your approach, e.g., `entries/gcarreno/README.md`.
+3. Put all your code under `entries/<your name>/src`, e.g., `entries/gcarreno/src`.
+4. If you need to provide a custom `.gitignore` for something not present in the main one, please do.
+
+This challenge is mainly to allow us to learn something new. This means that copying code from others will be allowed, under these conditions:
+1. The code must have some sort of mention/attribution to the original author.
+2. It's not a blatant copy just for the sake of submission.
+3. It adds something of value, not just a different code formatting.
 
 In order to produce the One Billion Rows of text, we are providing the source code for the official generator, so we all have the same entry data.
 
-We now have both a Lazarus version and a Delphi version of the generator.
-
-For those that are using a Delphi version that is not able to produce a Linux executable binary, please make that known on your `README.md` file.
-
-I'll then compile the source code on my Windows `VM` with Delphi 12.1 and use the generated executable for the benchmark.
+> **NOTE**
+>
+> We now have both a Lazarus version and a Delphi version of the generator for both 32b and 64b.
 
 Submit your implementation and become part of the leader board!
 
