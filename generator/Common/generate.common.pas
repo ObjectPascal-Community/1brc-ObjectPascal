@@ -47,8 +47,6 @@ implementation
 
 const
   cSeed: LongInt = 46668267; // '1BRC' in ASCII
-  cColdestTemp = -99.9;
-  cHottestTemp = 99.9;
   linesPercent = 10;
   stationsCapacity = 50000;
   chunkBatch = 10000;

@@ -67,7 +67,7 @@ begin
   WriteLn('  -v|--version                   Writes the version and exits');
   WriteLn('  -i|--input-file <filename>     The file containing the Weather Stations');
   WriteLn('  -o|--output-file <filename>    The file that will contain the generated lines');
-  WriteLn('  -n|--line-count <number>       The amount of lines to be generated');
+  WriteLn('  -n|--line-count <number>       The amount of lines to be generated ( Can use 1_000_000_000 )');
 end;
 
 end.
