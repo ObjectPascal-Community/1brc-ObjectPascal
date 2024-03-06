@@ -26,7 +26,7 @@ type
     procedure BuildStationNames;
     function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer;
       AFileSize: Int64; ATimeElapsed: TDateTime): String;
-    function Rng1brc(Range: longint): longint;
+    function Rng1brc(Range: Integer): Integer;
   protected
   public
     constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64);
@@ -180,11 +180,11 @@ procedure TGenerator.Generate;
 var
   index, progressCount, progressBatch: Integer;
   stationId, randomTemp: Integer;
-  randomTempStr: String[4];
+  randomTempWord: Word;
   outputFileStream: TFileStream;
   chunkLine, randomTempFinal: Utf8String;
   stationArray, temperatureArray: TStringArray;
-  LenStationArray, LenTemperatureArray: Array of Integer;
+  stationTempOffsetArray, stationTempRangeArray, LenStationArray, LenTemperatureArray: Array of Word;
   chunkCount, chunkLen, stationsCount, temperaturesCount: Integer;
   start: TDateTime;
 begin
@@ -202,38 +202,28 @@ begin
   // This is all paweld magic:
   // From here
   // based on code @domasz from lazarus forum, github: PascalVault
+  temperaturesCount := 1999;
   stationsCount := FStationNames.count;
   SetLength(stationArray, stationsCount);
   SetLength(LenStationArray, stationsCount);
+  SetLength(stationTempOffsetArray, stationsCount);
+  SetLength(stationTempRangeArray, stationsCount);
   for index := 0 to stationsCount - 1 do
   begin
     stationArray[index] := FStationNames[index] + ';';
     LenStationArray[index] := Length(stationArray[index]);
+    stationTempRangeArray[index] := Rng1brc(501) + 350;
+    stationTempOffsetArray[index] := Rng1brc(temperaturesCount - stationTempRangeArray[index]);
   end;
 
   temperaturesCount := 1999;
   SetLength(temperatureArray, temperaturesCount);
   SetLength(LenTemperatureArray, temperaturesCount);
-  temperatureArray[0] := '0.0' + lineEnding;
-  LenTemperatureArray[0] := Length(temperatureArray[0]);
-  for index := 1 to 999 do
+  for index := 0 to High(temperatureArray) do
   begin
-    randomTempStr := IntToStr(index);
-    case Ord(randomTempStr[0]) of
-      1:
-        randomTempFinal := '0.' + randomTempStr;
-      2:
-        randomTempFinal := randomTempStr[1] + '.' + randomTempStr[2];
-      3:
-        randomTempFinal := randomTempStr[1] + randomTempStr[2] + '.' + randomTempStr[3];
-      4:
-        randomTempFinal := randomTempStr[1] + randomTempStr[2] + randomTempStr[3] + '.' +
-          randomTempStr[4];
-    end;
-    temperatureArray[index * 2 - 1] := randomTempFinal + lineEnding;
-    LenTemperatureArray[index * 2 - 1] := Length(temperatureArray[index * 2 - 1]);
-    temperatureArray[index * 2] := '-' + randomTempFinal + lineEnding;
-    LenTemperatureArray[index * 2] := LenTemperatureArray[index * 2 - 1] + 1;
+    randomTempFinal := FormatFloat('0"."0', index - 999);
+    temperatureArray[index] := randomTempFinal + lineEnding;
+    LenTemperatureArray[index] := Length(temperatureArray[index]);
   end;
 
   chunkCount := chunkBatch;
@@ -249,13 +239,14 @@ begin
     for index := 1 to FLineCount do
     begin
       stationId := Rng1brc(stationsCount);
-      randomTemp := Rng1brc(temperaturesCount);
+      randomTemp := stationTempOffsetArray[stationId] + Rng1brc(stationTempRangeArray[stationId]);
+      randomTempWord := randomTemp and $FFFF;
       Move(stationArray[stationId][1], chunkLine[chunkLen + 1],
         LenStationArray[stationId]);
       Inc(chunkLen, LenStationArray[stationId]);
-      Move(temperatureArray[randomTemp][1], chunkLine[chunkLen + 1],
-        LenTemperatureArray[randomTemp]);
-      Inc(chunkLen, LenTemperatureArray[randomTemp]);
+      Move(temperatureArray[randomTempWord][1], chunkLine[chunkLen + 1],
+        LenTemperatureArray[randomTempWord]);
+      Inc(chunkLen, LenTemperatureArray[randomTempWord]);
 
       Dec(chunkCount);
       if chunkCount = 0 then
