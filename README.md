@@ -31,7 +31,7 @@ The task is to write an Object Pascal program which reads the file, calculates t
 
 ## Honour Mentions
 
-I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a whopping ~25s, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 4 amd a half minutes.
+I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a whopping ~25s, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 4 and a half minutes.
 
 I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator.
 
