@@ -80,10 +80,11 @@ type
     constructor Create(AWSManager: TWSManager);
   end;
 
+  { TWSManager }
+
   TWSManager = class
   private
     FSrcFile: String;
-    FDstFile: String;
     FThreadCnt: Integer;
     FTerminated: Boolean;
     FThreadList: TLockList;
@@ -92,7 +93,7 @@ type
     FOnStart: TNotifyEvent;
     FOnFinish: TNotifyEvent;
   public
-    constructor Create(ASrcFile, ADstFile: String; AThreadCnt: Integer);
+    constructor Create(ASrcFile: String; AThreadCnt: Integer);
     destructor Destroy; override;
   public
     property WSThreadsWatcher: TWSThreadsWatcher read FWSThreadsWatcher;
@@ -414,7 +415,7 @@ var
   Str: String;
   WS: PWS;
   SL: TStringList;
-  MS: TMemoryStream;
+//  MS: TMemoryStream;
 begin
   SL := TStringList.Create;
   try
@@ -440,14 +441,20 @@ begin
   Str := Trim(Str);
   Delete(Str, Length(Str), 1);
   Str := '{' + Str + '}';
-  MS := TMemoryStream.Create;
-  try
-    MS.Write(Pointer(Str)^, Length(Str) div SizeOf(Char));
-    MS.Position := 0;
-    MS.SaveToFile(FWSManager.FDstFile);
-  finally
-    MS.Free;
-  end;
+  Str := StringReplace(Str, sLineBreak, ' ', [rfReplaceAll]);
+  Writeln(Str);
+
+  //Str := Trim(Str);
+  //Delete(Str, Length(Str), 1);
+  //Str := '{' + Str + '}';
+  //MS := TMemoryStream.Create;
+  //try
+  //  MS.Write(Pointer(Str)^, Length(Str) div SizeOf(Char));
+  //  MS.Position := 0;
+  //  MS.SaveToFile(FWSManager.FDstFile);
+  //finally
+  //  MS.Free;
+  //end;
 end;
 
 procedure TWSThreadsWatcher.Execute;
@@ -497,10 +504,9 @@ begin
 end;
 
 { TWSManager }
-constructor TWSManager.Create(ASrcFile, ADstFile: String; AThreadCnt: Integer);
+constructor TWSManager.Create(ASrcFile: String; AThreadCnt: Integer);
 begin
   FSrcFile := ASrcFile;
-  FDstFile := ADstFile;
   FThreadCnt := AThreadCnt;
   FTerminated := False;
   FThreadList := TLockList.Create;

@@ -44,18 +44,18 @@ begin
     Halt;
   end;
 
-  if (Trim(ParamStr(2)) = '')  then
+  {if (Trim(ParamStr(2)) = '')  then
   begin
     Writeln('Please specify a valid destination file');
     Halt;
-  end;
+  end;}
 
-  if (Trim(ParamStr(3)) <> '')  then
+  if (Trim(ParamStr(2)) <> '')  then
     TC := StrToIntDef(ParamStr(3), 16)
   else
     TC := 16;
 
-  FWSManager := TWSManager.Create(ParamStr(1), ParamStr(2), TC);
+  FWSManager := TWSManager.Create(ParamStr(1), TC);
   MStart.Data := nil;
   MStart.Code := @DoOnStart;
   FWSManager.OnStart := TNotifyEvent(MStart);
