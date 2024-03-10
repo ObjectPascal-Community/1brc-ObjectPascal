@@ -5,7 +5,7 @@ unit uWeatherStations;
 interface
 
 uses
-  Classes, SysUtils, syncobjs, contnrs;
+  Classes, SysUtils, Math, syncobjs, contnrs;
 
 type
   TWSManager = class;
@@ -62,7 +62,7 @@ type
     FMS: TMemoryStream;
     procedure ProcessBuffer(ABuffer: String);
     procedure UpdateMainHashList;
-    procedure AddToHashList(AStation, ATemp: String);
+    procedure AddToHashList(AStation, ATemp: String); inline;
     procedure UpdateThreadList(AUpdateType: TUpdateType);
   protected
     procedure Execute; override;
@@ -155,6 +155,8 @@ var
   ReadCnt: LongInt;
 begin
   Result := '';
+  if AST.Position = AST.Size then
+    Exit;
   Len := 100 div SizeOf(Char);
   SetLength(Result, Len);
   ReadCnt := AST.Read(Pointer(Result)^, Len);
@@ -166,7 +168,6 @@ begin
     begin
       Result := Copy(Result, 1, P - 1);
       AST.Position := AST.Position + Length(Result)*SizeOf(Char);
-      Result := Result + sLineBreak + ' ';
     end;
   end;
 end;
@@ -257,10 +258,8 @@ begin
     else
     begin
       WSAll := FWSManager.FHashListAll.Items[Index];
-      if WS^.FMin < WSAll^.FMin then
-        WSAll^.FMin := WS^.FMin;
-      if WS^.FMax > WSALL^.FMax then
-        WSAll^.FMax := WS^.FMax;
+      WSAll^.FMin := Min(WSALL^.FMin, WS^.FMin);
+      WSAll^.FMax := Max(WSAll^.FMax, WS^.FMax);
       WSAll^.FTot := WSAll^.FTot + WS^.FTot;
       WSAll^.FCnt := WSAll^.FCnt + WS^.FCnt;
     end;
@@ -268,6 +267,7 @@ begin
 end;
 
 procedure TWSThread.UpdateThreadList(AUpdateType: TUpdateType);
+
 begin
   while (not Terminated) do
   begin
@@ -297,13 +297,14 @@ var
   WS: PWS;
   Index: Integer;
   Temp: Single;
+ Code: Integer;
 begin
   Index := FHashList.FindIndexOf(AStation);
   if Index = -1 then
   begin
-    ATemp := ATemp + '000000001';
-    if not TryStrToFloat(ATemp, Temp) then
-      Exit;
+    Val(ATemp, Temp, Code);
+    if Code <> 0 then Exit;
+
     New(WS);
     WS^.FName := AStation;
     WS^.FMin := Temp;
@@ -314,13 +315,12 @@ begin
   end
   else
   begin
-    if not TryStrToFloat(ATemp, Temp) then
-      Exit;
+    Val(ATemp, Temp, Code);
+    if Code <> 0 then Exit;
+
     WS := FHashList.Items[Index];
-    if Temp < WS^.FMin then
-      WS^.FMin := Temp;
-    if Temp > WS^.FMax then
-      WS^.FMax := Temp;
+    WS^.FMin := Min(WS^.FMin, Temp);
+    WS^.FMax := Max(WS^.FMax, Temp);
     WS^.FTot := WS^.FTot + Temp;
     WS^.FCnt := WS^.FCnt + 1;
   end;
@@ -328,50 +328,47 @@ end;
 
 procedure TWSThread.ProcessBuffer(ABuffer: String);
 var
-  SL: TStringList;
+  P: Integer;
+  PDel, PEnd: Integer;
   Str: String;
-  P, I: Integer;
   Station: String;
   Temp: String;
 begin
-  SL := TStringList.Create;
-  try
-    SL.DefaultEncoding := TEncoding.UTF8;
-    SL.BeginUpdate;
-    SL.Text := ABuffer;
-    for I := 0 to SL.Count - 1 do
-    begin
-      Str := SL.Strings[I];
-      P := Pos(';', Str);
-      if P > 0 then
-      begin
-        Station := Copy(Str, 1, P - 1);
-        Temp := Copy(Str, P + 1, Length(Str));
-        AddToHashList(Trim(Station), Trim(Temp));
-      end;
-    end;
-    SL.EndUpdate;
-  finally
-    SL.Free;
-  end;
+  Str := StringReplace(ABuffer, sLineBreak, ':', [rfReplaceAll]);
+  if Str[1] = ':' then
+    Delete(Str, 1, 1);
+  P := 1;
+  repeat
+    PDel := Pos(';', Str, P);
+    PEnd := Pos(':', Str, P);
+    if PEnd = 0 then
+      PEnd := Length(Str);
+    Station := Copy(Str, P, PDel - P);
+    Temp := Copy(Str, PDel + 1, PEnd - PDel - 1);
+    if (Station <> '') and (Temp <> '') then
+      AddToHashList(Station, Temp);
+    P := PEnd + 1;
+  until (PDel = 0) or (PEnd = 0);
 end;
 
 procedure TWSThread.Execute;
-const
-  BufferSize =  1048576;
 var
   Buffer: string;
   ReadCnt: LongInt;
+  BufferSize: Int64;
 begin
   UpdateThreadList(utAdd);
   try
     FMS.Write(Pointer(FStr)^, Length(FStr) div SizeOf(Char));
     FMS.Position := 0;
     FStr := '';
+    BufferSize := 1048576;
     repeat
        if Terminated then
          Break;
        Buffer := '';
+       if BufferSize > FMS.Size - FMS.Position then
+         BufferSize := FMS.Size - FMS.Position;
        SetLength(Buffer, BufferSize div SizeOf(Char));
        ReadCnt := FMS.Read(Pointer(Buffer)^, BufferSize div SizeOf(Char));
        if (ReadCnt > 0) then
@@ -407,7 +404,7 @@ begin
   begin
     Str1 := Copy(Str1, 1, P1 - 1);
     Str2 := Copy(Str2, 1, P2 - 1);
-    Result :=  CompareText(Str1, Str2);
+    Result := CompareStr(Str1, Str2);
   end;
 end;
 
@@ -423,18 +420,18 @@ begin
   try
     SL.DefaultEncoding := TEncoding.UTF8;
     SL.BeginUpdate;
-    SL.CustomSort(@Compare);
     for I := 0 to FWSManager.FHashListAll.Count - 1 do
     begin
       WS := FWSManager.FHashListAll.Items[I];
+      if Trim(WS^.FName) = '' then
+        Continue;
+      WS^.FTot := Round(WS^.FTot*10)/10;
       WS^.FMean := WS^.FTot/WS^.FCnt;
-      WS^.FMean := Round(WS^.FMean*1000)/1000;
       Str := WS^.FName + '=' + FormatFloat('0.0', WS^.FMin) + '/' + FormatFloat('0.0', WS^.FMean) + '/' + FormatFloat('0.0', WS^.FMax) + ',';
       SL.Add(Str);
     end;
-    SL.SortStyle := sslUser;
-    SL.Sorted := True;
     SL.EndUpdate;
+    SL.CustomSort(@Compare);
     Str := SL.Text;
   finally
     SL.Free;
@@ -477,6 +474,7 @@ begin
       ReadCnt := FS.Read(Pointer(Buffer)^, BufferSize div SizeOf(Char));
       if (ReadCnt > 0) then
       begin
+        if Terminated then Break;
         Buffer := Buffer + GetLeftOver(FS);
         WSThread := TWSThread.Create(Buffer, FWSManager);
         WSThread.Start;

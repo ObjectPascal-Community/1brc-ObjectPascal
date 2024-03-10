@@ -73,6 +73,7 @@ Submit your implementation and become part of the leader board!
 ## Results
 
 These are the results from running all entries into the challenge on my personal computer:
+- Ubuntu 23.10 64b
 - Ryzen 9 5950x 16 cores
 - 32GB RAM
 - 250GB SSD
@@ -80,15 +81,9 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms): SSD | Result (m:s.ms): HDD | Submitter     | Notes     | Certificates |
 |---|----------------------|----------------------|---------------|-----------|--------------|
-| 1 | 1:4.925 | 2:29.476 | Székely Balázs aka GetMem | Using 16 threads | |
+| 1 | 0:29.212 | 2:2.504 | Székely Balázs | Using 16 threads | |
 
 ## Evaluating Results
-
-Results are determined by running the program on:
-- Ryzen 9 5950x 16 core
-- 32GB RAM
-- 250GB SSD
-- 1TB HDD
 
 Each contender is run 10 times in a row for both `SSD` and `HDD` using `hyperfine` for the time taking.
 The mean value of the 10 runs is the result for that contender and will be added to the results table above.
