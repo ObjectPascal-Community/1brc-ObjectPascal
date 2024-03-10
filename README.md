@@ -54,9 +54,11 @@ When creating your entry, please do as follows:
 4. If you need to provide a custom `.gitignore` for something not present in the main one, please do.
 
 This challenge is mainly to allow us to learn something new. This means that copying code from others will be allowed, under these conditions:
-1. The code must have some sort of mention/attribution to the original author.
-2. It's not a blatant copy just for the sake of submission.
-3. It adds something of value, not just a different code formatting.
+1. You can only use pure Object Pascal with no calls to any operating system's `API` or external `C/C++` libraries.
+2. The code must have some sort of mention/attribution to the original author, in case you've used someone else's code.
+3. It's not a blatant copy just for the sake of submission.
+4. It adds something of value, not just a different code formatting.
+5. All code should be formatted with the `IDE`'s default formatting tool.
 
 In order to produce the One Billion Rows of text, we are providing the source code for the official generator, so we all have the same entry data.
 
@@ -86,9 +88,8 @@ Results are determined by running the program on:
 - 250GB SSD
 - 1TB HDD
 
-Each contender is run five times in a row for both `SSD` and `HDD` using `hyperfine` for the time taking.
-The slowest and the fastest runs are discarded.
-The mean value of the remaining three runs is the result for that contender and will be added to the results table above.
+Each contender is run 10 times in a row for both `SSD` and `HDD` using `hyperfine` for the time taking.
+The mean value of the 10 runs is the result for that contender and will be added to the results table above.
 The exact same `measurements.txt` file is used for evaluating all contenders.
 
 ## Prize
