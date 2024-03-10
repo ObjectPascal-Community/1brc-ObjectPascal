@@ -47,6 +47,8 @@ The blog post in question: https://www.bytesizego.com/blog/one-billion-row-chall
 
 Submissions will be via a `PR`( Pull Request ) to this repository.
 
+The challenge will run from the 10th of March until the 10th of May, 2024.
+
 When creating your entry, please do as follows:
 1. Create a folder under `entries` with your first initial and last name, e.g., for Gustavo Carreno: `entries/gcarreno`.
 2. Create a `README.md` with some content about your approach, e.g., `entries/gcarreno/README.md`.
