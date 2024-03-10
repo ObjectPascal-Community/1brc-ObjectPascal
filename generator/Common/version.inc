@@ -1,2 +1,2 @@
 const
-  cVersion = '0.5';
+  cVersion = '1.0';
