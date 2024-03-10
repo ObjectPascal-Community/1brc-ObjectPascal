@@ -80,7 +80,7 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms): SSD | Result (m:s.ms): HDD | Submitter     | Notes     | Certificates |
 |---|----------------------|----------------------|---------------|-----------|--------------|
-|?|?|?|?|?|?|
+| 1 | 1:4.925 | 2:29.476 | Székely Balázs aka GetMem | Using 16 threads | |
 
 ## Evaluating Results
 
