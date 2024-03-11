@@ -69,8 +69,7 @@ function TOneBRCGenerator.ParseConsoleParams: boolean;
 var
   I, J, invalid, valid: Integer;
   tmpLineCount: String;
-  paramflag: boolean;
-  templist: TStringList;
+  ParamOK: Boolean;
 begin
   Result := false;
   // initialize the params list
@@ -98,121 +97,125 @@ begin
   // parsing
   // ************************************
   // check for invalid input
-  templist := TStringList.Create;
-  try
-    templist.Text := FParams.Text;
-    if templist.Count > 0 then
+  if FParams.Count > 0 then
+  begin
+    for I := 0 to FParams.Count - 1 do
     begin
-      for I := 0 to pred(Length(cShortOptions)) do
+      ParamOK := False;
+      for J := 0 to Pred(Length(cShortOptions)) do
       begin
-        J := templist.IndexOfName(cShortOptions[I]);
-        if J > -1 then
-          templist.Delete(J);
+        if (FParams[I] = cShortOptions[J]) then
+        begin
+          ParamOK := True;
+          Break;
+        end;
       end;
 
-      for I := 0 to pred(Length(cLongOptions)) do
-      begin
-        J := templist.IndexOfName(cLongOptions[I]);
-        if J > -1 then
-          templist.Delete(J);
-      end;
+      if not ParamOK then
+        for J := 0 to Pred(Length(cLongOptions)) do
+        begin
+          if (FParams[I] = cLongOptions[J]) then
+          begin
+            ParamOK := True;
+            Break;
+          end;
+        end;
 
-      if templist.Count > 0 then
-      begin
-        WriteLn(Format(rsErrorMessage, [templist.Text]));
-        Result := false;
-        exit;
-      end;
+      if not ParamOK then
+        Break;
+    end;
 
-    end
-    else
+    if not ParamOK then
     begin
+      WriteLn(Format(rsErrorMessage, [FParams.Text]));
       Result := false;
       exit;
     end;
-
-    // ************************************
-    // check for valid inputs
-    // check help
-    if (FParams.Find(cShortOptHelp, J) or FParams.Find(cLongOptHelp, J)) then
-    begin
-      WriteHelp;
-      inc(invalid);
-    end;
-
-    // check version
-    if (FParams.Find(cShortOptVersion, J) or FParams.Find(cLongOptVersion, J)) then
-    begin
-      WriteLn(Format(rsGeneratorVersion, [cVersion]));
-      inc(invalid);
-    end;
-
-    // check inputfilename
-    J := -1;
-    J := FParams.IndexOfName(cShortOptInput);
-    if J = -1 then
-      J := FParams.IndexOfName(cLongOptInput);
-    if J = -1 then
-    begin
-      WriteLn(Format(rsErrorMessage, [rsMissingInputFlag]));
-      inc(invalid);
-    end
-    else
-    begin
-      inputFilename := FParams.ValueFromIndex[J];
-      inc(valid);
-    end;
-
-    // check outputfilename
-    J := -1;
-    J := FParams.IndexOfName(cShortOptOutput);
-    if J = -1 then
-      J := FParams.IndexOfName(cLongOptOutput);
-    if J = -1 then
-    begin
-      WriteLn(Format(rsErrorMessage, [rsMissingOutputFlag]));
-      inc(invalid);
-    end
-    else
-    begin
-      outputFilename := FParams.ValueFromIndex[J];
-      inc(valid);
-    end;
-
-    // check linecount
-    J := -1;
-    J := FParams.IndexOfName(cShortOptNumber);
-    if J = -1 then
-      J := FParams.IndexOfName(cLongOptNumber);
-    if J = -1 then
-    begin
-      WriteLn(Format(rsErrorMessage, [rsMissingLineCountFlag]));
-      inc(invalid);
-    end
-    else
-    begin
-      tmpLineCount := FParams.ValueFromIndex[J].Replace('_', '', [rfReplaceAll]);
-
-      if not TryStrToInt(tmpLineCount, lineCount) then
-      begin
-        WriteLn(Format(rsInvalidInteger, [tmpLineCount]));
-        inc(invalid);
-      end;
-
-      if not(lineCount > 0) then
-      begin
-        WriteLn(Format(rsErrorMessage, [rsInvalidLineNumber]));
-        inc(invalid);
-      end;
-      inc(valid);
-    end;
-    
-    // check if everything was provided
-    Result := valid = 3;
-  finally
-    templist.Free;
+  end
+  else
+  begin
+    Result := false;
+    exit;
   end;
 
+  // ************************************
+  // check for valid inputs
+  // check help
+  if (FParams.Find(cShortOptHelp, J) or FParams.Find(cLongOptHelp, J)) then
+  begin
+    WriteHelp;
+    inc(invalid);
+  end;
+
+  // check version
+  if (FParams.Find(cShortOptVersion, J) or FParams.Find(cLongOptVersion, J)) then
+  begin
+    WriteLn(Format(rsGeneratorVersion, [cVersion]));
+    inc(invalid);
+  end;
+
+  // check inputfilename
+  J := -1;
+  J := FParams.IndexOfName(cShortOptInput);
+  if J = -1 then
+    J := FParams.IndexOfName(cLongOptInput);
+  if J = -1 then
+  begin
+    WriteLn(Format(rsErrorMessage, [rsMissingInputFlag]));
+    inc(invalid);
+  end
+  else
+  begin
+    inputFilename := FParams.ValueFromIndex[J];
+    inc(valid);
+  end;
+
+  // check outputfilename
+  J := -1;
+  J := FParams.IndexOfName(cShortOptOutput);
+  if J = -1 then
+    J := FParams.IndexOfName(cLongOptOutput);
+  if J = -1 then
+  begin
+    WriteLn(Format(rsErrorMessage, [rsMissingOutputFlag]));
+    inc(invalid);
+  end
+  else
+  begin
+    outputFilename := FParams.ValueFromIndex[J];
+    inc(valid);
+  end;
+
+  // check linecount
+  J := -1;
+  J := FParams.IndexOfName(cShortOptNumber);
+  if J = -1 then
+    J := FParams.IndexOfName(cLongOptNumber);
+  if J = -1 then
+  begin
+    WriteLn(Format(rsErrorMessage, [rsMissingLineCountFlag]));
+    inc(invalid);
+  end
+  else
+  begin
+    tmpLineCount := FParams.ValueFromIndex[J].Replace('_', '', [rfReplaceAll]);
+
+    if not TryStrToInt(tmpLineCount, lineCount) then
+    begin
+      WriteLn(Format(rsInvalidInteger, [tmpLineCount]));
+      inc(invalid);
+    end;
+
+    if not(lineCount > 0) then
+    begin
+      WriteLn(Format(rsErrorMessage, [rsInvalidLineNumber]));
+      inc(invalid);
+    end;
+    inc(valid);
+  end;
+
+  // check if everything was provided
+  Result := valid = 3;
 end;
 
 var
