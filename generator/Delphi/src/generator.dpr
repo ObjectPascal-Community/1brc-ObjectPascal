@@ -18,6 +18,8 @@ type
   private
     FGenerator: TGenerator;
     FParams: TStringList;
+    function CheckShortParams(const AParam: char): Boolean;
+    function CheckLongParams(const AParam: string): Boolean;
   protected
     function ParseConsoleParams: boolean;
     procedure Run;
@@ -58,6 +60,34 @@ begin
   end;
 end;
 
+function TOneBRCGenerator.CheckLongParams(const AParam: string): Boolean;
+var
+  J: Integer;
+begin
+  for J := 0 to Pred(Length(cLongOptions)) do
+  begin
+    if (AParam = cLongOptions[J]) then
+    begin
+      Result := True;
+      Break;
+    end;
+  end;
+end;
+
+function TOneBRCGenerator.CheckShortParams(const AParam: char): Boolean;
+var
+  J: Integer;
+begin
+  for J := 0 to Pred(Length(cShortOptions)) do
+  begin
+    if (AParam = cShortOptions[J]) then
+    begin
+      Result := True;
+      Break;
+    end;
+  end;
+end;
+
 destructor TOneBRCGenerator.Destroy;
 begin
   if Assigned(FParams) then
@@ -70,6 +100,7 @@ var
   I, J, invalid, valid: Integer;
   tmpLineCount: String;
   ParamOK: Boolean;
+  SkipNext: Boolean;
 begin
   Result := false;
   // initialize the params list
@@ -99,35 +130,28 @@ begin
   // check for invalid input
   if FParams.Count > 0 then
   begin
+    SkipNext := False;
     for I := 0 to FParams.Count - 1 do
     begin
-      ParamOK := False;
-      for J := 0 to Pred(Length(cShortOptions)) do
+      if SkipNext then
       begin
-        if (FParams[I] = cShortOptions[J]) then
-        begin
-          ParamOK := True;
-          Break;
-        end;
+        SkipNext := False;
+        Continue;
       end;
 
-      if not ParamOK then
-        for J := 0 to Pred(Length(cLongOptions)) do
-        begin
-          if (FParams[I] = cLongOptions[J]) then
-          begin
-            ParamOK := True;
-            Break;
-          end;
-        end;
+      if (Length(FParams[I]) = 1) or (FParams[I][2] = '=') then
+        ParamOK := CheckShortParams(FParams[I][1])
+      else
+        ParamOK := CheckLongParams(Copy(FParams[I], 1, Pos('=', FParams[I]) - 1));
 
+      // if we found a bad parameter, don't need to check the rest of them
       if not ParamOK then
         Break;
     end;
 
     if not ParamOK then
     begin
-      WriteLn(Format(rsErrorMessage, [FParams.Text]));
+      WriteLn(Format(rsErrorMessage, [FParams.CommaText]));
       Result := false;
       exit;
     end;
