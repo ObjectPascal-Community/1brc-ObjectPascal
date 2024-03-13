@@ -1,4 +1,8 @@
 # 1️⃣🐝🏎️ The One Billion Row Challenge in Object Pascal
+<p>
+    <a href="https://discord.gg/c382VBk"><img src="https://img.shields.io/discord/623794270255579146?label=Delphi Community Discord" alt="Delphi Community" /></a>
+    <a href="https://discord.gg/3VdxbSFyJP"><img src="https://img.shields.io/discord/570025060312547359?label=Unofficial Free Pacal Discord" alt="Unofficial Free Pacal" /></a>
+</p>
 
 This is the repository that will coordinate the 1 Billion Row Challenge for Object Pascal.
 
@@ -25,7 +29,7 @@ Conakry;31.2
 Istanbul;23.0
 ```
 
-The task is to write an Object Pascal program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on `STDOUT` like this (i.e. sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit):
+The task is to write an Object Pascal program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on `STDOUT` like this (i.e., sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit, with the decimal separator being a period `.`):
 
 ```
 {Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
