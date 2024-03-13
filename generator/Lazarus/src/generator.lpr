@@ -17,8 +17,7 @@ uses
 
 type
 
-  { TOneBRCGenerator }
-
+{ TOneBRCGenerator }
   TOneBRCGenerator = class(TCustomApplication)
   private
     FGenerator: TGenerator;

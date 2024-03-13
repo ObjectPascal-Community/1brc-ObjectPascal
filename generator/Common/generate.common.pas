@@ -13,8 +13,7 @@ uses
 
 type
 
-  { TGenerator }
-
+{ TGenerator }
   TGenerator = class(TObject)
   private
     rndState: Array [0..1] of Cardinal;
