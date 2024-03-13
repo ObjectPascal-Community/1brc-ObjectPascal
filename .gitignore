@@ -2,6 +2,7 @@
 /bin
 /data/measurements*.txt
 /profiling
+/results
 
 # Compiled l10n files: .mo should be ignored
 *.mo
