@@ -1,4 +1,8 @@
 # 1️⃣🐝🏎️ The One Billion Row Challenge in Object Pascal
+<p>
+    <a href="https://discord.gg/c382VBk"><img src="https://img.shields.io/discord/623794270255579146?label=Delphi Community Discord" alt="Delphi Community" /></a>
+    <a href="https://discord.gg/3VdxbSFyJP"><img src="https://img.shields.io/discord/570025060312547359?label=Unofficial Free Pacal Discord" alt="Unofficial Free Pacal" /></a>
+</p>
 
 This is the repository that will coordinate the 1 Billion Row Challenge for Object Pascal.
 
