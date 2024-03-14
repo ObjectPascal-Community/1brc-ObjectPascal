@@ -53,6 +53,9 @@ This challenge is mainly to allow us to learn something new. This means that cop
 4. It adds something of value, not just a different code formatting.
 5. All code should be formatted with the `IDE`'s default formatting tool.
 
+**IMPORTANT** This challenge can be entered even if you only have access to the Community Edition of RAD Studio. \
+I have a Windows VM, with RAD Studio installed, that will do the necessary cross compilation into my Linux host.
+
 Submit your implementation and become part of the leader board!
 
 ## Generating the measurements.txt
