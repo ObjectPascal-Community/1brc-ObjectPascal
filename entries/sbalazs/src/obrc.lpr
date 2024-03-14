@@ -17,7 +17,7 @@ var
 begin
   if (ParamStr(1) = '-h') or (ParamStr(1) = '/?') or (ParamStr(1) = '--help') then
   begin
-    Writeln('USAGE: obrc <source_file> <destination_file> <threadCnt(optional-default 16)>');
+    Writeln('USAGE: obrc <source_file> <threadCnt(optional-default 16)>');
     Halt;
   end;
 

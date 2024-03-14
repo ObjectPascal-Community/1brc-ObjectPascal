@@ -1,6 +1,7 @@
 unit uWeatherStations;
 
 {$mode ObjFPC}{$H+}
+{$R-} {$Q-}
 
 interface
 
@@ -14,7 +15,6 @@ const
   HashBuckets = 1 shl 17;
 
 type
-  PData = ^TData;
   TData = record
     FMin: Single;
     FMax: Single;
@@ -25,7 +25,7 @@ type
 
   TWS = record
     FStation: TBytes;
-    FData: PData;
+    FData: TData;
   end;
 
   TWSList = array[0..HashBuckets - 1] of TWS;
@@ -248,22 +248,17 @@ begin
   FMS := TMemoryStream.Create;
   for I := Low(FWSList) to High(FWSList) do
   begin
-    FWSList[I].FData := nil;
-    New(FWSList[I].FData);
-    FWSList[I].FData^.FMin := 0;
-    FWSList[I].FData^.FMax := 0;
-    FWSList[I].FData^.FTot := 0;
-    FWSList[I].FData^.FCnt := 0;
+    FWSList[I].FStation := nil;
+    FWSList[I].FData.FMin := 0;
+    FWSList[I].FData.FMax := 0;
+    FWSList[I].FData.FTot := 0;
+    FWSList[I].FData.FCnt := 0;
   end;
 end;
 
 destructor TWSThread.Destroy;
-var
-  I: Integer;
 begin
   FMS.Free;
-  for I := Low(FWSList) to High(FWSList) do
-    Dispose(FWSList[I].FData);
   inherited Destroy;
 end;
 
@@ -415,19 +410,19 @@ begin
     begin
       SetLength(FWSList[Index].FStation, Length(Astation));
       Move(Astation[0], FWSList[Index].FStation[0], Length(Astation));
-      FWSList[Index].FData^.FMin := Atemp;
-      FWSList[Index].FData^.FMax := Atemp;
-      FWSList[Index].FData^.FTot := Atemp;
-      FWSList[Index].FData^.FCnt := 1;
-      FWSList[Index].FData^.FHash := AHash;
+      FWSList[Index].FData.FMin := Atemp;
+      FWSList[Index].FData.FMax := Atemp;
+      FWSList[Index].FData.FTot := Atemp;
+      FWSList[Index].FData.FCnt := 1;
+      FWSList[Index].FData.FHash := AHash;
       Break;
     end;
     if CompareMem(@FWSList[Index].FStation[0], @Astation[0], Length(Astation)) then
     begin
-      FWSList[Index].FData^.FMin := min(FWSList[Index].FData^.FMin, Atemp);
-      FWSList[Index].FData^.FMax := max(FWSList[Index].FData^.FMax, Atemp);
-      FWSList[Index].FData^.FTot := FWSList[Index].FData^.FTot + Atemp;
-      Inc(FWSList[Index].FData^.FCnt);
+      FWSList[Index].FData.FMin := min(FWSList[Index].FData.FMin, Atemp);
+      FWSList[Index].FData.FMax := max(FWSList[Index].FData.FMax, Atemp);
+      FWSList[Index].FData.FTot := FWSList[Index].FData.FTot + Atemp;
+      Inc(FWSList[Index].FData.FCnt);
       Break;
     end;
     Inc(Index);
@@ -444,25 +439,25 @@ begin
   begin
     if FWSList[I].FStation = nil then
       Continue;
-    Index := FWSList[I].FData^.FHash and QWord(HashBuckets - 1);
+    Index := FWSList[I].FData.FHash and QWord(HashBuckets - 1);
     while True do
     begin
       if FWSManager.FWSListAll[Index].FStation = nil then
       begin
         SetLength(FWSManager.FWSListAll[Index].FStation, Length(FWSList[I].FStation));
         Move(FWSList[I].FStation[0], FWSManager.FWSListAll[Index].FStation[0], Length(FWSList[I].FStation));
-        FWSManager.FWSListAll[Index].FData^.FMin := FWSList[I].FData^.FMin;
-        FWSManager.FWSListAll[Index].FData^.FMax := FWSList[I].FData^.FMax;
-        FWSManager.FWSListAll[Index].FData^.FTot := FWSList[I].FData^.FTot;
-        FWSManager.FWSListAll[Index].FData^.FCnt := FWSList[I].FData^.FCnt;
+        FWSManager.FWSListAll[Index].FData.FMin := FWSList[I].FData.FMin;
+        FWSManager.FWSListAll[Index].FData.FMax := FWSList[I].FData.FMax;
+        FWSManager.FWSListAll[Index].FData.FTot := FWSList[I].FData.FTot;
+        FWSManager.FWSListAll[Index].FData.FCnt := FWSList[I].FData.FCnt;
         Break;
       end;
       if CompareMem(@FWSManager.FWSListAll[Index].FStation[0], @FWSList[I].FStation[0], Length(FWSList[I].FStation)) then
       begin
-        FWSManager.FWSListAll[Index].FData^.FMin := min(FWSManager.FWSListAll[Index].FData^.FMin, FWSList[I].FData^.FMin);
-        FWSManager.FWSListAll[Index].FData^.FMax := max(FWSManager.FWSListAll[Index].FData^.FMax, FWSList[I].FData^.FMax);
-        FWSManager.FWSListAll[Index].FData^.FTot := FWSManager.FWSListAll[Index].FData^.FTot + FWSList[I].FData^.FTot;
-        FWSManager.FWSListAll[Index].FData^.FCnt := FWSManager.FWSListAll[Index].FData^.FCnt + FWSList[I].FData^.FCnt;
+        FWSManager.FWSListAll[Index].FData.FMin := min(FWSManager.FWSListAll[Index].FData.FMin, FWSList[I].FData.FMin);
+        FWSManager.FWSListAll[Index].FData.FMax := max(FWSManager.FWSListAll[Index].FData.FMax, FWSList[I].FData.FMax);
+        FWSManager.FWSListAll[Index].FData.FTot := FWSManager.FWSListAll[Index].FData.FTot + FWSList[I].FData.FTot;
+        FWSManager.FWSListAll[Index].FData.FCnt := FWSManager.FWSListAll[Index].FData.FCnt + FWSList[I].FData.FCnt;
         Break;
       end;
       Inc(Index);
@@ -518,9 +513,9 @@ begin
         Continue;
       SetString(Name, Pointer(@WS.FStation[0]), Length(WS.FStation));
       SetCodePage(Name, CP_UTF8, True);
-      WS.FData^.FTot := Round(WS.FData^.FTot*10)/10;
-      Mean := WS.FData^.FTot/WS.FData^.FCnt;
-      Str := Name + '=' + FormatFloat('0.0', WS.FData^.FMin) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', WS.FData^.FMax) + ',';
+      WS.FData.FTot := Round(WS.FData.FTot*10)/10;
+      Mean := WS.FData.FTot/WS.FData.FCnt;
+      Str := Name + '=' + FormatFloat('0.0', WS.FData.FMin) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', WS.FData.FMax) + ',';
       SL.Add(Str);
     end;
     SL.EndUpdate;
@@ -601,22 +596,17 @@ begin
   for I := Low(FWSListAll) to High(FWSListAll) do
   begin
     FWSListAll[I].FStation := nil;
-    New(FWSListAll[I].FData);
-    FWSListAll[I].FData^.FMin := 0;
-    FWSListAll[I].FData^.FMax := 0;
-    FWSListAll[I].FData^.FTot := 0;
-    FWSListAll[I].FData^.FCnt := 0;
+    FWSListAll[I].FData.FMin := 0;
+    FWSListAll[I].FData.FMax := 0;
+    FWSListAll[I].FData.FTot := 0;
+    FWSListAll[I].FData.FCnt := 0;
   end;
   FThreadList := TLockList.Create;
   FWSThreadsWatcher := TWSThreadsWatcher.Create(Self);
 end;
 
 destructor TWSManager.Destroy;
-var
-  I: Integer;
 begin
-  for I := Low(FWSListAll) to High(FWSListAll) do
-    Dispose(FWSListAll[I].FData);
   FThreadList.Free;
   inherited Destroy;
 end;
