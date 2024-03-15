@@ -1,6 +1,13 @@
-# OneBRC for Object Pascal
+# Iwan Kelaiah
 
 An Entry to the One Billion Row Challenge in Object Pascal.
+
+The approach I implemented here is simplistic.
+
+- Sequentially read the measurement file.
+- Populate a `TDictionary` with station names, min, max, count and sum; without storing all the temperature measurements.
+- Use a custom comparer to sort the station and temperature statistics in a `TStringList`.
+- Display the sorted measurements using a simple for loop.
 
 ## Getting Started
 
