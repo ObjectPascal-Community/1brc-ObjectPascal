@@ -21,7 +21,7 @@ program OneBRC;
 
 {$mode objfpc}{$H+}{$J-}{$modeSwitch advancedRecords}
 {$codepage utf8}
-//{$DEFINE DEBUG}
+
 
 uses
   {$IFDEF UNIX}

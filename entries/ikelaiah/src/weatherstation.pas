@@ -10,8 +10,11 @@ uses
   {$ENDIF}
   Classes,
   SysUtils,
-  Generics.Collections,
-  Stopwatch;
+  Generics.Collections
+  {$IFDEF DEBUG}
+,  Stopwatch
+  {$ENDIF}
+;
 
 type
   // Create a record of temperature stats
@@ -147,7 +150,9 @@ var
 begin
 
   // Start a timer
-  // Stopwatch.StartTimer;
+  {$IFDEF DEBUG}
+  Stopwatch.StartTimer;
+  {$ENDIF}
 
   // Create a city - weather dictionary
   wd := TWeatherDictionary.Create;
@@ -206,7 +211,7 @@ begin
       isFirstKey := False;
     end;
 
-    Write('}');
+    WriteLn('}');
 
     {$IFDEF DEBUG}
     WriteLn('DEBUG mode on');
@@ -218,8 +223,10 @@ begin
   end; // End of processing TDictionary and TStringList
 
   // Stop a timer
-  // Stopwatch.StopTimer;
-  // Stopwatch.DisplayTimer;
+  {$IFDEF DEBUG}
+  Stopwatch.StopTimer;
+  Stopwatch.DisplayTimer;
+  {$ENDIF}
 
 end;
 

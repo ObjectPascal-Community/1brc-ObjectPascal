@@ -17,8 +17,7 @@ uses
 
 type
 
-  { TOneBRCBaseline }
-
+{ TOneBRCBaseline }
   TOneBRCBaseline = class(TCustomApplication)
   private
     FBaseline: TBaseline;
