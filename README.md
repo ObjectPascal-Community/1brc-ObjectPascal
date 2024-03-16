@@ -40,14 +40,14 @@ Submissions will be via a `PR`( Pull Request ) to this repository. \
 The challenge will run from the 10th of March until the 10th of May, 2024.
 
 When creating your entry, please do as follows:
-1. Create a folder under `entries` with your first initial and last name, e.g., for Gustavo Carreno: `entries/gcarreno`. \
+1. Create a folder under `entries` with your first initial and last name, e.g., for Gustavo Carreno: `entries/gcarreno`.
 2. If you're worried about anonymity, because the Internet stinks, feel free to use a fictional one: Bruce Wayne, Clark Kent, James Logan, Peter Parker, Diana of Themyscira. Your pick!
 3. Create a `README.md` with some content about your approach, e.g., `entries/gcarreno/README.md`.
 4. Put all your code under `entries/<your name>/src`, e.g., `entries/gcarreno/src`.
 5. If you need to provide a custom `.gitignore` for something not present in the main one, please do.
 
 This challenge is mainly to allow us to learn something new. This means that copying code from others will be allowed, under these conditions:
-1. You can only use pure Object Pascal with no calls to any operating system's `API` or external `C/C++` libraries.
+1. You can only use pure Object Pascal with no calls to any operating system's `API` or external `C/C++` libraries. \
   There's been a bit of confusion about this restriction. \
   To clear that out: You can use any package/custom code you want. \
   As long as it compiles cross-platform and itself is only pure Object Pascal. \
