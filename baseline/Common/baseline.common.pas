@@ -21,9 +21,9 @@ type
 PWeatherStation = ^TWeatherStation;
 TWeatherStation = record
   FStation: String[100];
-  FMin: Single;
-  FMax: Single;
-  FTot: Single;
+  FMin: Int64;
+  FMax: Int64;
+  FTot: Int64;
   FCnt: Integer;
 
 end;
@@ -34,7 +34,7 @@ end;
     FStationNames: TStringList;
     FHashStationList: TFPHashList;
 
-    procedure AddToHashList(AStation: String; ATemp: Single);
+    procedure AddToHashList(AStation: String; ATemp: Int64);
     procedure BuildHashList;
   protected
   public
@@ -112,7 +112,7 @@ begin
   inherited Destroy;
 end;
 
-procedure TBaseline.AddToHashList(AStation: String; ATemp: Single);
+procedure TBaseline.AddToHashList(AStation: String; ATemp: Int64);
 var
   weatherStation: PWeatherStation;
   Index: Integer;
@@ -146,7 +146,7 @@ var
   strLine: String;
   strStation: String;
   strTemp: String;
-  temparature: Single;
+  temparature: Int64;
 begin
   if FileExists(FInputFile) then
   begin
@@ -162,6 +162,7 @@ begin
           begin
             strStation := Copy(strLine, 1, position - 1);
             strTemp := Copy(strLine, position + 1, Length(strLine));
+            strTemp := StringReplace(strTemp, '.', '', [rfReplaceAll]);
             Val(strTemp, temparature, Code);
             if Code <> 0 then
               Continue;
@@ -185,7 +186,9 @@ procedure TBaseline.Generate;
 var
   index: Integer;
   strTemp: String;
-  mean: Single;
+  min: Double;
+  max: Double;
+  mean: Double;
   weatherStation: PWeatherStation;
 begin
 
@@ -196,9 +199,10 @@ begin
   for index := 0 to FHashStationList.Count - 1 do
   begin
     weatherStation := FHashStationList.Items[index];
-    weatherStation^.FTot := Round(weatherStation^.FTot*10)/10;
-    mean := weatherStation^.FTot/weatherStation^.FCnt;
-    strTemp := weatherStation^.FStation + '=' + FormatFloat('0.0', weatherStation^.FMin) + '/' + FormatFloat('0.0', mean) + '/' + FormatFloat('0.0', weatherStation^.FMax) + ',';
+    Min := weatherStation^.FMin/10;
+    Max := weatherStation^.FMax/10;
+    Mean := weatherStation^.FTot/weatherStation^.FCnt/10;
+    strTemp := weatherStation^.FStation + '=' + FormatFloat('0.0', Min) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', Max) + ',';
     FStationNames.Add(strTemp);
   end;
   FStationNames.EndUpdate;
