@@ -102,7 +102,11 @@ var
   ParamOK: Boolean;
   SkipNext: Boolean;
 begin
+  // initialize values
   Result := false;
+  invalid := 0;
+  valid := 0;
+  ParamOK := false;
   // initialize the params list
   if not Assigned(FParams) then
     FParams := TStringList.Create(dupIgnore, false, false);
