@@ -125,7 +125,7 @@ _Q: What is the encoding of the measurements.txt file?_\
 A: The file is encoded with UTF-8.
 
 _Q: Which operating system is used for evaluation?_\
-A: Ubuntu 23.10.
+A: Ubuntu 23.10 64b.
 
 ## Honour Mentions
 I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a whopping ~25s, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 4 and a half minutes.\
