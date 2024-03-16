@@ -51,7 +51,7 @@ This challenge is mainly to allow us to learn something new. This means that cop
   **There's been a bit of confusion about this restriction.** \
   To clear that out: You can use any package/custom code you want. \
   As long as it compiles cross-platform and itself is only pure Object Pascal. \
-  Anything from the `Jedi Project` or even `mORMmot` ( or anything else ), if it compiles cross-platform is allowed.
+  Anything from the `Jedi Project` or even `mORMmot` ( or anything else ), if it compiles, runs cross-platform it's allowed.
 2. The code must have some sort of mention/attribution to the original author, in case you've used someone else's code.
 3. It's not a blatant copy just for the sake of submission.
 4. It adds something of value, not just a different code formatting.
