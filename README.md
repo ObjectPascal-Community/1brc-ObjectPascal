@@ -71,11 +71,11 @@ In order to produce the One Billion Rows of text, we are providing the [source c
 
 | Parameter | Description |
 |:----------|:------------|
-| -h or --help | Writes this help message and exits |
-| -v or --version | Writes the version and exits |
-| -i or --input-file <filename> | The file containing the Weather Stations |
-| -o or --output-file <filename> | The file that will contain the generated lines |
-| -n or --line-count <number> | The amount of lines to be generated ( Can use 1_000_000_000 ) |
+| **-h** or **--help** | Writes this help message and exits |
+| **-v** or **--version** | Writes the version and exits |
+| **-i** or **--input-file \<filename\>** | The file containing the Weather Stations |
+| **-o** or **--output-file \<filename\>** | The file that will contain the generated lines |
+| **-n** or **--line-count \<number\>** | The amount of lines to be generated ( Can use 1_000_000_000 ) |
 
 
 ### Verify
