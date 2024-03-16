@@ -48,7 +48,7 @@ When creating your entry, please do as follows:
 
 This challenge is mainly to allow us to learn something new. This means that copying code from others will be allowed, under these conditions:
 1. You can only use pure Object Pascal with no calls to any operating system's `API` or external `C/C++` libraries. \
-  There's been a bit of confusion about this restriction. \
+  **There's been a bit of confusion about this restriction.** \
   To clear that out: You can use any package/custom code you want. \
   As long as it compiles cross-platform and itself is only pure Object Pascal. \
   Anything from the `Jedi Project` or even `mORMmot` ( or anything else ), if it compiles cross-platform is allowed.
