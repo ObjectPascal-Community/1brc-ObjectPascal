@@ -6,19 +6,19 @@ unit uWeatherStations;
 interface
 
 uses
-  Classes, SysUtils, Math, syncobjs;
-
-type
-  TWSManager = class;
+  {$IFDEF MSWINDOWS}Windows, {$ENDIF}Classes, SysUtils, Math, syncobjs;
 
 const
   HashBuckets = 1 shl 17;
 
 type
+  TWSManager = class;
+
+type
   TData = record
-    FMin: Single;
-    FMax: Single;
-    FTot: Single;
+    FMin: Int64;
+    FMax: Int64;
+    FTot: Int64;
     FCnt: Integer;
     FHash: QWord;
   end;
@@ -73,7 +73,7 @@ type
     FWSList: TWSList;
     procedure UpdateMainHashList;
     procedure ProcessBytes(ABytes: TBytes);
-    procedure AddToHashList(AStation: TBytes; ATemp: Single; AHash: QWord);
+    procedure AddToHashList(AStation: TBytes; ATemp: Int64; AHash: QWord);
     procedure UpdateThreadList(AUpdateType: TUpdateType);
   protected
     procedure Execute; override;
@@ -93,21 +93,19 @@ type
 
   TWSManager = class
   private
+    FDone: Boolean;
     FSrcFile: String;
     FThreadCnt: Integer;
     FTerminated: Boolean;
     FThreadList: TLockList;
     FWSListALL: TWSList;
     FWSThreadsWatcher: TWSThreadsWatcher;
-    FOnStart: TNotifyEvent;
-    FOnFinish: TNotifyEvent;
   public
     constructor Create(ASrcFile: String; AThreadCnt: Integer);
     destructor Destroy; override;
   public
     property WSThreadsWatcher: TWSThreadsWatcher read FWSThreadsWatcher;
-    property OnStart: TNotifyEvent read FOnStart write FOnStart;
-    property OnFinish: TNotifyEvent read FOnFinish write FOnFinish;
+    property Done: Boolean read FDone;
   end;
 
 implementation
@@ -294,7 +292,7 @@ var
   PDel: Int64;
   Len: Int64;
   Station: TBytes;
-  Temp: Single;
+  Temp: Int64;
   DoHash: Boolean;
   DoTemp: Boolean;
   IsNeg: Boolean;
@@ -303,7 +301,7 @@ begin
   PCur := -1;
   PBeg := 0;
   PDel := 0;
-  Temp := 0;
+  Temp := 1000;
   Station := nil;
   DoHash := True;
   DoTemp := False;
@@ -313,25 +311,25 @@ begin
     Inc(PCur);
     if DoTemp then
     begin
-       IsNeg := False;
-       if ABytes[PCur] = 45 then
-       begin
-         Inc(PCur);
-         IsNeg := True;
-       end;
-       Temp := Ord(ABytes[PCur]) - Ord('0');
-       Inc(PCur);
-       if ABytes[PCur] <> 46 then
-       begin
-         Temp := Temp*10 + (Ord(ABytes[PCur]) - Ord('0'));
-         Inc(PCur)
-       end;
-       Inc(PCur);
-       Temp := Temp + (Ord(ABytes[PCur]) - Ord('0'))/10;
-       if IsNeg then
-         Temp := -Temp;
-       Inc(PCur);
-       DoTemp := False;
+      IsNeg := False;
+      if ABytes[PCur] = 45 then
+      begin
+        Inc(PCur);
+        IsNeg := True;
+      end;
+      Temp := Ord(ABytes[PCur]) - Ord('0');
+      Inc(PCur);
+      if ABytes[PCur] <> 46 then
+      begin
+        Temp := Temp*10 + (Ord(ABytes[PCur]) - Ord('0'));
+        Inc(PCur)
+      end;
+      Inc(PCur);
+      Temp := Temp*10 +  Ord(ABytes[PCur]) - Ord('0');
+      if IsNeg then
+        Temp := -Temp;
+      Inc(PCur);
+      DoTemp := False;
     end;
     if ABytes[PCur] = 59 then
     begin
@@ -349,10 +347,12 @@ begin
     begin
       SetLength(Station, PDel - PBeg);
       Move(ABytes[PBeg], Station[0], PDel - PBeg);
-      AddToHashList(Station, Temp, Hash);
+      if (Station <> nil) and (Temp < 1000) then
+        AddToHashList(Station, Temp, Hash);
       Hash := 14695981039346656037;
       DoHash := True;
-      Temp := 0;
+      Station := nil;
+      Temp := 1000;
       DoTemp := False;
       PBeg := PCur + 1;
     end;
@@ -369,6 +369,7 @@ var
 begin
   UpdateThreadList(utAdd);
   try
+    FStarted := True;
     FMS.Write(FBytes[0], Length(FBytes));
     FMS.Position := 0;
     FBytes := nil;
@@ -399,7 +400,7 @@ begin
   end;
 end;
 
-procedure TWSThread.AddToHashList(AStation: TBytes; ATemp: Single; AHash: QWord);
+procedure TWSThread.AddToHashList(AStation: TBytes; ATemp: Int64; AHash: QWord);
 var
   Index: Integer;
 begin
@@ -408,20 +409,20 @@ begin
   begin
     if FWSList[Index].FStation = nil then
     begin
-      SetLength(FWSList[Index].FStation, Length(Astation));
-      Move(Astation[0], FWSList[Index].FStation[0], Length(Astation));
-      FWSList[Index].FData.FMin := Atemp;
-      FWSList[Index].FData.FMax := Atemp;
-      FWSList[Index].FData.FTot := Atemp;
+      SetLength(FWSList[Index].FStation, Length(AStation));
+      Move(AStation[0], FWSList[Index].FStation[0], Length(AStation));
+      FWSList[Index].FData.FMin := ATemp;
+      FWSList[Index].FData.FMax := ATemp;
+      FWSList[Index].FData.FTot := ATemp;
       FWSList[Index].FData.FCnt := 1;
       FWSList[Index].FData.FHash := AHash;
       Break;
     end;
-    if CompareMem(@FWSList[Index].FStation[0], @Astation[0], Length(Astation)) then
+    if CompareMem(@FWSList[Index].FStation[0], @AStation[0], Length(AStation)) then
     begin
-      FWSList[Index].FData.FMin := min(FWSList[Index].FData.FMin, Atemp);
-      FWSList[Index].FData.FMax := max(FWSList[Index].FData.FMax, Atemp);
-      FWSList[Index].FData.FTot := FWSList[Index].FData.FTot + Atemp;
+      FWSList[Index].FData.FMin := min(FWSList[Index].FData.FMin, ATemp);
+      FWSList[Index].FData.FMax := max(FWSList[Index].FData.FMax, ATemp);
+      FWSList[Index].FData.FTot := FWSList[Index].FData.FTot + ATemp;
       Inc(FWSList[Index].FData.FCnt);
       Break;
     end;
@@ -498,8 +499,10 @@ var
   WS: TWS;
   Str: String;
   Name: RawByteString;
-  Mean: Single;
+  Min, Max: Double;
+  Mean: Double;
   SL: TStringList;
+  //MS: TMemoryStream;
 begin
   SL := TStringList.Create;
   try
@@ -513,9 +516,10 @@ begin
         Continue;
       SetString(Name, Pointer(@WS.FStation[0]), Length(WS.FStation));
       SetCodePage(Name, CP_UTF8, True);
-      WS.FData.FTot := Round(WS.FData.FTot*10)/10;
-      Mean := WS.FData.FTot/WS.FData.FCnt;
-      Str := Name + '=' + FormatFloat('0.0', WS.FData.FMin) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', WS.FData.FMax) + ',';
+      Min := WS.FData.FMin/10;
+      Max := WS.FData.FMax/10;
+      Mean := WS.FData.FTot/WS.FData.FCnt/10;
+      Str := Name + '=' + FormatFloat('0.0', Min) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', Max) + ',';
       SL.Add(Str);
     end;
     SL.EndUpdate;
@@ -528,7 +532,26 @@ begin
   Delete(Str, Length(Str), 1);
   Str := '{' + Str + '}';
   Str := StringReplace(Str, sLineBreak, ' ', [rfReplaceAll]);
+  //write to console
+  {$IFDEF MSWINDOWS}
+  SetConsoleOutputCP(CP_UTF8);
+  SetTextCodePage(Output, CP_UTF8);
+  SetString(Name, Pointer(@Str[1]), Length(Str));
+  SetCodePage(Name, CP_UTF8, False);
+  Writeln(Name);
+  {$ELSE}
   Writeln(Str);
+  {$ENDIF}
+
+  //save to file
+  {MS := TMemoryStream.Create;
+  try    
+    MS.Write(Pointer(Str)^, Length(Str) div SizeOf(Char));
+    MS.Position := 0;
+    MS.SaveToFile('summary.txt');
+  finally
+    MS.Free
+  end;}
 end;
 
 procedure TWSThreadsWatcher.Execute;
@@ -543,8 +566,6 @@ var
   WSThread: TWSThread;
 begin
   FStarted := True;
-  if (not Terminated) and (FWSManager.FOnStart <> nil) then
-    FWSManager.FOnStart(Self);
   FS := TFileStream.Create(FWSManager.FSrcFile, fmOpenRead or fmShareDenyNone);
   try
     Size := Round(FS.Size/(FWSManager.FThreadCnt + 1));
@@ -569,6 +590,8 @@ begin
         AddLineBreak(Bytes);
         WSThread := TWSThread.Create(Bytes, FWSManager);
         WSThread.Start;
+    	while not WSThread.FStarted do
+          Wait(10); 
       end;
     until (ReadCnt = 0);
   finally
@@ -577,20 +600,20 @@ begin
   ThreadCnt := -1;
   repeat
     ThreadCnt := GetThreadCnt;
-    Wait(100);
+    Sleep(100);
   until ThreadCnt = 0;
   if (not Terminated) then
     CreateFinalList;
-  if (not Terminated) and (FWSManager.FOnFinish <> nil) then
-    FWSManager.FOnFinish(Self);
+  FWSManager.FDone := True;
 end;
 
 { TWSManager }
-constructor TWSManager.Create(ASrcFile:String; AThreadCnt: Integer);
+constructor TWSManager.Create(ASrcFile: String; AThreadCnt: Integer);
 var
   I: Integer;
 begin
   FSrcFile := ASrcFile;
+  FDone := False;
   FThreadCnt := AThreadCnt;
   FTerminated := False;
   for I := Low(FWSListAll) to High(FWSListAll) do

@@ -23,7 +23,7 @@ begin
 
   if (Trim(ParamStr(1)) = '') or (not FileExists(ParamStr(1))) then
   begin
-    Writeln('Please specify a valid source file');
+    Writeln('Please specify a valid source file.');
     Halt;
   end;
 
@@ -34,7 +34,8 @@ begin
 
   FWSManager := TWSManager.Create(ParamStr(1), TC);
   FWSManager.WSThreadsWatcher.Start;
-  FWSManager.WSThreadsWatcher.WaitFor;
+  while FWSManager.Done = False do
+    Sleep(100);
   FWSManager.Free;
 end.
 
