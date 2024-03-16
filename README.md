@@ -77,6 +77,16 @@ In order to produce the One Billion Rows of text, we are providing the [source c
 | **-o** or **--output-file \<filename\>** | The file that will contain the generated lines |
 | **-n** or **--line-count \<number\>** | The amount of lines to be generated ( Can use 1_000_000_000 ) |
 
+## Baseline
+
+In order to verify the official output, we are providing the [source code](./baseline) for the official baseline.
+
+| Parameter | Description |
+|:----------|:------------|
+| **-h** or **--help** | Writes this help message and exits |
+| **-v** or **--version** | Writes the version and exits |
+| **-i** or **--input-file \<filename\>** | The file containing the 1 billion rows |
+
 
 ### Verify
 You can verify the generated `measurements.txt` with a `SHA256` utility:
