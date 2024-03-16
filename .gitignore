@@ -3,6 +3,9 @@
 /data/measurements*.txt
 /profiling
 /results
+compile_all.*
+test_all.*
+run_all.*
 
 # Compiled l10n files: .mo should be ignored
 *.mo
