@@ -93,7 +93,7 @@ In order to verify the official output, we are providing the [source code](./bas
 You can verify the generated `measurements.txt` with a `SHA256` utility:
 
 **Linux**
-```console
+```bash
 $ sha256sum ./data/measurements.txt
 ```
 **Windows (PowerShell)**
