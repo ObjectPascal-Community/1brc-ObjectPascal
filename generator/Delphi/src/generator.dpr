@@ -31,8 +31,6 @@ type
   { TOneBRCGenerator }
 
 procedure TOneBRCGenerator.Run;
-var
-  ErrorMsg: String;
 begin
   if ParseConsoleParams then
   begin
@@ -64,6 +62,8 @@ function TOneBRCGenerator.CheckLongParams(const AParam: string): Boolean;
 var
   J: Integer;
 begin
+  Result := False;
+
   for J := 0 to Pred(Length(cLongOptions)) do
   begin
     if (AParam = cLongOptions[J]) then
@@ -78,6 +78,8 @@ function TOneBRCGenerator.CheckShortParams(const AParam: char): Boolean;
 var
   J: Integer;
 begin
+  Result := False;
+
   for J := 0 to Pred(Length(cShortOptions)) do
   begin
     if (AParam = cShortOptions[J]) then
@@ -102,7 +104,9 @@ var
   ParamOK: Boolean;
   SkipNext: Boolean;
 begin
-  Result := false;
+  valid := 0;
+  invalid := 0;
+
   // initialize the params list
   if not Assigned(FParams) then
     FParams := TStringList.Create(dupIgnore, false, false);
@@ -130,6 +134,7 @@ begin
   // check for invalid input
   if FParams.Count > 0 then
   begin
+    ParamOK := True;
     SkipNext := False;
     for I := 0 to FParams.Count - 1 do
     begin
@@ -168,18 +173,15 @@ begin
   if (FParams.Find(cShortOptHelp, J) or FParams.Find(cLongOptHelp, J)) then
   begin
     WriteHelp;
-    inc(invalid);
   end;
 
   // check version
   if (FParams.Find(cShortOptVersion, J) or FParams.Find(cLongOptVersion, J)) then
   begin
     WriteLn(Format(rsGeneratorVersion, [cVersion]));
-    inc(invalid);
   end;
 
   // check inputfilename
-  J := -1;
   J := FParams.IndexOfName(cShortOptInput);
   if J = -1 then
     J := FParams.IndexOfName(cLongOptInput);
@@ -195,7 +197,6 @@ begin
   end;
 
   // check outputfilename
-  J := -1;
   J := FParams.IndexOfName(cShortOptOutput);
   if J = -1 then
     J := FParams.IndexOfName(cLongOptOutput);
@@ -211,7 +212,6 @@ begin
   end;
 
   // check linecount
-  J := -1;
   J := FParams.IndexOfName(cShortOptNumber);
   if J = -1 then
     J := FParams.IndexOfName(cLongOptNumber);
@@ -239,7 +239,7 @@ begin
   end;
 
   // check if everything was provided
-  Result := valid = 3;
+  Result := (valid = 3) and (invalid = 0);
 end;
 
 var
@@ -250,4 +250,8 @@ begin
   Application.Run;
   Application.Free;
 
+  {$IFDEF DEBUG}
+  Writeln('Press ENTER...');
+  Readln;
+  {$ENDIF}
 end.
