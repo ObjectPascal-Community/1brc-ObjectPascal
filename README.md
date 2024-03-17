@@ -121,7 +121,7 @@ In order to verify the official output, we are providing the [source code](./bas
 | **-v** or **--version** | Writes the version and exits |
 | **-i** or **--input-file \<filename\>** | The file containing the 1 billion rows |
 
-### Verify
+## Verify Input File
 You can verify the generated `measurements.txt` with a `SHA256` utility:
 
 **Linux**
@@ -135,6 +135,7 @@ Get-FileHash .\data\measurements.txt -Algorithm SHA256
 Expected `SHA256` hash:
 `ebad17b266ee9f5cb3d118531f197e6f68c9ab988abc5cb9506e6257e1a52ce6`
 
+## Verify Output File
 > **NOTE**
 >
 > We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
