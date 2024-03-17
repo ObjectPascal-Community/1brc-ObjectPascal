@@ -56,13 +56,16 @@ const
   cTestBash            = 'test_all.sh';
   cRunBash             = 'run_all.sh';
 
+  cLazbuild            = '%s -B "%s%s%s"';
+  cLazbuildRelease     = '%s -B --bm="Release" "%s%s%s"';
+
   cReplaceName         = '[[name]]';
   cReplaceJSONResults  = '[[results-json]]';
   cReplaceEntryBinary  = '[[entry-binary]]';
   cReplaceEntryInput   = '[[input]]';
   cReplaceEntryThreads = '[[threads]]';
-
-  cOfficialOutputHash  = '0000000000000000000000000000000000000000000000000000000000000000';
+  cCompilerFPC         = 'fpc';
+//  cCompilerDelphi      = 'delphi';
 
 { TBuilder }
 
@@ -114,11 +117,12 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       if FConfig.Entries[index].HasRelease then
       begin
        line:= line  +
-       Format('%s -B --bm="Release" "%s%s%s"', [
+       Format(cLazbuildRelease, [
          FConfig.Lazbuild,
          IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
          IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
@@ -129,7 +133,7 @@ begin
       else
       begin
         line:= line  +
-        Format('%s -B "%s%s%s"', [
+        Format(cLazbuild, [
           FConfig.Lazbuild,
           IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
           IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
@@ -146,6 +150,13 @@ begin
   end;
   FpChmod(PChar(FScriptFile), &775);
 end;
+
+{$IFNDEF UNIX}
+procedure TBuilder.BuildCompileScriptPowerShell;
+begin
+
+end;
+{$ENDIF}
 
 procedure TBuilder.BuildTestScriptBash;
 var
@@ -189,7 +200,7 @@ begin
       ]);
       line:= line + tmpStr + LineEnding;
       line:= line + Format('echo "%s  Official Output Hash"',[
-        cOfficialOutputHash
+        FConfig.OutputHash
       ]) + LineEnding;
       line:= line + 'echo "==========="' + LineEnding;
       line:= line + 'echo' + LineEnding + LineEnding;
@@ -200,6 +211,13 @@ begin
   end;
   FpChmod(PChar(FScriptFile), &775);
 end;
+
+{$IFNDEF UNIX}
+procedure TBuilder.BuildTestScriptPowerShell;
+begin
+
+end;
+{$ENDIF}
 
 procedure TBuilder.BuildRunScriptBash;
 var
@@ -220,12 +238,13 @@ begin
         FConfig.Entries[index].EntryBinary,
         [rfReplaceAll]
       );
+      // Run for SSD
       tmpStr := StringReplace(
         tmpStr,
         cReplaceJSONResults,
         Format('%s%s', [
           IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
-          FConfig.Entries[index].EntryBinary + '-1_000_000_000.json'
+          FConfig.Entries[index].EntryBinary + '-1_000_000_000-SSD.json'
         ]),
         [rfReplaceAll]
       );
@@ -251,7 +270,21 @@ begin
         IntToStr(FConfig.Entries[index].Threads),
         [rfReplaceAll]
       );
-      line:= line + tmpStr + LineEnding;
+      line:= line + 'echo "-- SSD --"' + LineEnding + tmpStr + LineEnding;
+      // Run for HDD
+      tmpStr:= StringReplace(
+        tmpStr,
+        FConfig.InputSSD,
+        FConfig.InputHDD,
+        [rfReplaceAll]
+      );
+      tmpStr := StringReplace(
+        tmpStr,
+        'SSD',
+        'HDD',
+        [rfReplaceAll]
+      );
+      line:= line + 'echo "-- HDD --"' + LineEnding + tmpStr + LineEnding;
       line:= line + 'echo "==========="' + LineEnding;
       line:= line + 'echo' + LineEnding + LineEnding;
     end;
@@ -261,5 +294,12 @@ begin
   end;
   FpChmod(PChar(FScriptFile), &775);
 end;
+
+{$IFNDEF UNIX}
+procedure TBuilder.BuildRunScriptPowerShell;
+begin
+
+end;
+{$ENDIF}
 
 end.
