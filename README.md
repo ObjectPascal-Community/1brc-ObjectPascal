@@ -125,12 +125,12 @@ In order to verify the official output, we are providing the [source code](./bas
 You can verify the generated `measurements.txt` with a `SHA256` utility:
 
 **Linux**
-```bash
+```console
 $ sha256sum ./data/measurements.txt
 ```
 **Windows (Command Line)**
-```
-C:>CertUtil -hashfile .\data\measurements.txt SHA256
+```console
+C:> CertUtil -hashfile .\data\measurements.txt SHA256
 ```
 **Windows (PowerShell)**
 ```powershell
