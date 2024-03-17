@@ -128,6 +128,10 @@ You can verify the generated `measurements.txt` with a `SHA256` utility:
 ```bash
 $ sha256sum ./data/measurements.txt
 ```
+**Windows (Command Line)**
+```
+C:>CertUtil -hashfile .\data\measurements.txt SHA256
+```
 **Windows (PowerShell)**
 ```powershell
 Get-FileHash .\data\measurements.txt -Algorithm SHA256
