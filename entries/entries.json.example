@@ -3,8 +3,8 @@
     "entries-folder": "{...}1brc-ObjectPascal/entries",
     "results-folder": "{...}1brc-ObjectPascal/results",
     "bin-folder": "{...}1brc-ObjectPascal/bin",
-    "input-ssd": "/tmp/measurments-1_000_000_000.txt",
-    "input-hdd": "{...}1brc-ObjectPascal/data/measurments-1_000_000_000.txt",
+    "input-ssd": "/tmp/measurements-1_000_000_000.txt",
+    "input-hdd": "{...}1brc-ObjectPascal/data/measurements-1_000_000_000.txt",
     "hyperfine": "hyperfine -w 1 -r 10 -N -n '[[name]]' --export-json '[[results-json]]' '[[entry]]'",
     "lazbuild": "{...}FreePascal_3.0/lazarus/lazbuild",
     "entries": [
