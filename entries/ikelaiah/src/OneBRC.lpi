@@ -11,7 +11,7 @@
         <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="obrc"/>
+      <Title Value="OneBRC"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -22,7 +22,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\sbalazs"/>
+            <Filename Value="..\..\..\bin\ikelaiah"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -34,6 +34,7 @@
             </SyntaxOptions>
           </Parsing>
           <CodeGeneration>
+            <RelocatableUnit Value="True"/>
             <Checks>
               <IOChecks Value="True"/>
               <RangeChecks Value="True"/>
@@ -51,9 +52,10 @@
             </Debugging>
           </Linking>
           <Other>
-            <CompilerMessages>
-              <IgnoredMessages idx5024="True"/>
-            </CompilerMessages>
+            <CustomOptions Value="-dDEBUG"/>
+            <OtherDefines Count="1">
+              <Define0 Value="DEBUG"/>
+            </OtherDefines>
           </Other>
         </CompilerOptions>
       </Item2>
@@ -62,7 +64,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\sbalazs"/>
+            <Filename Value="..\..\..\bin\ikelaiah"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -70,6 +72,7 @@
           </SearchPaths>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
+            <RelocatableUnit Value="True"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -81,11 +84,6 @@
             </Debugging>
             <LinkSmart Value="True"/>
           </Linking>
-          <Other>
-            <CompilerMessages>
-              <IgnoredMessages idx5024="True"/>
-            </CompilerMessages>
-          </Other>
         </CompilerOptions>
       </Item3>
     </BuildModes>
@@ -96,38 +94,43 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="2">
+    <Units Count="3">
       <Unit0>
-        <Filename Value="obrc.lpr"/>
+        <Filename Value="OneBRC.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="uweatherstations.pas"/>
+        <Filename Value="stopwatch.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uWeatherStations"/>
+        <UnitName Value="Stopwatch"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="weatherstation.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="WeatherStation"/>
+      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\..\..\bin\sbalazs"/>
+      <Filename Value="..\..\..\bin\ikelaiah"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
       <UnitOutputDirectory Value="..\..\..\bin\lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
+    <CodeGeneration>
+      <SmartLinkUnit Value="True"/>
+      <RelocatableUnit Value="True"/>
+      <Optimizations>
+        <OptimizationLevel Value="2"/>
+      </Optimizations>
+    </CodeGeneration>
     <Linking>
-      <Debugging>
-        <DebugInfoType Value="dsDwarf3"/>
-      </Debugging>
+      <LinkSmart Value="True"/>
     </Linking>
-    <Other>
-      <CompilerMessages>
-        <IgnoredMessages idx5024="True"/>
-      </CompilerMessages>
-    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

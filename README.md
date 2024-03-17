@@ -1,4 +1,8 @@
 # 1️⃣🐝🏎️ The One Billion Row Challenge in Object Pascal
+<p>
+    <a href="https://discord.gg/c382VBk"><img src="https://img.shields.io/discord/623794270255579146?label=Delphi Community Discord" alt="Delphi Community" /></a>
+    <a href="https://discord.gg/3VdxbSFyJP"><img src="https://img.shields.io/discord/570025060312547359?label=Unofficial Free Pacal Discord" alt="Unofficial Free Pacal" /></a>
+</p>
 
 This is the repository that will coordinate the 1 Billion Row Challenge for Object Pascal.
 
@@ -25,7 +29,7 @@ Conakry;31.2
 Istanbul;23.0
 ```
 
-The task is to write an Object Pascal program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on `STDOUT` like this (i.e. sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit):
+The task is to write an Object Pascal program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on `STDOUT` like this (i.e., sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit towards positive infinity with both `17.01` and `17.05` being rounded to `17.1`, with the decimal separator being a period `.`):
 
 ```
 {Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
@@ -43,13 +47,53 @@ When creating your entry, please do as follows:
 5. If you need to provide a custom `.gitignore` for something not present in the main one, please do.
 
 This challenge is mainly to allow us to learn something new. This means that copying code from others will be allowed, under these conditions:
-1. You can only use pure Object Pascal with no calls to any operating system's `API` or external `C/C++` libraries.
+1. You can only use pure Object Pascal with no calls to any operating system's `API` or external `C/C++` libraries. \
+  **There's been a bit of confusion about this restriction.** \
+  To clear that out: You can use any package/custom code you want. \
+  As long as it compiles cross-platform and itself is only pure Object Pascal. \
+  Anything from the `Jedi Project` or even `mORMmot` ( or anything else ), if it compiles, runs cross-platform it's allowed.
 2. The code must have some sort of mention/attribution to the original author, in case you've used someone else's code.
 3. It's not a blatant copy just for the sake of submission.
 4. It adds something of value, not just a different code formatting.
 5. All code should be formatted with the `IDE`'s default formatting tool.
 
+**IMPORTANT** \
+This challenge can be entered even if you only have access to the Community Edition of RAD Studio. \
+I have a Windows VM, with RAD Studio installed, that will do the necessary cross compilation into my Linux host.
+
 Submit your implementation and become part of the leader board!
+
+## Rounding
+
+Székely Balázs has provided code for rounding towards positive infinity per the original challenge.\
+This will be the official way to round the output values:
+```pas
+function TBaseline.RoundEx(x: Double): Double;
+begin
+  Result := PascalRound(x*10.0)/10.0;
+end;
+
+function TBaseline.PascalRound(x: Double): Double;
+var
+  t: Double;
+begin
+  //round towards positive infinity
+  t := Trunc(x);
+  if (x < 0.0) and (t - x = 0.5) then
+  begin
+    // Do nothing
+  end
+  else if Abs(x - t) >= 0.5 then
+  begin
+    t := t + Math.Sign(x);
+  end;
+
+  if t = 0.0 then
+    Result := 0.0
+  else
+    Result := t;
+end;
+```
 
 ## Generating the measurements.txt
 > **NOTE** \
@@ -59,30 +103,42 @@ In order to produce the One Billion Rows of text, we are providing the [source c
 
 | Parameter | Description |
 |:----------|:------------|
-| -h or --help | Writes this help message and exits |
-| -v or --version | Writes the version and exits |
-| -i or --input-file <filename> | The file containing the Weather Stations |
-| -o or --output-file <filename> | The file that will contain the generated lines |
-| -n or --line-count <number> | The amount of lines to be generated ( Can use 1_000_000_000 ) |
+| **-h** or **--help** | Writes this help message and exits |
+| **-v** or **--version** | Writes the version and exits |
+| **-i** or **--input-file \<filename\>** | The file containing the Weather Stations |
+| **-o** or **--output-file \<filename\>** | The file that will contain the generated lines |
+| **-n** or **--line-count \<number\>** | The amount of lines to be generated ( Can use 1_000_000_000 ) |
 
+## Baseline
+> **NOTE** \
+> This is still a bit in flux, still needing to get the Delphi version done.
 
-### Verify
+In order to verify the official output, we are providing the [source code](./baseline) for the official baseline.
+
+| Parameter | Description |
+|:----------|:------------|
+| **-h** or **--help** | Writes this help message and exits |
+| **-v** or **--version** | Writes the version and exits |
+| **-i** or **--input-file \<filename\>** | The file containing the 1 billion rows |
+
+## Verify Input File
 You can verify the generated `measurements.txt` with a `SHA256` utility:
 
 **Linux**
-```sh
+```bash
 $ sha256sum ./data/measurements.txt
 ```
 **Windows (PowerShell)**
-```ps
+```powershell
 Get-FileHash .\data\measurements.txt -Algorithm SHA256
 ```
 Expected `SHA256` hash:
 `ebad17b266ee9f5cb3d118531f197e6f68c9ab988abc5cb9506e6257e1a52ce6`
 
+## Verify Output File
 > **NOTE**
 >
-> I'm still being lazy and I need to do the baseline in order for us to have the same `SHA256` value for an official output.
+> We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
 
 ## Results
 These are the results from running all entries into the challenge on my personal computer:
@@ -94,7 +150,8 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms): SSD | Result (m:s.ms): HDD | Compiler | Submitter     | Notes     | Certificates |
 |--:|---------------------:|---------------------:|:---------|:--------------|:----------|:-------------|
-| 1 | 0:29.212 | 2:2.504 | lazarus-3.0, fpc-3.2.2 | Székely Balázs | Using 16 threads | |
+| 1 | 0:29.212 |  2:2.504 | lazarus-3.0, fpc-3.2.2 | Székely Balázs | Using 16 threads | |
+| 2 | 15:3.075 | 15:7.630 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah   | Using 1 thread   | |
 
 ## Evaluating Results
 Each contender is run 10 times in a row for both `SSD` and `HDD` using `hyperfine` for the time taking. \
@@ -112,11 +169,13 @@ _Q: What is the encoding of the measurements.txt file?_\
 A: The file is encoded with UTF-8.
 
 _Q: Which operating system is used for evaluation?_\
-A: Ubuntu 23.10.
+A: Ubuntu 23.10 64b.
 
 ## Honour Mentions
 I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a whopping ~25s, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 4 and a half minutes.\
-I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator.
+I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator.\
+I'd like to thank [@dtpfl](https://github.com/dtpfl) for his invaluable work on maintaining the `README.md` file up to date with everything.\
+I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.
 
 ## Links
 The original repository: https://github.com/gunnarmorling/1brc \

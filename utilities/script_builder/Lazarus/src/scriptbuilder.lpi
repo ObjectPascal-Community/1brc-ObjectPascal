@@ -2,7 +2,6 @@
 <CONFIG>
   <ProjectOptions>
     <Version Value="12"/>
-    <PathDelim Value="\"/>
     <General>
       <Flags>
         <MainUnitHasCreateFormStatements Value="False"/>
@@ -11,7 +10,7 @@
         <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="obrc"/>
+      <Title Value="Script Builder"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -20,13 +19,13 @@
       <Item2 Name="Debug">
         <CompilerOptions>
           <Version Value="11"/>
-          <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\sbalazs"/>
+            <Filename Value="../../../../bin/scriptbuilder"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir)"/>
-            <UnitOutputDirectory Value="..\..\..\bin\lib\$(TargetCPU)-$(TargetOS)"/>
+            <IncludeFiles Value="$(ProjOutDir);../../Common"/>
+            <OtherUnitFiles Value="../../Common"/>
+            <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
             <SyntaxOptions>
@@ -50,23 +49,18 @@
               <UseExternalDbgSyms Value="True"/>
             </Debugging>
           </Linking>
-          <Other>
-            <CompilerMessages>
-              <IgnoredMessages idx5024="True"/>
-            </CompilerMessages>
-          </Other>
         </CompilerOptions>
       </Item2>
       <Item3 Name="Release">
         <CompilerOptions>
           <Version Value="11"/>
-          <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\sbalazs"/>
+            <Filename Value="../../../../bin/scriptbuilder"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir)"/>
-            <UnitOutputDirectory Value="..\..\..\bin\lib\$(TargetCPU)-$(TargetOS)"/>
+            <IncludeFiles Value="$(ProjOutDir);../../Common"/>
+            <OtherUnitFiles Value="../../Common"/>
+            <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
@@ -81,11 +75,6 @@
             </Debugging>
             <LinkSmart Value="True"/>
           </Linking>
-          <Other>
-            <CompilerMessages>
-              <IgnoredMessages idx5024="True"/>
-            </CompilerMessages>
-          </Other>
         </CompilerOptions>
       </Item3>
     </BuildModes>
@@ -96,38 +85,44 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="2">
+    <Units Count="5">
       <Unit0>
-        <Filename Value="obrc.lpr"/>
+        <Filename Value="scriptbuilder.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="ScriptBuilder"/>
       </Unit0>
       <Unit1>
-        <Filename Value="uweatherstations.pas"/>
+        <Filename Value="../../Common/scriptbuilder.console.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uWeatherStations"/>
+        <UnitName Value="ScriptBuilder.Console"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="../../Common/scriptbuilder.data.config.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ScriptBuilder.Data.Config"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="../../Common/scriptbuilder.data.entries.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ScriptBuilder.Data.Entries"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="../../Common/scriptbuilder.common.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="ScriptBuilder.Common"/>
+      </Unit4>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
-    <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\..\..\bin\sbalazs"/>
+      <Filename Value="../../../../bin/scriptbuilder"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir)"/>
-      <UnitOutputDirectory Value="..\..\..\bin\lib\$(TargetCPU)-$(TargetOS)"/>
+      <IncludeFiles Value="$(ProjOutDir);../../Common"/>
+      <OtherUnitFiles Value="../../Common"/>
+      <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
-    <Linking>
-      <Debugging>
-        <DebugInfoType Value="dsDwarf3"/>
-      </Debugging>
-    </Linking>
-    <Other>
-      <CompilerMessages>
-        <IgnoredMessages idx5024="True"/>
-      </CompilerMessages>
-    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
