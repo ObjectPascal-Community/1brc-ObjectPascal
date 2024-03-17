@@ -26,13 +26,11 @@ type
     function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer;
       AFileSize: Int64; ATimeElapsed: TDateTime): String;
     function Rng1brc(Range: Integer): Integer;
-  protected
   public
     constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64);
     destructor Destroy; override;
 
     procedure Generate;
-  published
   end;
 
   {$IFNDEF FPC}
