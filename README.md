@@ -63,6 +63,38 @@ I have a Windows VM, with RAD Studio installed, that will do the necessary cross
 
 Submit your implementation and become part of the leader board!
 
+## Rounding
+
+Székely Balázs has provided code for rounding towards positive infinity per the original challenge.\
+This will be the official way to round the output values:
+```pas
+function TBaseline.RoundEx(x: Double): Double;
+begin
+  Result := PascalRound(x*10.0)/10.0;
+end;
+
+function TBaseline.PascalRound(x: Double): Double;
+var
+  t: Double;
+begin
+  //round towards positive infinity
+  t := Trunc(x);
+  if (x < 0.0) and (t - x = 0.5) then
+  begin
+    // Do nothing
+  end
+  else if Abs(x - t) >= 0.5 then
+  begin
+    t := t + Math.Sign(x);
+  end;
+
+  if t = 0.0 then
+    Result := 0.0
+  else
+    Result := t;
+end;
+```
+
 ## Generating the measurements.txt
 > **NOTE** \
 > We now have both a Lazarus version and a Delphi version of the generator for both 32b and 64b.
@@ -105,7 +137,7 @@ Expected `SHA256` hash:
 
 > **NOTE**
 >
-> I'm still being lazy and I need to do the baseline in order for us to have the same `SHA256` value for an official output.
+> We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
 
 ## Results
 These are the results from running all entries into the challenge on my personal computer:
