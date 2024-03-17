@@ -70,6 +70,8 @@ const
   cReplaceEntryInput   = '[[input]]';
   cReplaceEntryThreads = '[[threads]]';
   cCompilerFPC         = 'fpc';
+  cSSD                 = 'SSD';
+  cHDD                 = 'HDD';
 //  cCompilerDelphi      = 'delphi';
 
 resourcestring
@@ -287,16 +289,16 @@ begin
       );
       line:= line + 'echo "-- SSD --"' + LineEnding + tmpStr + LineEnding;
       // Run for HDD
-      tmpStr:= StringReplace(
+      tmpStr:= StringsReplace(
         tmpStr,
-        FConfig.InputSSD,
-        FConfig.InputHDD,
-        [rfReplaceAll]
-      );
-      tmpStr := StringReplace(
-        tmpStr,
-        'SSD',
-        'HDD',
+        [
+          FConfig.InputSSD,
+          cSSD
+        ],
+        [
+          FConfig.InputHDD,
+          cHDD
+        ],
         [rfReplaceAll]
       );
       line:= line + 'echo "-- HDD --"' + LineEnding + tmpStr + LineEnding;
