@@ -33,9 +33,10 @@ end;
     FInputFile: String;
     FStationNames: TStringList;
     FHashStationList: TFPHashList;
-
     procedure AddToHashList(AStation: String; ATemp: Int64);
     procedure BuildHashList;
+    function RoundEx(x: Double): Double;
+    function PascalRound(x: Double): Double;
   protected
   public
     constructor Create(AInputFile: String);
@@ -182,6 +183,32 @@ begin
   end;
 end;
 
+function TBaseline.RoundEx(x: Double): Double;
+begin
+  Result := PascalRound(x*10.0)/10.0;
+end;
+
+function TBaseline.PascalRound(x: Double): Double;
+var
+  t: Double;
+begin
+  //round towards positive infinity
+  t := Trunc(x);
+  if (x < 0.0) and (t - x = 0.5) then
+  begin
+    // Do nothing
+  end
+  else if Abs(x - t) >= 0.5 then
+  begin
+    t := t + Math.Sign(x);
+  end;
+
+  if t = 0.0 then
+    Result := 0.0
+  else
+    Result := t;
+end;
+
 procedure TBaseline.Generate;
 var
   index: Integer;
@@ -199,9 +226,9 @@ begin
   for index := 0 to FHashStationList.Count - 1 do
   begin
     weatherStation := FHashStationList.Items[index];
-    Min := weatherStation^.FMin/10;
-    Max := weatherStation^.FMax/10;
-    Mean := weatherStation^.FTot/weatherStation^.FCnt/10;
+    Min := RoundEx(weatherStation^.FMin/10);
+    Max := RoundEx(weatherStation^.FMax/10);
+    Mean := RoundEx(weatherStation^.FTot/weatherStation^.FCnt/10);
     strTemp := weatherStation^.FStation + '=' + FormatFloat('0.0', Min) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', Max) + ',';
     FStationNames.Add(strTemp);
   end;
