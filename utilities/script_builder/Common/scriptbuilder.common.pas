@@ -14,6 +14,8 @@ uses
 ;
 
 type
+{ EPatternsLengthDonMatch }
+  EPatternsLengthDonMatch = Exception;
 { TBuilder }
   TBuilder = class(TObject)
   private
@@ -22,6 +24,11 @@ type
     FScriptFile: String;
 
     function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer): String;
+    function StringsReplace(
+      const AString: String;
+      const AOLdPattern, ANewPattern: TStringArray;
+      const AFlags: TReplaceFlags
+    ): String;
   protected
   public
     constructor Create(AConfigFile: String);
@@ -33,8 +40,6 @@ type
     procedure BuildRunScriptBash;
     {$ELSE}
     procedure BuildCompileScriptPowerShell;
-    procedure BuildTestScriptPowerShell;
-    procedure BuildRunScriptPowerShell;
     {$ENDIF}
   published
   end;
@@ -66,6 +71,9 @@ const
   cReplaceEntryThreads = '[[threads]]';
   cCompilerFPC         = 'fpc';
 //  cCompilerDelphi      = 'delphi';
+
+resourcestring
+  rsEPatternsLengthDOntMatch = 'Patterns length does not match';
 
 { TBuilder }
 
@@ -103,6 +111,23 @@ begin
   Result := Result + StringOfChar('#', filled);
   Result := Result + StringOfChar('-', APBWIdth - filled);
   Result := Result + Format('] %5.2f %%', [percentDone]);
+end;
+
+function TBuilder.StringsReplace(
+  const AString: String;
+  const AOLdPattern, ANewPattern: TStringArray;
+  const AFlags: TReplaceFlags
+): String;
+var
+  index: Integer;
+begin
+  Result:= AString;
+  if Length(AOLdPattern) <> Length(ANewPattern) then
+    raise EPatternsLengthDonMatch.Create(rsEPatternsLengthDOntMatch);
+  for index:= Low(AOLdPattern) to High(AOLdPattern) do
+  begin
+    Result:= StringReplace(Result, AOLdPattern[index], ANewPattern[index], AFlags);
+  end;
 end;
 
 procedure TBuilder.BuildCompileScriptBash;
@@ -154,7 +179,8 @@ end;
 {$IFNDEF UNIX}
 procedure TBuilder.BuildCompileScriptPowerShell;
 begin
-
+  { #todo 99 -ogcarreno : Using the command line compiler, compile the binary for Linux 64b }
+  { #todo 99 -ogcarreno : Using scp copy the resulting binary to Linux }
 end;
 {$ENDIF}
 
@@ -176,16 +202,16 @@ begin
         FConfig.Entries[index].EntryBinary,
         FConfig.Entries[index].RunParams
       ]);
-      tmpStr:= StringReplace(
+      tmpStr:= StringsReplace(
         tmpStr,
-        cReplaceEntryInput,
-        FConfig.InputSSD,
-        [rfReplaceAll]
-      );
-      tmpStr:= StringReplace(
-        tmpStr,
-        cReplaceEntryThreads,
-        IntToStr(FConfig.Entries[index].Threads),
+        [
+          cReplaceEntryInput,
+          cReplaceEntryThreads
+        ],
+        [
+          FConfig.InputSSD,
+          IntToStr(FConfig.Entries[index].Threads)
+        ],
         [rfReplaceAll]
       );
       tmpStr:= Format('%s > %s%s.output', [
@@ -212,13 +238,6 @@ begin
   FpChmod(PChar(FScriptFile), &775);
 end;
 
-{$IFNDEF UNIX}
-procedure TBuilder.BuildTestScriptPowerShell;
-begin
-
-end;
-{$ENDIF}
-
 procedure TBuilder.BuildRunScriptBash;
 var
   index: Integer;
@@ -232,42 +251,38 @@ begin
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
-      tmpStr := StringReplace(
-        FConfig.Hyperfine,
-        cReplaceName,
-        FConfig.Entries[index].EntryBinary,
-        [rfReplaceAll]
-      );
       // Run for SSD
-      tmpStr := StringReplace(
-        tmpStr,
-        cReplaceJSONResults,
-        Format('%s%s', [
-          IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
-          FConfig.Entries[index].EntryBinary + '-1_000_000_000-SSD.json'
-        ]),
-        [rfReplaceAll]
-      );
-      tmpStr := StringReplace(
-        tmpStr,
-        cReplaceEntryBinary,
-        Format('%s%s %s', [
-          IncludeTrailingPathDelimiter(FConfig.BinFolder),
+      tmpStr:= StringsReplace(
+        FConfig.Hyperfine,
+        [
+          cReplaceName,
+          cReplaceJSONResults,
+          cReplaceEntryBinary
+        ],
+        [
           FConfig.Entries[index].EntryBinary,
-          FConfig.Entries[index].RunParams
-        ]),
+          Format('%s%s', [
+            IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
+            FConfig.Entries[index].EntryBinary + '-1_000_000_000-SSD.json'
+          ]),
+          Format('%s%s %s', [
+            IncludeTrailingPathDelimiter(FConfig.BinFolder),
+            FConfig.Entries[index].EntryBinary,
+            FConfig.Entries[index].RunParams
+          ])
+        ],
         [rfReplaceAll]
       );
-      tmpStr := StringReplace(
+      tmpStr:= StringsReplace(
         tmpStr,
-        cReplaceEntryInput,
-        FConfig.InputSSD,
-        [rfReplaceAll]
-      );
-      tmpStr := StringReplace(
-        tmpStr,
-        cReplaceEntryThreads,
-        IntToStr(FConfig.Entries[index].Threads),
+        [
+          cReplaceEntryInput,
+          cReplaceEntryThreads
+        ],
+        [
+          FConfig.InputSSD,
+          IntToStr(FConfig.Entries[index].Threads)
+        ],
         [rfReplaceAll]
       );
       line:= line + 'echo "-- SSD --"' + LineEnding + tmpStr + LineEnding;
@@ -294,12 +309,5 @@ begin
   end;
   FpChmod(PChar(FScriptFile), &775);
 end;
-
-{$IFNDEF UNIX}
-procedure TBuilder.BuildRunScriptPowerShell;
-begin
-
-end;
-{$ENDIF}
 
 end.
