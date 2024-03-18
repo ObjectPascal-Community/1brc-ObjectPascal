@@ -10,38 +10,33 @@ uses
   {$ENDIF}
   Classes,
   SysUtils,
-  Generics.Collections
+  Generics.Collections,
+  Math
   {$IFDEF DEBUG}
 ,  Stopwatch
   {$ENDIF}
-;
+  ;
 
 type
   // Create a record of temperature stats
   TStat = record
   var
-    min: single;
-    max: single;
-    sum: single;
-    count: word;
+    min: int64;
+    max: int64;
+    sum: int64;
+    Count: int64;
+  private
+    function RoundEx(x: double): double;     // Borrowed from the baseline program
+    function PascalRound(x: double): double; // Borrowed from the baseline program
   public
-    constructor Create(newMin: single;
-                       newMax: single;
-                       newSum: single;
-                       newCount: word);
+    constructor Create(newMin: int64; newMax: int64; newSum: int64; newCount: int64);
     function ToString: string;
+
   end;
 
 type
   // Create a dictionary
   TWeatherDictionary = specialize TDictionary<string, TStat>;
-
-
-{// A helper function to add a city temperature into the TWeatherDictionary
-procedure AddCityTemperature(cityName: string;
-                             newTemp: single;
-                             var weatherDictionary: TWeatherDictionary);
-}
 
 // The main algorithm to process the temp measurements from various weather station
 procedure ProcessTempMeasurements(filename: string);
@@ -49,18 +44,43 @@ procedure ProcessTempMeasurements(filename: string);
 
 implementation
 
-constructor TStat.Create(newMin: single;
-                         newMax: single;
-                         newSum: single;
-                         newCount: word);
+function TStat.RoundEx(x: double): double;
+begin
+  Result := PascalRound(x * 10.0) / 10.0;
+end;
+
+function TStat.PascalRound(x: double): double;
+var
+  t: double;
+begin
+  //round towards positive infinity
+  t := Trunc(x);
+  if (x < 0.0) and (t - x = 0.5) then
+  begin
+    // Do nothing
+  end
+  else if Abs(x - t) >= 0.5 then
+  begin
+    t := t + Math.Sign(x);
+  end;
+
+  if t = 0.0 then
+    Result := 0.0
+  else
+    Result := t;
+end;
+
+constructor TStat.Create(newMin: int64; newMax: int64; newSum: int64; newCount: int64);
 begin
   self.min := newMin;
   self.max := newMax;
   self.sum := newSum;
-  self.count := newCount;
+  self.Count := newCount;
 end;
 
 function TStat.ToString: string;
+var
+  minR, meanR, maxR: double; // Store the rounded values prior saving to TStringList.
 begin
   {$IFDEF DEBUG}
     Result := Format('Min: %.1f; Mean: %.1f; Maxp: %.1f; Sum: %.1f; Count %d',
@@ -68,7 +88,10 @@ begin
       self.sum, self.Count]);
   {$ENDIF DEBUG}
   // Result := Format('%.1f/%.1f/%.1f', [self.min, (self.sum / self.count), self.max]);
-  Result := FormatFloat('0.0', self.min) + '/' + FormatFloat('0.0', (self.sum/self.count)) + '/' + FormatFloat('0.0', self.max)
+  minR := RoundEx(self.min / 10);
+  maxR := RoundEx(self.max / 10);
+  meanR := RoundEx(self.sum / self.Count / 10);
+  Result := FormatFloat('0.0', minR) + '/' + FormatFloat('0.0', meanR) + '/' + FormatFloat('0.0', maxR);
 
 end;
 
@@ -78,10 +101,11 @@ end;
   The following procedure Written by Székely Balázs for the 1BRC for Object Pascal.
   URL: https://github.com/gcarreno/1brc-ObjectPascal/tree/main
 }
-function CustomTStringListComparer(AList: TStringList; AIndex1, AIndex2: Integer): Integer;
+function CustomTStringListComparer(AList: TStringList;
+  AIndex1, AIndex2: integer): integer;
 var
-  Pos1, Pos2: Integer;
-  Str1, Str2: String;
+  Pos1, Pos2: integer;
+  Str1, Str2: string;
 begin
   Result := 0;
   Str1 := AList.Strings[AIndex1];
@@ -92,13 +116,12 @@ begin
   begin
     Str1 := Copy(Str1, 1, Pos1 - 1);
     Str2 := Copy(Str2, 1, Pos2 - 1);
-    Result :=  CompareStr(Str1, Str2);
+    Result := CompareStr(Str1, Str2);
   end;
 end;
 
-procedure AddCityTemperature(cityName: string;
-                             newTemp: single;
-                             var weatherDictionary: TWeatherDictionary);
+
+procedure AddCityTemperature(cityName: string; newTemp: int64; var weatherDictionary: TWeatherDictionary);
 var
   stat: TStat;
 begin
@@ -142,11 +165,11 @@ end;
 procedure ProcessTempMeasurements(filename: string);
 var
   wd: TWeatherDictionary;
-  line, ws: string;
-  lineSeparated: array of string;
+  line, ws, recordedTemp: string;
   weatherStationList: TStringList;
   textFile: System.TextFile;
   isFirstKey: boolean = True;
+  delimiterPos: integer;
 begin
 
   // Start a timer
@@ -172,12 +195,26 @@ begin
       begin
         // Read a line
         ReadLn(textFile, line);
+
         // If the line start with #, then continue/skip.
         if (line[1] = '#') then continue;
 
+        // Get position of the delimiter
+        delimiterPos := Pos(';', line);
+
         // Else, add an entry into the dictionary.
-        lineSeparated := line.Split([';']);
-        AddCityTemperature(lineSeparated[0], StrToFloat(lineSeparated[1]), wd);
+        // Get the weather station name
+        // Using Copy ans POS - as suggested by Gemini AI.
+        // This made the program 3 mins fater when processing 1 billion rows.
+        ws := Copy(line, 1, delimiterPos - 1);
+
+        // Get the temperature recorded, as string, remove '.' from string float
+        // because we want to save it as int64.
+        recordedTemp := Copy(line, delimiterPos + 1, Length(line));
+        recordedTemp := StringReplace(recordedTemp, '.', '', [rfReplaceAll, rfIgnoreCase]);
+
+        // Add the weather station and the recorded temp (as int64) in the TDictionary
+        AddCityTemperature(ws, StrToInt64(recordedTemp), wd);
 
       end; // end while loop reading line at a time
 
@@ -190,6 +227,7 @@ begin
     end; // End of file reading ////////////////////////////////////////////////
 
     // Format and sort weather station by name and temp stat ///////////////////
+    ws:='';
     for ws in wd.Keys do
     begin
       weatherStationList.Add(ws + '=' + wd[ws].ToString);
