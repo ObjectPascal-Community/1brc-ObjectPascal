@@ -19,7 +19,7 @@ The approach I implemented here is simplistic.
 
 ### Compiling
 
-* Open `OneBRC.lpi` using Lazarus. 
+* Open `OneBRC.lpi` using Lazarus.
 * Hit `Ctrl + F9` to compile.
 
 ### Running the executable
