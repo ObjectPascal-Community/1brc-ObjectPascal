@@ -61,8 +61,8 @@ const
   cTestBash            = 'test_all.sh';
   cRunBash             = 'run_all.sh';
 
-  cLazbuild            = '%s -B "%s%s%s"';
-  cLazbuildRelease     = '%s -B --bm="Release" "%s%s%s"';
+  cLazbuild            = '%s -B "%s"';
+  cLazbuildRelease     = '%s -B --bm="Release" "%s"';
 
   cReplaceName         = '[[name]]';
   cReplaceJSONResults  = '[[results-json]]';
@@ -151,9 +151,13 @@ begin
        line:= line  +
        Format(cLazbuildRelease, [
          FConfig.Lazbuild,
-         IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
-         IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
-         FConfig.Entries[index].LPI
+         ExpandFileName(
+           ConcatPaths([
+             IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
+             IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
+             FConfig.Entries[index].LPI
+           ])
+         )
        ] ) +
        LineEnding;
       end
@@ -162,9 +166,13 @@ begin
         line:= line  +
         Format(cLazbuild, [
           FConfig.Lazbuild,
-          IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
-          IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
-          FConfig.Entries[index].LPI
+          ExpandFileName(
+            ConcatPaths([
+              IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
+              IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
+              FConfig.Entries[index].LPI
+            ])
+          )
         ] ) +
         LineEnding;
       end;

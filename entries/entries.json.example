@@ -10,6 +10,17 @@
     "output-hash": "0000000000000000000000000000000000000000000000000000000000000000",
     "entries": [
         {
+            "name": "Official Baseline",
+            "notes": "Beeing the last of all",
+            "compiler": "fpc",
+            "entry-folder": "../baseline/Lazarus/src",
+            "entry-binary": "baseline",
+            "lpi": "baseline.lpi",
+            "has-release": true,
+            "threads": 1,
+            "run-params": "-i [[input]]"
+        },
+        {
             "name": "Gustavo Carreno",
             "notes": "Using 30 threads",
             "compiler": "fpc",
