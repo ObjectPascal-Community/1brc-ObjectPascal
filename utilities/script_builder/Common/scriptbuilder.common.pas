@@ -61,7 +61,7 @@ const
   cTestBash            = 'test_all.sh';
   cRunBash             = 'run_all.sh';
 
-  cLazbuild            = '%s -B "%s"';
+  cLazbuildDefault     = '%s -B "%s"';
   cLazbuildRelease     = '%s -B --bm="Release" "%s"';
 
   cReplaceName         = '[[name]]';
@@ -69,10 +69,11 @@ const
   cReplaceEntryBinary  = '[[entry-binary]]';
   cReplaceEntryInput   = '[[input]]';
   cReplaceEntryThreads = '[[threads]]';
+
   cCompilerFPC         = 'fpc';
+  //  cCompilerDelphi      = 'delphi';
   cSSD                 = 'SSD';
   cHDD                 = 'HDD';
-//  cCompilerDelphi      = 'delphi';
 
 resourcestring
   rsEPatternsLengthDOntMatch = 'Patterns length does not match';
@@ -135,6 +136,7 @@ end;
 procedure TBuilder.BuildCompileScriptBash;
 var
   index: Integer;
+  //entry: TEntry;
   line: String;
 begin
   FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootFolder) + cCompileBash;
@@ -142,6 +144,7 @@ begin
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
+    //for entry in FConfig.Entries do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
@@ -164,7 +167,7 @@ begin
       else
       begin
         line:= line  +
-        Format(cLazbuild, [
+        Format(cLazbuildDefault, [
           FConfig.Lazbuild,
           ExpandFileName(
             ConcatPaths([

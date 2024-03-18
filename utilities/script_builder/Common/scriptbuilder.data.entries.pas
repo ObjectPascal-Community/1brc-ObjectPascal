@@ -31,7 +31,7 @@ type
 //  ENodeStatusParamsWrongType = Exception;
 
 { TEntry }
-  TEntry = class
+  TEntry = class(TObject)
   private
     FName: String;
     FNotes: String;
@@ -85,7 +85,8 @@ type
   end;
 
 { TEntries }
-  TEntries = class
+  TEntriesEnumerator = class; //Forward
+  TEntries = class(TObject)
   private
     FEntries: TFPObjectList;
 
@@ -103,6 +104,8 @@ type
 
     destructor Destroy; override;
 
+    function GetEnumerator: TEntriesEnumerator;
+
     property Count: Integer
       read GetCount;
     property Items[Index: Integer]: TEntry
@@ -110,8 +113,23 @@ type
       write SetEntry; default;
   published
   end;
+  //TEntriesClass = class of TEntries;
 
-{ TEntriesIterator }
+{ TEntriesEnumerator }
+  TEntriesEnumerator = class(TObject)
+  private
+    FEntries: TEntries;
+    FPosition: Integer;
+  protected
+  public
+    constructor Create(const AEntries: TEntries);
+    function GetCurrent: TEntry;
+    function MoveNext: Boolean;
+
+    property Current: TEntry
+      read GetCurrent;
+  published
+  end;
 
 implementation
 
@@ -232,6 +250,30 @@ destructor TEntries.Destroy;
 begin
   FEntries.Free;
   inherited Destroy;
+end;
+
+function TEntries.GetEnumerator: TEntriesEnumerator;
+begin
+    Result:= TEntriesEnumerator.Create(Self);
+end;
+
+{ TEntriesEnumerator }
+
+constructor TEntriesEnumerator.Create(const AEntries: TEntries);
+begin
+  FEntries := AEntries;
+  FPosition := -1;
+end;
+
+function TEntriesEnumerator.GetCurrent: TEntry;
+begin
+  Result:= FEntries.Items[FPosition] as TEntry;
+end;
+
+function TEntriesEnumerator.MoveNext: Boolean;
+begin
+  Inc(FPosition);
+  Result := FPosition < FEntries.Count;
 end;
 
 end.
