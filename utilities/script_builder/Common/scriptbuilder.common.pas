@@ -70,6 +70,7 @@ const
   cReplaceEntryInput   = '[[input]]';
   cReplaceEntryThreads = '[[threads]]';
 
+  cBaselineBinary      = 'baseline';
   cCompilerFPC         = 'fpc';
   //  cCompilerDelphi      = 'delphi';
   cSSD                 = 'SSD';
@@ -143,11 +144,14 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
+    line:= line + 'echo "******** Compile All ********"' + LineEnding;
+    line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     //for entry in FConfig.Entries do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       if FConfig.Entries[index].HasRelease then
       begin
@@ -206,9 +210,12 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
+    line:= line + 'echo "******** Test All ********"' + LineEnding;
+    line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       tmpStr:= Format('%s%s %s', [
         IncludeTrailingPathDelimiter(FConfig.BinFolder),
@@ -260,9 +267,12 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
+    line:= line + 'echo "******** Run All ********"' + LineEnding;
+    line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       // Run for SSD
       tmpStr:= StringsReplace(
