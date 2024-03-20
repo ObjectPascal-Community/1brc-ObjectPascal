@@ -22,10 +22,9 @@ program OneBRC;
 {$mode objfpc}{$H+}{$J-}{$modeSwitch advancedRecords}
 {$codepage utf8}
 
-
 uses
   {$IFDEF UNIX}
-  cthreads,
+  cmem, cthreads,
   {$ENDIF}
   Classes,
   SysUtils,
