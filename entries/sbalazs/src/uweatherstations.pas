@@ -68,7 +68,8 @@ type
 
   TWSThread = class(TWSThreadBase)
   private
-    FBytes: TBytes;
+    FStartP: Int64;
+    FEndP: Int64;
     FMS: TMemoryStream;
     FWSList: TWSList;
     procedure UpdateMainHashList;
@@ -78,7 +79,7 @@ type
   protected
     procedure Execute; override;
   public
-    constructor Create(ABytes: TBytes; AWSManager: TWSManager);
+    constructor Create(AStartP, AEndP: Int64; AWSManager: TWSManager);
     destructor Destroy; override;
   end;
 
@@ -237,23 +238,13 @@ begin
 end;
 
 { TWSThread }
-constructor TWSThread.Create(ABytes: TBytes; AWSManager: TWSManager);
-var
-  I: Integer;
+constructor TWSThread.Create(AStartP, AEndP: Int64; AWSManager: TWSManager);
 begin
   inherited Create(AWSManager);
-  SetLength(FBytes, Length(ABytes));
-  Move(ABytes[0], FBytes[0], Length(ABytes));
+  FStartP := AStartP;
+  FEndP := AEndP;
   FStarted := False;
   FMS := TMemoryStream.Create;
-  for I := Low(FWSList) to High(FWSList) do
-  begin
-    FWSList[I].FStation := nil;
-    FWSList[I].FData.FMin := 0;
-    FWSList[I].FData.FMax := 0;
-    FWSList[I].FData.FTot := 0;
-    FWSList[I].FData.FCnt := 0;
-  end;
 end;
 
 destructor TWSThread.Destroy;
@@ -368,13 +359,29 @@ var
   Bytes: TBytes;
   BytesEx: TBytes;
   Len, LenEx: LongInt;
+  I: Integer;
+  FS: TFileStream;
 begin
   UpdateThreadList(utAdd);
   try
     FStarted := True;
-    FMS.Write(FBytes[0], Length(FBytes));
-    FMS.Position := 0;
-    FBytes := nil;
+    for I := Low(FWSList) to High(FWSList) do
+    begin
+      FWSList[I].FStation := nil;
+      FWSList[I].FData.FMin := 0;
+      FWSList[I].FData.FMax := 0;
+      FWSList[I].FData.FTot := 0;
+      FWSList[I].FData.FCnt := 0;
+    end;
+    FS := TFileStream.Create(FWSManager.FSrcFile, fmOpenRead or fmShareDenyWrite);
+    try
+      FS.Position := FStartP;
+      FMS.SetSize(FEndP - FStartP);
+      FS.Read(FMS.Memory^, FEndP - FStartP);
+      FMS.Position := 0;
+    finally
+      FS.Free;
+    end;
     Size := 1048576;
     repeat
       Bytes := nil;
@@ -530,7 +537,7 @@ var
   Min, Max: Double;
   Mean: Double;
   SL: TStringList;
-  //MS: TMemoryStream;
+  MS: TMemoryStream;
 begin
   SL := TStringList.Create;
   try
@@ -572,56 +579,43 @@ begin
   {$ENDIF}
 
   //save to file
-  {MS := TMemoryStream.Create;
+  MS := TMemoryStream.Create;
   try    
     MS.Write(Pointer(Str)^, Length(Str) div SizeOf(Char));
     MS.Position := 0;
     MS.SaveToFile('summary.txt');
   finally
     MS.Free
-  end;}
+  end;
 end;
 
 procedure TWSThreadsWatcher.Execute;
 var
   ThreadCnt: Integer;
-  Bytes: TBytes;
-  BytesEx: TBytes;
   Size: Int64;
   FS: TFileStream;
-  ReadCnt: LongInt;
-  Len, LenEx: LongInt;
   WSThread: TWSThread;
+  StartP, EndP: Int64;
 begin
   FStarted := True;
   FS := TFileStream.Create(FWSManager.FSrcFile, fmOpenRead or fmShareDenyNone);
   try
     Size := Round(FS.Size/(FWSManager.FThreadCnt + 1));
     FS.Position := 0;
+    StartP := 0;
+    EndP := 0;
     repeat
-      Bytes := nil;
-      BytesEx := nil;
       if Size > FS.Size - FS.Position then
         Size := FS.Size - FS.Position;
-      SetLength(Bytes, Size);
-      ReadCnt := FS.Read(Bytes[0], Size);
-      if (ReadCnt > 0) then
-      begin
-        BytesEx := GetNextLineBreak(FS);
-        LenEx := Length(BytesEx);
-        if LenEx > 0 then
-        begin
-          Len := Length(Bytes);
-          SetLength(Bytes, Len + LenEx);
-          Move(BytesEx[0], Bytes[Len], LenEx);
-        end;
-        AddLineBreak(Bytes);
-        WSThread := TWSThread.Create(Bytes, FWSManager);
-        WSThread.Start;
-        while not WSThread.FStarted do
-          Wait(10);
-      end;
-    until (ReadCnt = 0);
+      if Size > High(LongInt) then
+        Size := High(LongInt) - 100;
+      StartP := FS.Position;
+      FS.Position :=FS.Position + Size;
+      GetNextLineBreak(FS);
+      EndP := FS.Position;
+      WSThread := TWSThread.Create(StartP, EndP, FWSManager);
+      WSThread.Start;
+    until (FS.Position >= FS.Size);
   finally
     FS.Free
   end;
