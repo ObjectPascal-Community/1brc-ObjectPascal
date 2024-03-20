@@ -579,14 +579,14 @@ begin
   {$ENDIF}
 
   //save to file
-  MS := TMemoryStream.Create;
+  {MS := TMemoryStream.Create;
   try    
     MS.Write(Pointer(Str)^, Length(Str) div SizeOf(Char));
     MS.Position := 0;
     MS.SaveToFile('summary.txt');
   finally
     MS.Free
-  end;
+  end;}
 end;
 
 procedure TWSThreadsWatcher.Execute;
