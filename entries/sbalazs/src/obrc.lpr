@@ -28,7 +28,11 @@ begin
   end;
 
   if (Trim(ParamStr(2)) <> '')  then
-    TC := StrToIntDef(ParamStr(2), 16)
+  begin
+    TC := StrToIntDef(ParamStr(2), 16);
+    if TC < 16 then
+      TC := 16;
+  end
   else
     TC := 16;
 
