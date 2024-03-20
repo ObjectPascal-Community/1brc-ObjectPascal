@@ -143,6 +143,8 @@ Expected `SHA256` hash:
 > **NOTE**
 >
 > We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
+>
+> Until then, this is the current one: `db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524`
 
 ## Results
 These are the results from running all entries into the challenge on my personal computer:
