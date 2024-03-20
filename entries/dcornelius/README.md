@@ -6,7 +6,7 @@ I wanted to see how different methods compared for ease of writing the code and 
 
 - **TDictionary** - as each line is read, create an object and add it to a `TDictionary` collection; if an entry already exists for a city, update it instead of adding. This was simple to implement but since `TDictionary` doesn't have a sort method, after this list is built, another list must be created to sort them.
 - **TStringList** - this is a really simple implementation but requires a lot of memory because the `LoadFromFile` method is used to read in all rows before processing them. Then a second TStringList is used to collate and sort the data. *NOTE: This method results in an immediate Range Check Error! The documentation on TStringList says it'll handle over a billion records--but the LoadFromFile function does not!!*
-- **In-Memory Table** - another approach I thought I'd try was to load all the data into an in-memory table and use local SQL to query the data. I didn't expect this to be the most efficient method (it actually turned out to be the slowest by far) but I did learn some cool things about FireDAC.
+- **In-Memory Table** - another approach I thought I'd try was to load all the data into an in-memory table and use local SQL to query the data. This also takes a lot of memory and I didn't expect this to be the most efficient method (it actually turned out to be the slowest by far) but I did learn some cool things about FireDAC.
 
 ## Compiler
 
@@ -42,4 +42,4 @@ $ obrc_docrnelius measurements.txt dic
 
 ## History
 
-- Version 1.0: working version with `TDictionary` and `TStringList` methods implemented.
+- Version 1.0: working version with `TDictionary`, `TStringList`, and `TFDMemTable` methods implemented.
