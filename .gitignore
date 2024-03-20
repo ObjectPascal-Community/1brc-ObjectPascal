@@ -67,3 +67,10 @@ backup/
 
 # Castalia statistics file
 *.stat
+entries/dcornelius/src/Linux64/
+entries/dcornelius/src/Win32/
+entries/dcornelius/src/Win64/
+generator/Delphi/src/Linux64/
+generator/Delphi/src/OSX64/
+generator/Delphi/src/Win32/
+generator/Delphi/src/Win64/
