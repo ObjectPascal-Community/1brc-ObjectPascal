@@ -7,7 +7,19 @@
     "input-hdd": "{...}1brc-ObjectPascal/data/measurements-1_000_000_000.txt",
     "hyperfine": "hyperfine -w 1 -r 10 -N -n '[[name]]' --export-json '[[results-json]]' '[[entry]]'",
     "lazbuild": "{...}FreePascal_3.0/lazarus/lazbuild",
+    "output-hash": "0000000000000000000000000000000000000000000000000000000000000000",
     "entries": [
+        {
+            "name": "Official Baseline",
+            "notes": "Beeing the last of all",
+            "compiler": "fpc",
+            "entry-folder": "../baseline/Lazarus/src",
+            "entry-binary": "baseline",
+            "lpi": "baseline.lpi",
+            "has-release": true,
+            "threads": 1,
+            "run-params": "-i [[input]]"
+        },
         {
             "name": "Gustavo Carreno",
             "notes": "Using 30 threads",

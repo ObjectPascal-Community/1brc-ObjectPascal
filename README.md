@@ -125,8 +125,12 @@ In order to verify the official output, we are providing the [source code](./bas
 You can verify the generated `measurements.txt` with a `SHA256` utility:
 
 **Linux**
-```bash
+```console
 $ sha256sum ./data/measurements.txt
+```
+**Windows (Command Line)**
+```console
+C:> CertUtil -hashfile .\data\measurements.txt SHA256
 ```
 **Windows (PowerShell)**
 ```powershell
@@ -156,6 +160,7 @@ These are the results from running all entries into the challenge on my personal
 ## Evaluating Results
 Each contender is run 10 times in a row for both `SSD` and `HDD` using `hyperfine` for the time taking. \
 The mean value of the 10 runs is the result for that contender and will be added to the results table above. \
+The min and max values are discarded and the remaining 8 values are then used to calculate the average. \
 The exact same `measurements.txt` file is used for evaluating all contenders.
 
 ## Prize

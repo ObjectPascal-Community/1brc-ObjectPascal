@@ -6,8 +6,10 @@ The approach I implemented here is simplistic.
 
 - Sequentially read the measurement file.
 - Populate a `TDictionary` with station names, min, max, count and sum; without storing all the temperature measurements.
+- Avoided [StrUtil.SplitString](https://www.freepascal.org/docs-html/rtl/strutils/splitstring.html), used [`Pos()`](https://www.freepascal.org/docs-html/rtl/system/pos.html) and [`Copy()`](https://www.freepascal.org/docs-html/rtl/system/copy.html) instead.
 - Use a custom comparer to sort the station and temperature statistics in a `TStringList`.
-- Display the sorted measurements using a simple for loop.
+- Use the rounding method as provided in the `baseline.lpr` (or the `README.md` from 1brc-ObjectPascal).
+- Display the sorted measurements using a simple `for` loop.
 
 ## Getting Started
 
@@ -17,7 +19,7 @@ The approach I implemented here is simplistic.
 
 ### Compiling
 
-* Open `OneBRC.lpi` using Lazarus. 
+* Open `OneBRC.lpi` using Lazarus.
 * Hit `Ctrl + F9` to compile.
 
 ### Running the executable

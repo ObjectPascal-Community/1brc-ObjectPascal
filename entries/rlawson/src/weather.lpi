@@ -10,7 +10,7 @@
         <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="Baseline"/>
+      <Title Value="Rick 1brc app"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -20,11 +20,10 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/baseline"/>
+            <Filename Value="../../../bin/rlawson"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-            <OtherUnitFiles Value="../../Common"/>
+            <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -55,11 +54,10 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/baseline"/>
+            <Filename Value="../../../bin/rlawson"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-            <OtherUnitFiles Value="../../Common"/>
+            <IncludeFiles Value="$(ProjOutDir)"/>
             <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -85,36 +83,29 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="3">
+    <Units Count="2">
       <Unit0>
-        <Filename Value="baseline.lpr"/>
+        <Filename Value="weather.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="../../Common/baseline.console.pas"/>
+        <Filename Value="parser.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="Baseline.Console"/>
       </Unit1>
-      <Unit2>
-        <Filename Value="../../Common/baseline.common.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Baseline.Common"/>
-      </Unit2>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../../bin/baseline"/>
+      <Filename Value="../../../bin/rlawson"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-      <OtherUnitFiles Value="../../Common"/>
+      <IncludeFiles Value="$(ProjOutDir)"/>
       <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
       <Debugging>
-        <DebugInfoType Value="dsDwarf2Set"/>
+        <DebugInfoType Value="dsDwarf3"/>
       </Debugging>
     </Linking>
   </CompilerOptions>

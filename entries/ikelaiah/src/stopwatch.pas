@@ -53,11 +53,10 @@ begin
   seconds := elapsedMilliseconds div 1000;
   milliseconds := elapsedMilliseconds mod 1000;
 
-  WriteLn;
   WriteLn('------------------------------');
   WriteLn('Elapsed time: ', hours, ' hours ', minutes, ' minutes ',
     seconds, ' seconds ', milliseconds, ' milliseconds');
-  //WriteLn('Elapsed time: ', (endTime - startTime), ' ms');
+  WriteLn('------------------------------');
 end;
 
 

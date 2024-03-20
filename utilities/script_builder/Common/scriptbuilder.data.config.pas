@@ -39,6 +39,7 @@ type
     FInputHDD: String;
     FHyperfine: String;
     FLazbuild: String;
+    FOutputHash: String;
     FEntries: TEntries;
 
     //procedure setFromJSON(const AJSON: TJSONStringType);
@@ -76,6 +77,9 @@ type
     property Lazbuild: String
       read FLazbuild
       write FLazbuild;
+    property OutputHash: String
+      read FOutputHash
+      write FOutputHash;
     property Entries: TEntries
       read FEntries;
   published
@@ -92,6 +96,7 @@ const
   cJSONInputHDD      = 'input-hdd';
   cJSONHyperfine     = 'hyperfine';
   cJSONLazbuild      = 'lazbuild';
+  cJSONOutpuHash     = 'output-hash';
   cJSONEntries       = 'entries';
 
 resourcestring
@@ -112,6 +117,7 @@ begin
   FInputHDD:= '';
   FHyperfine:= '';
   FLazbuild:= '';
+  FOutputHash:= '';
   //FEntries:= TEntries.Create;
 end;
 
@@ -175,6 +181,7 @@ begin
   FInputHDD:= AJSONObject.Get(cJSONInputHDD, FInputHDD);
   FHyperfine:= AJSONObject.Get(cJSONHyperfine, FHyperfine);
   FLazbuild:= AJSONObject.Get(cJSONLazbuild, FLazbuild);
+  FOutputHash:= AJSONObject.Get(cJSONOutpuHash, FOutputHash);
   FEntries:= TEntries.Create(AJSONObject.Find(cJSONEntries));
 end;
 

@@ -14,6 +14,8 @@ uses
 ;
 
 type
+{ EPatternsLengthDonMatch }
+  EPatternsLengthDonMatch = Exception;
 { TBuilder }
   TBuilder = class(TObject)
   private
@@ -22,6 +24,11 @@ type
     FScriptFile: String;
 
     function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer): String;
+    function StringsReplace(
+      const AString: String;
+      const AOLdPattern, ANewPattern: TStringArray;
+      const AFlags: TReplaceFlags
+    ): String;
   protected
   public
     constructor Create(AConfigFile: String);
@@ -33,8 +40,6 @@ type
     procedure BuildRunScriptBash;
     {$ELSE}
     procedure BuildCompileScriptPowerShell;
-    procedure BuildTestScriptPowerShell;
-    procedure BuildRunScriptPowerShell;
     {$ENDIF}
   published
   end;
@@ -56,13 +61,23 @@ const
   cTestBash            = 'test_all.sh';
   cRunBash             = 'run_all.sh';
 
+  cLazbuildDefault     = '%s -B "%s"';
+  cLazbuildRelease     = '%s -B --bm="Release" "%s"';
+
   cReplaceName         = '[[name]]';
   cReplaceJSONResults  = '[[results-json]]';
   cReplaceEntryBinary  = '[[entry-binary]]';
   cReplaceEntryInput   = '[[input]]';
   cReplaceEntryThreads = '[[threads]]';
 
-  cOfficialOutputHash  = '0000000000000000000000000000000000000000000000000000000000000000';
+  cBaselineBinary      = 'baseline';
+  cCompilerFPC         = 'fpc';
+  //  cCompilerDelphi      = 'delphi';
+  cSSD                 = 'SSD';
+  cHDD                 = 'HDD';
+
+resourcestring
+  rsEPatternsLengthDOntMatch = 'Patterns length does not match';
 
 { TBuilder }
 
@@ -102,38 +117,69 @@ begin
   Result := Result + Format('] %5.2f %%', [percentDone]);
 end;
 
+function TBuilder.StringsReplace(
+  const AString: String;
+  const AOLdPattern, ANewPattern: TStringArray;
+  const AFlags: TReplaceFlags
+): String;
+var
+  index: Integer;
+begin
+  Result:= AString;
+  if Length(AOLdPattern) <> Length(ANewPattern) then
+    raise EPatternsLengthDonMatch.Create(rsEPatternsLengthDOntMatch);
+  for index:= Low(AOLdPattern) to High(AOLdPattern) do
+  begin
+    Result:= StringReplace(Result, AOLdPattern[index], ANewPattern[index], AFlags);
+  end;
+end;
+
 procedure TBuilder.BuildCompileScriptBash;
 var
   index: Integer;
+  //entry: TEntry;
   line: String;
 begin
   FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootFolder) + cCompileBash;
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
+    line:= line + 'echo "******** Compile All ********"' + LineEnding;
+    line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
+    //for entry in FConfig.Entries do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       if FConfig.Entries[index].HasRelease then
       begin
        line:= line  +
-       Format('%s -B --bm="Release" "%s%s%s"', [
+       Format(cLazbuildRelease, [
          FConfig.Lazbuild,
-         IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
-         IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
-         FConfig.Entries[index].LPI
+         ExpandFileName(
+           ConcatPaths([
+             IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
+             IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
+             FConfig.Entries[index].LPI
+           ])
+         )
        ] ) +
        LineEnding;
       end
       else
       begin
         line:= line  +
-        Format('%s -B "%s%s%s"', [
+        Format(cLazbuildDefault, [
           FConfig.Lazbuild,
-          IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
-          IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
-          FConfig.Entries[index].LPI
+          ExpandFileName(
+            ConcatPaths([
+              IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
+              IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
+              FConfig.Entries[index].LPI
+            ])
+          )
         ] ) +
         LineEnding;
       end;
@@ -147,6 +193,14 @@ begin
   FpChmod(PChar(FScriptFile), &775);
 end;
 
+{$IFNDEF UNIX}
+procedure TBuilder.BuildCompileScriptPowerShell;
+begin
+  { #todo 99 -ogcarreno : Using the command line compiler, compile the binary for Linux 64b }
+  { #todo 99 -ogcarreno : Using scp copy the resulting binary to Linux }
+end;
+{$ENDIF}
+
 procedure TBuilder.BuildTestScriptBash;
 var
   index: Integer;
@@ -156,25 +210,28 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
+    line:= line + 'echo "******** Test All ********"' + LineEnding;
+    line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       tmpStr:= Format('%s%s %s', [
         IncludeTrailingPathDelimiter(FConfig.BinFolder),
         FConfig.Entries[index].EntryBinary,
         FConfig.Entries[index].RunParams
       ]);
-      tmpStr:= StringReplace(
+      tmpStr:= StringsReplace(
         tmpStr,
-        cReplaceEntryInput,
-        FConfig.InputSSD,
-        [rfReplaceAll]
-      );
-      tmpStr:= StringReplace(
-        tmpStr,
-        cReplaceEntryThreads,
-        IntToStr(FConfig.Entries[index].Threads),
+        [
+          cReplaceEntryInput,
+          cReplaceEntryThreads
+        ],
+        [
+          FConfig.InputSSD,
+          IntToStr(FConfig.Entries[index].Threads)
+        ],
         [rfReplaceAll]
       );
       tmpStr:= Format('%s > %s%s.output', [
@@ -189,7 +246,7 @@ begin
       ]);
       line:= line + tmpStr + LineEnding;
       line:= line + Format('echo "%s  Official Output Hash"',[
-        cOfficialOutputHash
+        FConfig.OutputHash
       ]) + LineEnding;
       line:= line + 'echo "==========="' + LineEnding;
       line:= line + 'echo' + LineEnding + LineEnding;
@@ -210,48 +267,62 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
+    line:= line + 'echo "******** Run All ********"' + LineEnding;
+    line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
-      tmpStr := StringReplace(
+      // Run for SSD
+      tmpStr:= StringsReplace(
         FConfig.Hyperfine,
-        cReplaceName,
-        FConfig.Entries[index].EntryBinary,
-        [rfReplaceAll]
-      );
-      tmpStr := StringReplace(
-        tmpStr,
-        cReplaceJSONResults,
-        Format('%s%s', [
-          IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
-          FConfig.Entries[index].EntryBinary + '-1_000_000_000.json'
-        ]),
-        [rfReplaceAll]
-      );
-      tmpStr := StringReplace(
-        tmpStr,
-        cReplaceEntryBinary,
-        Format('%s%s %s', [
-          IncludeTrailingPathDelimiter(FConfig.BinFolder),
+        [
+          cReplaceName,
+          cReplaceJSONResults,
+          cReplaceEntryBinary
+        ],
+        [
           FConfig.Entries[index].EntryBinary,
-          FConfig.Entries[index].RunParams
-        ]),
+          Format('%s%s', [
+            IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
+            FConfig.Entries[index].EntryBinary + '-1_000_000_000-SSD.json'
+          ]),
+          Format('%s%s %s', [
+            IncludeTrailingPathDelimiter(FConfig.BinFolder),
+            FConfig.Entries[index].EntryBinary,
+            FConfig.Entries[index].RunParams
+          ])
+        ],
         [rfReplaceAll]
       );
-      tmpStr := StringReplace(
+      tmpStr:= StringsReplace(
         tmpStr,
-        cReplaceEntryInput,
-        FConfig.InputSSD,
+        [
+          cReplaceEntryInput,
+          cReplaceEntryThreads
+        ],
+        [
+          FConfig.InputSSD,
+          IntToStr(FConfig.Entries[index].Threads)
+        ],
         [rfReplaceAll]
       );
-      tmpStr := StringReplace(
+      line:= line + 'echo "-- SSD --"' + LineEnding + tmpStr + LineEnding;
+      // Run for HDD
+      tmpStr:= StringsReplace(
         tmpStr,
-        cReplaceEntryThreads,
-        IntToStr(FConfig.Entries[index].Threads),
+        [
+          FConfig.InputSSD,
+          cSSD
+        ],
+        [
+          FConfig.InputHDD,
+          cHDD
+        ],
         [rfReplaceAll]
       );
-      line:= line + tmpStr + LineEnding;
+      line:= line + 'echo "-- HDD --"' + LineEnding + tmpStr + LineEnding;
       line:= line + 'echo "==========="' + LineEnding;
       line:= line + 'echo' + LineEnding + LineEnding;
     end;

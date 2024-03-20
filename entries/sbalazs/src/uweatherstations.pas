@@ -544,8 +544,8 @@ begin
         Continue;
       SetString(Name, Pointer(@WS.FStation[0]), Length(WS.FStation));
       SetCodePage(Name, CP_UTF8, True);
-      Min := RoundEx(WS.FData.FMin/10);
-      Max := RoundEx(WS.FData.FMax/10);
+      Min := WS.FData.FMin/10;
+      Max := WS.FData.FMax/10;
       Mean := RoundEx(WS.FData.FTot/WS.FData.FCnt/10);
       Str := Name + '=' + FormatFloat('0.0', Min) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', Max) + ',';
       SL.Add(Str);
@@ -618,8 +618,8 @@ begin
         AddLineBreak(Bytes);
         WSThread := TWSThread.Create(Bytes, FWSManager);
         WSThread.Start;
-    	while not WSThread.FStarted do
-          Wait(10); 
+        while not WSThread.FStarted do
+          Wait(10);
       end;
     until (ReadCnt = 0);
   finally

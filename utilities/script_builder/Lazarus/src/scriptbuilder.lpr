@@ -96,19 +96,15 @@ begin
     {$ENDIF}
     WriteLn;
 
-    WriteLn('=== Test Script ===');
     {$IFDEF UNIX}
+    WriteLn('=== Test Script ===');
     FBuilder.BuildTestScriptBash;
-    {$ELSE}
-    FBuilder.BuildTestScriptPowerShell;
     {$ENDIF}
     WriteLn;
 
-    WriteLn('=== Run Script ===');
     {$IFDEF UNIX}
+    WriteLn('=== Run Script ===');
     FBuilder.BuildRunScriptBash;
-    {$ELSE}
-    FBuilder.BuildRunScriptPowerShell;
     {$ENDIF}
     WriteLn;
   finally
