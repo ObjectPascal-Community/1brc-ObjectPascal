@@ -4,9 +4,6 @@ unit WeatherStation;
 interface
 
 uses
-  {$IFDEF UNIX}
-  cmem, cthreads,
-  {$ENDIF}
   Classes,
   SysUtils,
   Generics.Collections,
