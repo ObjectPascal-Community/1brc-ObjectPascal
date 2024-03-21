@@ -4,11 +4,12 @@ program weather;
 
 uses
   {$IFDEF UNIX}
-  cthreads,
+  cthreads, cmem,
   {$ENDIF}
   Classes,
   SysUtils,
-  CustApp, parser;
+  CustApp,
+  parser;
 
 type
 
