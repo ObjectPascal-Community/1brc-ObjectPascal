@@ -8,7 +8,7 @@ unit udmChallengeWithFireDAC;
  *
  * NOTE: This is a single-threaded process.
  *
- * Processing time when reading in a 1-billion row file:
+ * Processing time when reading in a 1-billion row file: ___
  *)
 
 interface
@@ -71,14 +71,10 @@ begin
     dmChallengeWithFireDAC.tblWeatherData.Open;
     dmChallengeWithFireDAC.tblWeatherData.EmptyDataSet;
 
-    ChallengeCommon.ReadAndParseAllData(procedure (const CityName: string; const CityTemp: Double)
+    ChallengeCommon.ReadAndParseAllData(procedure (const CityName: string; const CityTemp: Integer)
       begin
         dmChallengeWithFireDAC.tblWeatherData.InsertRecord([CityName, CityTemp]);
       end);
-
-    {$IFDEF DEBUG}
-    Writeln(Format('Loaded %d lines from %s', [dmChallengeWithFireDAC.tblWeatherData.RecordCount, ChallengeCommon.InputFilename]));
-    {$ENDIF}
 
     dmChallengeWithFireDAC.qryCityTemps.Close;
     dmChallengeWithFireDAC.qryCityTemps.Open;

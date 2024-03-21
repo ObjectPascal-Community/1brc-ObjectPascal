@@ -13,17 +13,18 @@ type
   TWeatherCity = class
   public
     CityName: string;
-    MinTemp: Single;
-    MaxTemp: Single;
+    MinTemp: Integer;
+    MaxTemp: Integer;
     DataCount: Int64;
-    TotalTemp: Double;
-    constructor Create(const NewCityName: string; const NewTemp: single);
-    procedure AddNewTemp(const NewTemp: Single);
+    TotalTemp: Int64;
+    constructor Create(const NewCityName: string; const NewTemp: Integer);
+    procedure AddNewTemp(const NewTemp: Integer);
     function Mean: Double;
+    function OutputSumLine: string;
   end;
 
   // anonymous method type
-  TWeatherCityProc = reference to procedure(const City: string; const Temp: Double);
+  TWeatherCityProc = reference to procedure(const City: string; const Temp: Integer);
 
   // a global class to provide standard open/close and other functions
   TChallengeCommon = class
@@ -36,7 +37,7 @@ type
     procedure CloseWeatherData;
     procedure ReadAndParseAllData(WeatherCityProcessor: TWeatherCityProc);
     function PascalRound(x: Double): Double;
-    function SplitCityTemp(const StationLine: string; var CityName: string; var CityTemp: Double): Boolean;
+    function SplitCityTemp(const StationLine: string; var CityName: string; var CityTemp: Integer): Boolean;
     property InputFilename: string read FInputFilename write FInputFilename;
     property WeatherDataFile: TextFile read FWeatherDataFile;
   end;
@@ -47,7 +48,11 @@ var
 implementation
 
 uses
-  System.Classes, System.SysUtils, System.Math;
+  System.Classes, System.SysUtils,
+  {$IFDEF DEBUG}
+  System.Diagnostics,
+  {$ENDIF }
+  System.Math;
 
 { TChallengeCommon }
 
@@ -88,14 +93,23 @@ procedure TChallengeCommon.ReadAndParseAllData(WeatherCityProcessor: TWeatherCit
 var
   WeatherLine: string;
   WeatherCity: string;
-  CityTemp: Double;
+  CityTemp: Integer;
+  LineCount: Int64;
 begin
+  {$IFDEF DEBUG}
+  var StopWatch := TStopwatch.StartNew;
+  LineCount := 0;
+  {$ENDIF}
+
   OpenWeatherData;
   try
     // read all rows
     while not Eof(WeatherDataFile) do begin
       // read a row into a temp string
       Readln(WeatherDataFile, WeatherLine);
+      {$IFDEF DEBUG}
+      Inc(LineCount);
+      {$ENDIF}
 
       // parse the data and call a procedure to process it
       if SplitCityTemp(WeatherLine, WeatherCity, CityTemp) then
@@ -104,6 +118,12 @@ begin
   finally
     ChallengeCommon.CloseWeatherData;
   end;
+
+  {$IFDEF DEBUG}
+  StopWatch.Stop;
+  Writeln(Format('Loaded %d lines from %s in %d milliseconds', [LineCount, FInputFilename,
+                         StopWatch.ElapsedMilliseconds]));
+  {$ENDIF}
 end;
 
 procedure TChallengeCommon.CloseWeatherData;
@@ -111,7 +131,7 @@ begin
   CloseFile(FWeatherDataFile);
 end;
 
-function TChallengeCommon.SplitCityTemp(const StationLine: string; var CityName: string; var CityTemp: Double): Boolean;
+function TChallengeCommon.SplitCityTemp(const StationLine: string; var CityName: string; var CityTemp: Integer): Boolean;
 var
   SemiPos: Integer;
   TempStr: string;
@@ -126,14 +146,16 @@ begin
     Exit;
 
   CityName := Copy(StationLine, 1, SemiPos - 1);
-  TempStr := Copy(StationLine, SemiPos + 1, 50);
+  TempStr := Trim(Copy(StationLine, SemiPos + 1, 50));
+  // remove the decimal point to make this an integer
+  CityTemp := StrToInt(Copy(TempStr, 1, Length(TempStr) - 2) + Copy(TempStr, Length(TempStr), 1));
 
-  Result := TryStrToFloat(TempStr, CityTemp);
+  Result := True;
 end;
 
 { TWeatherCity }
 
-procedure TWeatherCity.AddNewTemp(const NewTemp: Single);
+procedure TWeatherCity.AddNewTemp(const NewTemp: Integer);
 begin
   Inc(DataCount);
 
@@ -147,7 +169,7 @@ begin
   TotalTemp := TotalTemp + NewTemp;
 end;
 
-constructor TWeatherCity.Create(const NewCityName: string; const NewTemp: single);
+constructor TWeatherCity.Create(const NewCityName: string; const NewTemp: Integer);
 begin
   CityName  := NewCityName;
   DataCount := 1;
@@ -159,6 +181,15 @@ end;
 function TWeatherCity.Mean: Double;
 begin
   Result := ChallengeCommon.PascalRound(TotalTemp / DataCount);
+end;
+
+function TWeatherCity.OutputSumLine: string;
+begin
+  Result := Format(' %s=%0.1f/%0.1f/%0.1f', [CityName,
+                                             MinTemp / 10,
+                                             Mean,
+                                             MaxTemp / 10]);
+
 end;
 
 end.

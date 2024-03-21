@@ -8,7 +8,7 @@ unit uChallengeWithDictionary;
  *
  * NOTE: This is a single-threaded process.
  *
- * Processing time when reading in a 1-billion row file: 9 minutes (22½ minutes on WSL-Windows Subsystem for Linux)
+ * Processing time when reading in a 1-billion row file: 9 minutes
  *)
 
 interface
@@ -31,11 +31,10 @@ procedure ChallengeWithDictionary;
 var
   SortedList: TStringList;
   CurrWeatherCity: TWeatherCity;
-  TempLine: string;
 begin
   WeatherCityList := TDictionary<string, TWeatherCity>.Create;
   try
-    ChallengeCommon.ReadAndParseAllData(procedure (const CityName: string; const CityTemp: Double)
+    ChallengeCommon.ReadAndParseAllData(procedure (const CityName: string; const CityTemp: Integer)
       begin
         if WeatherCityList.TryGetValue(CityName, CurrWeatherCity) then
           CurrWeatherCity.AddNewTemp(CityTemp)
@@ -43,20 +42,11 @@ begin
           WeatherCityList.Add(CityName, TWeatherCity.Create(CityName, CityTemp));
       end);
 
-      {$IFDEF DEBUG}
-      Writeln(Format('Loaded %d lines from %s', [WeatherCityList.Count, ChallengeCommon.InputFilename]));
-      {$ENDIF}
-
       // create the output list
-      SortedList := TStringList.Create;
+      SortedList := TStringList.Create(TDuplicates.dupAccept, False, True);
       try
-        for var WeatherSum in WeatherCityList do begin
-          TempLine := Format(' %s=%0.1f/%0.1f/%0.1f', [WeatherSum.Value.CityName,
-                                                      WeatherSum.Value.MinTemp,
-                                                      WeatherSum.Value.Mean,
-                                                      WeatherSum.Value.MaxTemp]);
-          SortedList.Add(TempLine);
-        end;
+        for var WeatherSum in WeatherCityList do
+          SortedList.Append(WeatherSum.Value.OutputSumLine);
 
         // sort and write out the data
         SortedList.Sort;

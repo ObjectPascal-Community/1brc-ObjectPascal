@@ -17,6 +17,9 @@ implementation
 
 uses
   System.SysUtils, System.Classes, System.StrUtils,
+  {$IFDEF DEBUG}
+  System.Diagnostics,
+  {$ENDIF }
   uChallengeCommon;
 
 procedure ChallengeWithStringList;
@@ -24,7 +27,7 @@ var
   WeatherLines: TStringList;
   SortedList: TStringList;
   WeatherCity: string;
-  CityTemp: Double;
+  CityTemp: Integer;
   ListCity: Integer;
   CurrLine: Int64;
 begin
@@ -33,12 +36,17 @@ begin
     WeatherLines.Delimiter := ';';
     {$IFDEF DEBUG}
     Writeln('Reading from ' + ChallengeCommon.InputFilename);
-    {$ENDIF}
-    WeatherLines.LoadFromFile(ChallengeCommon.InputFilename);
-    {$IFDEF DEBUG}
-    Writeln(Format('Loaded %d lines from %s', [WeatherLines.Count, ChallengeCommon.InputFilename]));
+
+    var StopWatch := TStopwatch.StartNew;
     {$ENDIF}
 
+    WeatherLines.LoadFromFile(ChallengeCommon.InputFilename);
+
+    {$IFDEF DEBUG}
+    StopWatch.Stop;
+    Writeln(Format('Loaded %d lines from %s in %d milliseconds', [WeatherLines.Count, ChallengeCommon.InputFilename,
+                         StopWatch.ElapsedMilliseconds]));
+    {$ENDIF}
 
     SortedList := TStringList.Create;
     try
@@ -56,22 +64,9 @@ begin
       end;
 
       Write('{');
-      for var i := 0 to SortedList.Count - 1 do begin
-        {$IFDEF DEBUG}
-        Write(Format('%s=%0.1f/%0.1f/%0.1f (%d stores)%s', [TWeatherCity(SortedList.Objects[i]).CityName,
-                                                            TWeatherCity(SortedList.Objects[i]).MinTemp,
-                                                            TWeatherCity(SortedList.Objects[i]).Mean,
-                                                            TWeatherCity(SortedList.Objects[i]).MaxTemp,
-                                                            TWeatherCity(SortedList.Objects[i]).DataCount,
-                                                            IfThen(i = SortedList.Count - 1, '', ', ')]));
-        {$ELSE}
-        Write(Format('%s=%0.1f/%0.1f/%0.1f%s', [TWeatherCity(SortedList.Objects[i]).CityName,
-                                                TWeatherCity(SortedList.Objects[i]).MinTemp,
-                                                TWeatherCity(SortedList.Objects[i]).Mean,
-                                                TWeatherCity(SortedList.Objects[i]).MaxTemp,
-                                                IfThen(i = SortedList.Count - 1, '', ',')]));
-        {$ENDIF}
-      end;
+      Write(Trim(TWeatherCity(SortedList.Objects[0]).OutputSumLine));
+      for var i := 1 to SortedList.Count - 1 do
+        Write(TWeatherCity(SortedList.Objects[i]).OutputSumLine);
       Writeln('}');
       {$IFDEF DEBUG}
       Writeln('Unique Stations: ', SortedList.Count);
