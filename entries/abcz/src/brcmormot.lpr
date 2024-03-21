@@ -518,7 +518,7 @@ end;
 var
   fn: TFileName;
   threads: integer;
-  verbose, affinity: boolean;
+  verbose, affinity, help: boolean;
   main: TBrcMain;
   res: RawUtf8;
   start, stop: Int64;
@@ -533,9 +533,10 @@ begin
     ['a', 'affinity'], 'force thread affinity to a single CPU core');
   Executable.Command.Get(
     ['t', 'threads'], threads, '#number of threads to run', 16);
+  help := Executable.Command.Option(['h', 'help'], 'display this help');
   if Executable.Command.ConsoleWriteUnknown then
     exit
-  else if Executable.Command.Option(['h', 'help'], 'display this help') or
+  else if help or
      (fn = '') then
   begin
     ConsoleWrite(Executable.Command.FullDescription);

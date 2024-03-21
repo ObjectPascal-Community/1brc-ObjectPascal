@@ -19,17 +19,17 @@ I am very happy to share decades of server-side performance coding techniques us
 Here are the main ideas behind this implementation proposal:
 
 - **mORMot** makes cross-platform and cross-compiler support simple (e.g. `TMemMap`, `TDynArray.Sort`,`TTextWriter`, `SetThreadCpuAffinity`, `crc32c`, `ConsoleWrite` or command-line parsing);
-- Memory map the entire 16GB file at once (so won't work on 32-bit OS, but reduce syscalls);
+- Will memmap the entire 16GB file at once into memory (so won't work on 32-bit OS, but reduce syscalls);
 - Process file in parallel using several threads (configurable, with `-t=16` by default);
-- Each thread is fed from 64MB chunks of input (because thread scheduling is unfair, it is inefficient to pre-divide the size of the whole input file into the number of threads);
+- Fed each thread from 64MB chunks of input (because thread scheduling is unfair, it is inefficient to pre-divide the size of the whole input file into the number of threads);
 - Each thread manages its own data, so there is no lock until the thread is finished and data is consolidated;
-- Each station information (name and values) is packed into a record of exactly 64 bytes, with no external pointer/string, so match the CPU L1 cache size for efficiency;
+- Each station information (name and values) is packed into a record of exactly 64 bytes, with no external pointer/string, to match the CPU L1 cache size for efficiency;
 - Use a dedicated hash table for the name lookup, with direct crc32c SSE4.2 hash - when `TDynArrayHashed` is involved, it requires a transient name copy on the stack, which is noticeably slower (see last paragraph of this document);
-- Store values as 16-bit or 32-bit integers (temperature multiplied by 10);
+- Store values as 16-bit or 32-bit integers (i.e. temperature multiplied by 10);
 - Parse temperatures with a dedicated code (expects single decimal input values);
 - No memory allocation (e.g. no transient `string` or `TBytes`) nor any syscall is done during the parsing process to reduce contention and ensure the process is only CPU-bound and RAM-bound (we checked this with `strace` on Linux);
-- Pascal code was tuned to generate the best possible asm output on FPC x86_64 (which is our target) with no SIMD involved;
-- Some dedicated x86_64 asm has been written to replace mORMot `crc32c` and `MemCmp` general-purpose functions and gain a last few percents;
+- Pascal code was tuned to generate the best possible asm output on FPC x86_64 (which is our target);
+- Some dedicated x86_64 asm has been written to replace mORMot `crc32c` and `MemCmp` general-purpose functions and gain a last few percents (nice to have);
 - Can optionally output timing statistics and hash value on the console to debug and refine settings (with the `-v` command line switch);
 - Can optionally set each thread affinity to a single core (with the `-a` command line switch).
 
@@ -60,11 +60,9 @@ We will use these command-line switches for local (dev PC), and benchmark (chall
 
 ## Local Analysis
 
-On my PC, it takes less than 5 seconds to process the 16GB file with 8 threads.
+On my PC, it takes less than 5 seconds to process the 16GB file with 8/10 threads.
 
-If we use the `time` command on Linux, we can see that there is little time spend in kernel (sys) land.
-
-If we compare our `mormot` with a solid multi-threaded entry using file buffer reads and no memory map (like `sbalazs`):
+Let's compare our `mormot` with a solid multi-threaded entry using file buffer reads and no memory map (like `sbalazs`), using the `time` command on Linux:
 
 ```
 ab@dev:~/dev/github/1brc-ObjectPascal/bin$ time ./mormot measurements.txt -t=10 >resmrel5.txt
@@ -79,7 +77,7 @@ real 0m25,330s
 user 6m44,853s
 sys  0m31,167s
 ```
-We used 20 threads for `sbalazs`, and 10 threads for `mormot` because it was giving the best results on each entry on this particular PC.
+We used 20 threads for `sbalazs`, and 10 threads for `mormot` because it was giving the best results for each program on our PC.
 
 Apart from the obvious global "wall" time reduction (`real` numbers), the raw parsing and data gathering in the threads match the number of threads and the running time (`user` numbers), and no syscall is involved by `mormot` thanks to the memory mapping of the whole file (`sys` numbers, which contain only memory page faults).
 
@@ -125,7 +123,7 @@ On the https://github.com/gcarreno/1brc-ObjectPascal challenge hardware, which i
 ./mormot measurements.txt -v -t=24 -a
 ./mormot measurements.txt -v -t=32 -a
 ```
-Please run those command lines, to guess which parameters are to be run for the benchmark to give the best results on the actual benchmark PC with its Ryzen 9 CPU. We will see if core affinity makes a difference here.
+Please run those command lines, to guess which parameters are to be run for the benchmark, and would give the best results on the actual benchmark PC with its Ryzen 9 CPU. We will see if core affinity makes a difference here.
 
 ## Feedback Needed
 
