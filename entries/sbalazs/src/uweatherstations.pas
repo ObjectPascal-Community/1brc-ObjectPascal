@@ -84,7 +84,7 @@ type
 
   TWSThreadsWatcher = class(TWSThreadBase)
   private
-    function RoundEx(x: Double): Double; inline;
+    function RoundEx(x: Double): Double;
     function PascalRound(x: Double): Double;
     procedure CreateFinalList;
   protected
