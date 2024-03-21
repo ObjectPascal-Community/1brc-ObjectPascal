@@ -33,6 +33,7 @@ type
 { TEntry }
   TEntry = class(TObject)
   private
+    FActive: Boolean;
     FName: String;
     FNotes: String;
     FCompiler: String;
@@ -54,6 +55,9 @@ type
 
     destructor Destroy; override;
 
+    property Active: Boolean
+      read FActive
+      write FActive;
     property Name: String
       read FName
       write FName;
@@ -134,6 +138,7 @@ type
 implementation
 
 const
+  cJSONActive      = 'active';
   cJSONName        = 'name';
   cJSONNotes       = 'notes';
   cJSONCompiler    = 'compiler';
@@ -155,6 +160,7 @@ resourcestring
 
 constructor TEntry.Create;
 begin
+  FActive:= false;
   FName:= '';
   FNotes:= '';
   FCompiler:= '';
@@ -188,6 +194,7 @@ end;
 
 procedure TEntry.setFromJSONObject(const AJSONObject: TJSONObject);
 begin
+  FActive:= AJSONObject.Get(cJSONActive, FActive);
   FName:= AJSONObject.Get(cJSONName, FName);
   FNotes:= AJSONObject.Get(cJSONNotes, FNotes);
   FCompiler:= AJSONObject.Get(cJSONCompiler, FCompiler);
