@@ -150,6 +150,7 @@ begin
     //for entry in FConfig.Entries do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
@@ -215,6 +216,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if not FConfig.Entries[index].Active then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       tmpStr:= Format('%s%s %s', [
@@ -272,6 +274,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       // Run for SSD

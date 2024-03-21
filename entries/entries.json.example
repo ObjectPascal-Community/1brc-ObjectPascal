@@ -10,6 +10,7 @@
     "output-hash": "0000000000000000000000000000000000000000000000000000000000000000",
     "entries": [
         {
+            "active": true,
             "name": "Official Baseline",
             "notes": "Beeing the last of all",
             "compiler": "fpc",
@@ -21,6 +22,7 @@
             "run-params": "-i [[input]]"
         },
         {
+            "active": true,
             "name": "Gustavo Carreno",
             "notes": "Using 30 threads",
             "compiler": "fpc",
