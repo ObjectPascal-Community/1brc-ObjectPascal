@@ -36,27 +36,20 @@ const
 procedure ProcessMeasurements(var buffer: array of char; bufferLength: integer;
   var results: TFPHashList);
 var
-  currentChar: char;
   idx: integer = 0;
   currentTempSign: integer = 1;
   temp, cityStart: integer;
   city: shortstring;
   reading: PTCityTemp;
 begin
-  //Writeln('bufferLength: ', bufferLength);
   while idx < (bufferLength - 1) do
   begin
-    {slurp up the city}
-    city := '';
+    // read the city until separator
+    //city := '';
     cityStart := idx;
-    currentChar := buffer[idx];
-    while currentChar <> REC_SEP do
-    begin
-      Inc(idx);
-      currentChar := buffer[idx];
-    end;
+    while buffer[idx] <> REC_SEP do Inc(idx);
     SetString(city, @buffer[cityStart], (idx - cityStart));
-    {slurp up the temp reading}
+    // increment through temp reading and calculate integer temp (*100)
     Inc(idx); // move pointer past the ;
     currentTempSign := 1;
     // check for negative sign, if so flag the multiplier and then move past neg sign
@@ -66,30 +59,20 @@ begin
       Inc(idx);
     end;
     // look ahead - is decimal point 2 spaces away then we have two digits
-    temp := 0;
     if buffer[idx + 2] = DECIMAL_POINT then
     begin
-      temp := 100 * (byte(buffer[idx]) - ANSI_ZERO);
-      Inc(idx);
-    end;
-    temp := temp + 10 * (byte(buffer[idx]) - ANSI_ZERO);
-    idx := idx + 2;
-    temp := currentTempSign * (temp + (byte(buffer[idx]) - ANSI_ZERO));
-    if temp > 999 then
+      temp := currentTempSign * (100 * byte(buffer[idx]) + 10 *
+        byte(buffer[idx + 1]) + byte(buffer[idx + 2]) - 5328);
+      // move past digits and CRLF and position pointer to first character of next record
+      idx := idx + 6;
+    end
+    else
     begin
-      WriteLn('Somethign wrong!', city, ' | ', temp, ' | ', buffer[idx - 3],
-        ' | ', buffer[idx - 2],
-        ' | ', buffer[idx - 1], ' | ', buffer[idx]);
-      break;
+      temp := currentTempSign * (10 * byte(buffer[idx + 1]) +
+        byte(buffer[idx + 2]) - 528);
+      // move past digits and CRLF and position pointer to first character of next record
+      idx := idx + 5;
     end;
-
-    currentChar := buffer[idx];
-    while currentChar <> LF do
-    begin
-      Inc(idx);
-      currentChar := buffer[idx];
-    end;
-    Inc(idx);
     reading := results.Find(city);
     if reading = nil then
     begin
@@ -109,7 +92,6 @@ begin
       reading^.numReadings := reading^.numReadings + 1;
     end;
   end;
-  //WriteLn('results: ', results.Count);
 end;
 
 function PascalRound(x: double): double;
