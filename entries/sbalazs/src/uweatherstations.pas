@@ -2,6 +2,7 @@ unit uWeatherStations;
 
 {$mode ObjFPC}{$H+}
 {$R-} {$Q-}
+{$INLINE ON}
 
 interface
 
@@ -14,7 +15,6 @@ const
 type
   TWSManager = class;
 
-type
   TData = record
     FMin: Int64;
     FMax: Int64;
@@ -70,11 +70,10 @@ type
   private
     FStartP: Int64;
     FEndP: Int64;
-    FMS: TMemoryStream;
     FWSList: TWSList;
     procedure UpdateMainHashList;
-    procedure ProcessBytes(ABytes: TBytes);
-    procedure AddToHashList(AStation: TBytes; ATemp: Int64; AHash: QWord);
+    procedure ProcessBytes(ABytes: TBytes); inline;
+    procedure AddToHashList(ABytes: TBytes; AStartP, AEndP: Int64; ATemp: Int64; AHash: QWord);
     procedure UpdateThreadList(AUpdateType: TUpdateType);
   protected
     procedure Execute; override;
@@ -85,7 +84,7 @@ type
 
   TWSThreadsWatcher = class(TWSThreadBase)
   private
-    function RoundEx(x: Double): Double;
+    function RoundEx(x: Double): Double; inline;
     function PascalRound(x: Double): Double;
     procedure CreateFinalList;
   protected
@@ -244,12 +243,10 @@ begin
   FStartP := AStartP;
   FEndP := AEndP;
   FStarted := False;
-  FMS := TMemoryStream.Create;
 end;
 
 destructor TWSThread.Destroy;
 begin
-  FMS.Free;
   inherited Destroy;
 end;
 
@@ -284,7 +281,6 @@ var
   PBeg: Int64;
   PDel: Int64;
   Len: Int64;
-  Station: TBytes;
   Temp: Int64;
   DoHash: Boolean;
   DoTemp: Boolean;
@@ -295,7 +291,6 @@ begin
   PBeg := 0;
   PDel := 0;
   Temp := 1000;
-  Station := nil;
   DoHash := True;
   DoTemp := False;
   Len := Length(ABytes);
@@ -338,13 +333,10 @@ begin
     end;
     if (ABytes[PCur] = 10) and (PCur < Len) then
     begin
-      SetLength(Station, PDel - PBeg);
-      Move(ABytes[PBeg], Station[0], PDel - PBeg);
-      if (Station <> nil) and (Temp < 1000) then
-        AddToHashList(Station, Temp, Hash);
+      if (Temp < 1000) then
+        AddToHashList(ABytes, PBeg, PDel, Temp, Hash);
       Hash := 14695981039346656037;
       DoHash := True;
-      Station := nil;
       Temp := 1000;
       DoTemp := False;
       PBeg := PCur + 1;
@@ -354,12 +346,9 @@ end;
 
 procedure TWSThread.Execute;
 var
-  ReadCnt: LongInt;
-  Size: Int64;
-  Bytes: TBytes;
-  BytesEx: TBytes;
-  Len, LenEx: LongInt;
   I: Integer;
+  Bytes: TBytes;
+  ReadCnt: LongInt;
   FS: TFileStream;
 begin
   UpdateThreadList(utAdd);
@@ -373,43 +362,24 @@ begin
       FWSList[I].FData.FTot := 0;
       FWSList[I].FData.FCnt := 0;
     end;
+    Bytes := nil;
     FS := TFileStream.Create(FWSManager.FSrcFile, fmOpenRead or fmShareDenyWrite);
     try
       FS.Position := FStartP;
-      FMS.SetSize(FEndP - FStartP);
-      FS.Read(FMS.Memory^, FEndP - FStartP);
-      FMS.Position := 0;
+      SetLength(Bytes, FEndP - FStartP);
+      ReadCnt := FS.Read(Bytes[0], FEndP - FStartP);
+      if ReadCnt > 0 then
+        ProcessBytes(Bytes);
     finally
       FS.Free;
     end;
-    Size := 1048576;
-    repeat
-      Bytes := nil;
-      BytesEx := nil;
-      if Size > FMS.Size - FMS.Position then
-        Size := FMS.Size - FMS.Position;
-      SetLength(Bytes, Size);
-      ReadCnt := FMS.Read(Bytes[0], Size);
-      if (ReadCnt > 0) then
-      begin
-        BytesEx := GetNextLineBreak(FMS);
-        LenEx := Length(BytesEx);
-        if LenEx > 0 then
-        begin
-          Len := Length(Bytes);
-          SetLength(Bytes, Len + LenEx);
-          Move(BytesEx[0], Bytes[Len], LenEx);
-        end;
-        AddLineBreak(Bytes);
-        ProcessBytes(Bytes);
-      end;
-    until (ReadCnt = 0);
   finally
     UpdateThreadList(utRemove);
   end;
 end;
 
-procedure TWSThread.AddToHashList(AStation: TBytes; ATemp: Int64; AHash: QWord);
+procedure TWSThread.AddToHashList(ABytes: TBytes; AStartP, AEndP: Int64;
+  ATemp: Int64; AHash: QWord);
 var
   Index: Integer;
 begin
@@ -418,8 +388,8 @@ begin
   begin
     if FWSList[Index].FStation = nil then
     begin
-      SetLength(FWSList[Index].FStation, Length(AStation));
-      Move(AStation[0], FWSList[Index].FStation[0], Length(AStation));
+      SetLength(FWSList[Index].FStation, AEndP - AStartP);
+      Move(ABytes[AStartP], FWSList[Index].FStation[0], AEndP - AStartP);
       FWSList[Index].FData.FMin := ATemp;
       FWSList[Index].FData.FMax := ATemp;
       FWSList[Index].FData.FTot := ATemp;
@@ -427,7 +397,7 @@ begin
       FWSList[Index].FData.FHash := AHash;
       Break;
     end;
-    if CompareMem(@FWSList[Index].FStation[0], @AStation[0], Length(AStation)) then
+    if CompareMem(@FWSList[Index].FStation[0], @ABytes[AStartP], AEndP - AStartP) then
     begin
       FWSList[Index].FData.FMin := min(FWSList[Index].FData.FMin, ATemp);
       FWSList[Index].FData.FMax := max(FWSList[Index].FData.FMax, ATemp);
@@ -537,7 +507,7 @@ var
   Min, Max: Double;
   Mean: Double;
   SL: TStringList;
-  MS: TMemoryStream;
+  //MS: TMemoryStream;
 begin
   SL := TStringList.Create;
   try
@@ -557,8 +527,8 @@ begin
       Str := Name + '=' + FormatFloat('0.0', Min) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', Max) + ',';
       SL.Add(Str);
     end;
-    SL.EndUpdate;
     SL.CustomSort(@Compare);
+    SL.EndUpdate;
     Str := SL.Text;
   finally
     SL.Free;
