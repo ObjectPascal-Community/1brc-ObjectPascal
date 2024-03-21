@@ -20,7 +20,6 @@ type
     numReadings: integer;
   end;
 
-
 implementation
 
 const
@@ -28,8 +27,6 @@ const
   // read size plus enough to hold one record if we split it
   BUFFER_SIZE = READ_SIZE + 1024;
   REC_SEP: char = ';';
-  LF: char = chr(10);
-  ANSI_ZERO: integer = 48;
   DECIMAL_POINT: char = '.';
   NEGATIVE_SIGN: char = '-';
 
@@ -45,7 +42,6 @@ begin
   while idx < (bufferLength - 1) do
   begin
     // read the city until separator
-    //city := '';
     cityStart := idx;
     while buffer[idx] <> REC_SEP do Inc(idx);
     SetString(city, @buffer[cityStart], (idx - cityStart));
@@ -61,6 +57,7 @@ begin
     // look ahead - is decimal point 2 spaces away then we have two digits
     if buffer[idx + 2] = DECIMAL_POINT then
     begin
+      // this is the math that results from subtracting the byte value of ansi zero from each character
       temp := currentTempSign * (100 * byte(buffer[idx]) + 10 *
         byte(buffer[idx + 1]) + byte(buffer[idx + 2]) - 5328);
       // move past digits and CRLF and position pointer to first character of next record
@@ -150,7 +147,6 @@ var
   weatherStationList: TStringList;
   isFirstKey: boolean = True;
 begin
-  //WriteLn(results.Count);
   weatherStationList := TStringList.Create;
   for i := 0 to results.Count - 1 do
   begin
@@ -160,11 +156,6 @@ begin
     mean := RoundEx(reading^.total / reading^.numReadings / 10);
     readingStr := reading^.city + '=' + FormatFloat('0.0', min) +
       '/' + FormatFloat('0.0', mean) + '/' + FormatFloat('0.0', max);
-    {$IFDEF DEBUG}
-       readingStr := reading^.city + '=' + FormatFloat('0.0', min) +
-      '/' + FormatFloat('0.0', mean) + '/' + FormatFloat('0.0', max) +
-      '/' + IntToStr(reading^.total) + '/' + IntToStr(reading^.numReadings);
-    {$ENDIF}
     weatherStationList.Add(readingStr);
     Dispose(reading);
   end;
@@ -172,106 +163,54 @@ begin
   Write('{');
   for ws in weatherStationList do
   begin
-    // If it's not the first key, print a comma
     if not isFirstKey then
       Write(', ');
-    // Print the weather station and the temp stat
     Write(ws);
-    // Set isFirstKey to False after printing the first key
     isFirstKey := False;
   end;
   WriteLn('}');
 end;
 
-
-procedure DumpExceptionCallStack(E: Exception);
-var
-  I: integer;
-  Frames: PPointer;
-  Report: string;
-begin
-  Report := 'Program exception! ' + LineEnding + 'Stacktrace:' +
-    LineEnding + LineEnding;
-  if E <> nil then
-  begin
-    Report := Report + 'Exception class: ' + E.ClassName + LineEnding +
-      'Message: ' + E.Message + LineEnding;
-  end;
-  Report := Report + BackTraceStrFunc(ExceptAddr);
-  Frames := ExceptFrames;
-  for I := 0 to ExceptFrameCount - 1 do
-    Report := Report + LineEnding + BackTraceStrFunc(Frames[I]);
-  WriteLn(Report);
-  Halt; // End of program execution
-end;
-
-
 procedure ReadMeasurements(inputFile: string);
+type
+  TCharArray = array of char;
 var
-  totalBytesRead, BytesRead: int64;
-  Buffer: array [0..BUFFER_SIZE] of char;
+  BytesRead: int64;
+  buffer: TCharArray;
   FileStream: TFileStream;
-  fileSize: int64;
   ReadBufferStream: TReadBufStream;
-  starttime: uint64;
-  elapsedTimeSec, MBRead: double;
   results: TFPHashList;
-  currentChar: char;
   idx: integer;
   startOfNextRecord: string;
   startOfNextRecordLength: integer;
   bufferLength: integer = 0;
 begin
   try
+    buffer := Default(TCharArray);
+    SetLength(buffer, BUFFER_SIZE);
     FileStream := TFileStream.Create(inputFile, fmOpenRead);
-    FileStream.Position := 0;  // Ensure you are at the start of the file
+    FileStream.Position := 0;
     ReadBufferStream := TReadBufStream.Create(FileStream);
-    fileSize := FileStream.size;
-    totalBytesRead := 0;
-    starttime := GetTickCount64;
     results := TFPHashList.Create;
     startOfNextRecord := '';
-    while totalBytesRead <= fileSize do
-      // While the amount of data read is less than or equal to the size of the stream do
+    while True do
     begin
       startOfNextRecordLength := Length(startOfNextRecord);
-      //WriteLn('startOfNextRecordLength: ', startOfNextRecordLength);
       // if we have leftover from previous read then prepend it to this buffer
       if startOfNextRecordLength > 0 then
-        Move(PChar(startOfNextRecord)^, Buffer[0], startOfNextRecordLength);
-      BytesRead := ReadBufferStream.Read(Buffer[startOfNextRecordLength], READ_SIZE);
-      //WriteLn('Bytes read: ', BytesRead);
+        Move(PChar(startOfNextRecord)^, buffer[0], startOfNextRecordLength);
+      BytesRead := ReadBufferStream.Read(buffer[startOfNextRecordLength], READ_SIZE);
       if BytesRead < 1 then break;
       // now look in buffer backwards until we find the first LF
       bufferLength := startOfNextRecordLength + BytesRead;
       idx := bufferLength - 1;
-      currentChar := buffer[idx];
-      while (currentChar <> LF) do
-      begin
-        Dec(idx);
-        currentChar := buffer[idx];
-      end;
-      ProcessMeasurements(Buffer, idx + 1, results);
-      startOfNextRecord := '';
+      while (buffer[idx] <> REC_SEP) do Inc(idx);
+      ProcessMeasurements(buffer, idx + 1, results);
       startOfNextRecordLength := bufferLength - idx - 1;
-      //WriteLn('startOfNextRecordLength: ', startOfNextRecordLength);
       if startOfNextRecordLength > 0 then
         SetString(startOfNextRecord, @buffer[idx + 1], startOfNextRecordLength);
-      Inc(totalBytesRead, BytesRead);
     end;
     DumpMeasurements(results);
-    elapsedTimeSec := (GetTickCount64() - starttime) / 1000;
-    MBRead := (totalBytesRead / (1024 * 1024));
-    {$IFDEF DEBUG}
-    WriteLn(inputFile);
-    WriteLn('Buffer size: ', SizeOf(Buffer));
-    WriteLn('Read size: ', READ_SIZE);
-    WriteLn('File size: ', FileStream.Size);
-    WriteLn('Total Bytes Read: ', totalBytesRead);
-    WriteLn(Format('%f MB read', [MBRead]));
-    WriteLn(Format('%f secs', [elapsedTimeSec]));
-    WriteLn(Format('%f MB/s processed', [MBRead / elapsedTimeSec]));
-    {$ENDIF}
     ReadBufferStream.Free;
     FileStream.Free;
     results.Free;
@@ -279,7 +218,6 @@ begin
     on E: Exception do
     begin
       writeln('File ', inputFile, ' could not be read or written because: ', E.ToString);
-      DumpExceptionCallStack(E);
     end;
   end;
 end;
