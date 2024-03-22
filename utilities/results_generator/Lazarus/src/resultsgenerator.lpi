@@ -85,7 +85,7 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="5">
+    <Units Count="6">
       <Unit0>
         <Filename Value="resultsgenerator.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -104,11 +104,18 @@
       <Unit3>
         <Filename Value="../../../common/utilities.data.config.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.Data.Config"/>
       </Unit3>
       <Unit4>
         <Filename Value="../../../common/utilities.data.entries.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.Data.Entries"/>
       </Unit4>
+      <Unit5>
+        <Filename Value="../../../common/utilities.data.hyperfine.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.Data.Hyperfine"/>
+      </Unit5>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

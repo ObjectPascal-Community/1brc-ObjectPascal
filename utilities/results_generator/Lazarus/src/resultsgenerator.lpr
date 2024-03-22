@@ -10,7 +10,7 @@ uses
 , SysUtils
 , CustApp
 , ResultsGenerator.Console
-, ResultsGenerator.Common
+, ResultsGenerator.Common, Utilities.Data.Hyperfine
 ;
 
 {$I version.inc}
@@ -88,7 +88,7 @@ begin
 
   FBuilder:= TResults.Create(configFilename);
   try
-    { #todo 99 -ogcarreno : Implement it all }
+    FBuilder.Generate;
   finally
     FBuilder.Free;
   end;
