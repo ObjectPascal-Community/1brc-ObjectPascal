@@ -3,7 +3,7 @@
 
 ## Formatting
 
-All entries should be formatted using the `Ctr-D` shortcut for both Lazarus and Delphi entries.
+All source code should be formatted using the default formatting rules for Pascal code, which your IDE should provide. Both Lazarus and Delphi uses `Ctr-D` as a shortcut to format your code.
 
 ## Folder name for the entry
 
@@ -13,11 +13,11 @@ For example, using _Gustavo Carreno_ for the name, the folder would be `entries/
 
 ## Name of the executable binary
 
-The executable binary follows the same rules has the entry folder above.
+The executable binary follows the same rules has the entry folder above; therefore, on Windows, the above example's executable would be `gcarreno.exe` and on Linux, just `gcarreno`.
 
 ## Placement of the executable binary
 
-The executable binary should be placed under a folder named `bin` below the root folder of this repository.
+The executable binary should be placed under a folder named `bin` below the root folder of this repository (`../../../bin` relative to your source).
 
 This folder is not present on the repository and is being ignored from the `.gitignore`.
 
@@ -57,7 +57,8 @@ The type is contained within the title and can be one of these types:
 Subjects should be no greater than 50 characters, should begin with a capital letter and do not end with a period.
 
 Use an imperative tone to describe what a commit does, rather than what it did. For example, use change; not changed or changes.
-The Body
+
+### The Body
 
 Not all commits are complex enough to warrant a body, therefore it is optional and only used when a commit requires a bit of explanation and context. Use the body to explain the what and why of a commit, not the how.
 
