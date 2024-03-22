@@ -176,7 +176,7 @@ Benchmark 1: abouchez
   Range (min … max):    2.386 s …  2.588 s    10 runs
 ```
 
-With 16 threads and thread affinity (`-t` switch on command line): 
+With 16 threads and thread affinity (`-a` switch on command line): 
 ```
 -- SSD --
 Benchmark 1: abouchez
