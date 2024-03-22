@@ -147,6 +147,21 @@ Expected `SHA256` hash:
 > Until then, this is the current one: `db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524`
 > There's also an archived version of the [baseline output](./data/baseline.output.gz)
 
+## Differences From Original
+I've decided that I would want this challenge to be turned way up to 11!
+
+This means that there are some differences from the original.
+
+The original results are calculated on a smaller set of weather stations: 400.\
+While I haven't tabulated how many reside on the input file, we do not limit it to any number as we use the full ~40K stations present on `data/weather_stations.csv` to generate the input file.
+
+Another difference is the machines these are run on.\
+I'm using my own machine, with the specs mentioned on the [Results](#results) section bellow.\
+I'm also allowing the use of the full 32 threads that my machine provides, where the original challenge limits it to 8.\
+The original challenge also has a second results table with 10K stations and the use of all 64 threads.
+
+With all this said, comparison with the original challenge should be made with this in mind.
+
 ## Results
 These are the results from running all entries into the challenge on my personal computer:
 - Ubuntu 23.10 64b
