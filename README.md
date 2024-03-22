@@ -36,7 +36,7 @@ The task is to write an Object Pascal program which reads the file, calculates t
 ```
 
 ## Entering The Challenge
-Submissions will be via a `PR`( Pull Request ) to this repository. \
+Submissions will be via a `PR` (Pull Request) to this repository.  
 The challenge will run from the 10th of March until the 10th of May, 2024.
 
 When creating your entry, please do as follows:
@@ -44,28 +44,29 @@ When creating your entry, please do as follows:
 2. If you're worried about anonymity, because the Internet stinks, feel free to use a fictional one: Bruce Wayne, Clark Kent, James Logan, Peter Parker, Diana of Themyscira. Your pick!
 3. Create a `README.md` with some content about your approach, e.g., `entries/gcarreno/README.md`.
 4. Put all your code under `entries/<your name>/src`, e.g., `entries/gcarreno/src`.
-5. If you need to provide a custom `.gitignore` for something not present in the main one, please do.
+5. Send your binary to the `bin` folder off the root of this repository. 
+6. If you need to provide a custom `.gitignore` for something not present in the main one, please do.
+7. Read the [CONTRIBUTING.md](./CONTRIBUTING.md) file for more details.
 
 This challenge is mainly to allow us to learn something new. This means that copying code from others will be allowed, under these conditions:
 1. You can only use pure Object Pascal with no calls to any operating system's `API` or external `C/C++` libraries. \
-  **There's been a bit of confusion about this restriction.** \
-  To clear that out: You can use any package/custom code you want. \
-  As long as it compiles cross-platform and itself is only pure Object Pascal. \
-  Anything from the `Jedi Project` or even `mORMmot` ( or anything else ), if it compiles, runs cross-platform it's allowed.
+  **There's been a bit of confusion about this restriction.**  
+  - To clear that out: You can use any package/custom code you want.
+  - As long as it compiles cross-platform and itself is only pure Object Pascal.
+  - Anything from the `Jedi Project` or even `mORMmot` ( or anything else ), if it compiles, runs cross-platform it's allowed.
 2. The code must have some sort of mention/attribution to the original author, in case you've used someone else's code.
 3. It's not a blatant copy just for the sake of submission.
 4. It adds something of value, not just a different code formatting.
 5. All code should be formatted with the `IDE`'s default formatting tool.
 
-**IMPORTANT** \
-This challenge can be entered even if you only have access to the Community Edition of RAD Studio. \
-I have a Windows VM, with RAD Studio installed, that will do the necessary cross compilation into my Linux host.
+**IMPORTANT**  
+This challenge can be entered even if you only have access to the Community Edition of RAD Studio. I have a Windows VM, with RAD Studio installed, that will do the necessary cross compilation into my Linux host.
 
 Submit your implementation and become part of the leader board!
 
 ## Rounding
 
-Székely Balázs has provided code for rounding towards positive infinity per the original challenge.\
+Székely Balázs has provided code for rounding towards positive infinity per the original challenge.  
 This will be the official way to round the output values:
 ```pas
 function TBaseline.RoundEx(x: Double): Double;
@@ -96,7 +97,7 @@ end;
 ```
 
 ## Generating the measurements.txt
-> **NOTE** \
+> **NOTE**  
 > We now have both a Lazarus version and a Delphi version of the generator for both 32b and 64b.
 
 In order to produce the One Billion Rows of text, we are providing the [source code](./generator) for the official generator, so we all have the same entry data.
@@ -110,7 +111,7 @@ In order to produce the One Billion Rows of text, we are providing the [source c
 | **-n** or **--line-count \<number\>** | The amount of lines to be generated ( Can use 1_000_000_000 ) |
 
 ## Baseline
-> **NOTE** \
+> **NOTE**  
 > This is still a bit in flux, still needing to get the Delphi version done.
 
 In order to verify the official output, we are providing the [source code](./baseline) for the official baseline.
