@@ -9,8 +9,8 @@ interface
 uses
   Classes
 , SysUtils
-, ScriptBuilder.Data.Config
-, ScriptBuilder.Data.Entries
+, Utilities.Data.Config
+, Utilities.Data.Entries
 ;
 
 type
