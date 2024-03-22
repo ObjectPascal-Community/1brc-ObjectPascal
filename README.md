@@ -179,7 +179,7 @@ These are the results from running all entries into the challenge on my personal
 | 4 | 1:16.059  | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using 1 thread   | |
 | 5 | 12:40.179 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using 1 thread   | |
 
-> ** NOTE **
+> **NOTE**
 >
 > After some tests performed by @paweld, it makes no sense to have an `HDD` run.
 > I've removed that from the results
@@ -207,7 +207,8 @@ A: Ubuntu 23.10 64b.
 I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a whopping ~25s, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 4 and a half minutes.\
 I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator.\
 I'd like to thank [@dtpfl](https://github.com/dtpfl) for his invaluable work on maintaining the `README.md` file up to date with everything.\
-I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.
+I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.\
+I'd like to thank [@corneliusdavid](https://github.com/corneliusdavid) for giving some of the information files a once over and making things more legible and clear.
 
 ## Links
 The original repository: https://github.com/gunnarmorling/1brc \
