@@ -1,4 +1,4 @@
-unit ScriptBuilder.Data.Config;
+unit Utilities.Data.Config;
 
 {$IFDEF FPC}
 {$mode ObjFPC}{$H+}
@@ -13,7 +13,7 @@ uses
 , fpjson
   {$ELSE}
   {$ENDIF}
-, ScriptBuilder.Data.Entries
+, Utilities.Data.Entries
 ;
 
 type
@@ -28,7 +28,7 @@ type
 { ENodeStatusParamsWrongType }
 //  ENodeStatusParamsWrongType = Exception;
 
-  { TConfig }
+{ TConfig }
   TConfig = class(TObject)
   private
     FRootFolder: String;
