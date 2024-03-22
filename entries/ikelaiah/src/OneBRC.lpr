@@ -32,7 +32,7 @@ uses
   WeatherStation;
 
 const
-  version = '1.0';
+  version = '1.3';
 
 type
 
@@ -96,10 +96,16 @@ type
       Exit;
     end;
 
-    // Start the main algorithm
-    WeatherStation.ProcessTempMeasurements(filename);
+    // Start the main algorithm ////////////////////////////////////////////////
+    try
+      WeatherStation.ProcessTempMeasurementsV3(filename);
+    except
+      on E: Exception do
+        WriteLn('Error: ' + E.Message);
+    end;
 
-    // stop program loop
+
+    // Stop program loop ///////////////////////////////////////////////////////
     Terminate;
   end;
 
