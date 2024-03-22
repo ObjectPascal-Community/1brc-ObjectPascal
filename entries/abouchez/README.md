@@ -115,15 +115,21 @@ So we first need to find out which options leverage at best the hardware it runs
 On the https://github.com/gcarreno/1brc-ObjectPascal challenge hardware, which is a Ryzen 9 5950x with 16 cores / 32 threads and 64MB of L3 cache, each thread using around 2.5MB of its own data, we should try several options with 16-24-32 threads, for instance:
 
 ```
-./abouchez measurements.txt -v -t=8
-./abouchez measurements.txt -v -t=16
-./abouchez measurements.txt -v -t=24
-./abouchez measurements.txt -v -t=32
-./abouchez measurements.txt -v -t=16 -a
-./abouchez measurements.txt -v -t=24 -a
-./abouchez measurements.txt -v -t=32 -a
+time ./abouchez measurements.txt -v -t=8
+time ./abouchez measurements.txt -v -t=16
+time ./abouchez measurements.txt -v -t=24
+time ./abouchez measurements.txt -v -t=32
+time ./abouchez measurements.txt -v -t=16 -a
+time ./abouchez measurements.txt -v -t=24 -a
+time ./abouchez measurements.txt -v -t=32 -a
 ```
 Please run those command lines, to guess which parameters are to be run for the benchmark, and would give the best results on the actual benchmark PC with its Ryzen 9 CPU. We will see if core affinity makes a difference here.
+
+Then we could run:
+```
+time ./abouchez measurements.txt -v -t=1
+```
+This `-t=1` run is for fun: it will run the process in a single thread. It will help to guess how optimized (and lockfree) our parsing code is, and to validate the CPU multi-core abilities. In a perfect world, other `-t=##` runs should stand for a perfect division of `real` time per the number of working threads, and the `user` value reported by `time` should remain almost the same when we add threads up to the number of CPU cores.
 
 ## Feedback Needed
 
