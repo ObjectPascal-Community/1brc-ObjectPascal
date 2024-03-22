@@ -170,8 +170,8 @@ These are the results from running all entries into the challenge on my personal
 - 250GB SSD
 - 1TB HDD
 
-| # | Result (m:s.ms): SSD | Compiler | Submitter | Notes | Certificates |
-|--:|---------------------:|---------:|:----------|:------|:-------------|
+| # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
+|--:|----------------:|---------:|:----------|:------|:-------------|
 | 1 | 0:2.472   | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez    | Using 16 threads | |
 | 2 | 0:16.874  | lazarus-3.0, fpc-3.2.2 | Székely Balázs    | Using 16 threads | |
 | 3 | 0:20.046  | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | using 30 thread  | |
