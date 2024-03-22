@@ -1,4 +1,4 @@
-# mORMot version of The One Billion Row Challenge
+# mORMot version of The One Billion Row Challenge by Arnaud Bouchez
 
 ## mORMot 2 is Required
 
@@ -37,13 +37,13 @@ The "64 bytes cache line" trick is quite unique among all implementations of the
 
 ## Usage
 
-If you execute the `mormot` executable without any parameter, it will give you some hints about its usage (using mORMot `TCommandLine` abilities):
+If you execute the `abouchez` executable without any parameter, it will give you some hints about its usage (using mORMot `TCommandLine` abilities):
 
 ```
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./mormot 
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez 
 The mORMot One Billion Row Challenge
 
-Usage: mormot  <filename> [options] [params]
+Usage: abouchez  <filename> [options] [params]
 
    <filename>         the data source filename
 
@@ -62,10 +62,10 @@ We will use these command-line switches for local (dev PC), and benchmark (chall
 
 On my PC, it takes less than 5 seconds to process the 16GB file with 8/10 threads.
 
-Let's compare our `mormot` with a solid multi-threaded entry using file buffer reads and no memory map (like `sbalazs`), using the `time` command on Linux:
+Let's compare `abouchez` with a solid multi-threaded entry using file buffer reads and no memory map (like `sbalazs`), using the `time` command on Linux:
 
 ```
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ time ./mormot measurements.txt -t=10 >resmrel5.txt
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ time ./abouchez measurements.txt -t=10 >resmrel5.txt
 
 real 0m4,216s
 user 0m38,789s
@@ -77,13 +77,13 @@ real 0m25,330s
 user 6m44,853s
 sys  0m31,167s
 ```
-We used 20 threads for `sbalazs`, and 10 threads for `mormot` because it was giving the best results for each program on our PC.
+We used 20 threads for `sbalazs`, and 10 threads for `abouchez` because it was giving the best results for each program on our PC.
 
-Apart from the obvious global "wall" time reduction (`real` numbers), the raw parsing and data gathering in the threads match the number of threads and the running time (`user` numbers), and no syscall is involved by `mormot` thanks to the memory mapping of the whole file (`sys` numbers, which contain only memory page faults).
+Apart from the obvious global "wall" time reduction (`real` numbers), the raw parsing and data gathering in the threads match the number of threads and the running time (`user` numbers), and no syscall is involved by `abouchez` thanks to the memory mapping of the whole file (`sys` numbers, which contain only memory page faults).
 
-The `memmap` feature makes the initial `mormot` call slower, because it needs to cache all measurements data from file into RAM (I have 32GB of RAM, so the whole data file will remain in memory, as on the benchmark hardware):
+The `memmap()` feature makes the initial/cold `abouchez` call slower, because it needs to cache all measurements data from file into RAM (I have 32GB of RAM, so the whole data file will remain in memory, as on the benchmark hardware):
 ```
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ time ./mormot measurements.txt -t=10 >resmrel4.txt
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ time ./abouchez measurements.txt -t=10 >resmrel4.txt
 
 real 0m6,042s
 user 0m53,699s
@@ -93,11 +93,11 @@ This is the expected behavior, and will be fine with the benchmark challenge, wh
 
 On my Intel 13h gen processor with E-cores and P-cores, forcing thread to core affinity does not help:
 ```
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./mormot measurements.txt -t=10 -v
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -t=10 -v
 Processing measurements.txt with 10 threads and affinity=false
 result hash=8A6B746A,, result length=1139418, stations count=41343, valid utf8=1
 done in 4.25s 3.6 GB/s
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./mormot measurements.txt -t=10 -v -a
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -t=10 -v -a
 Processing measurements.txt with 10 threads and affinity=true
 result hash=8A6B746A, result length=1139418, stations count=41343, valid utf8=1
 done in 4.42s 3.5 GB/s
@@ -115,13 +115,13 @@ So we first need to find out which options leverage at best the hardware it runs
 On the https://github.com/gcarreno/1brc-ObjectPascal challenge hardware, which is a Ryzen 9 5950x with 16 cores / 32 threads and 64MB of L3 cache, each thread using around 2.5MB of its own data, we should try several options with 16-24-32 threads, for instance:
 
 ```
-./mormot measurements.txt -v -t=8
-./mormot measurements.txt -v -t=16
-./mormot measurements.txt -v -t=24
-./mormot measurements.txt -v -t=32
-./mormot measurements.txt -v -t=16 -a
-./mormot measurements.txt -v -t=24 -a
-./mormot measurements.txt -v -t=32 -a
+./abouchez measurements.txt -v -t=8
+./abouchez measurements.txt -v -t=16
+./abouchez measurements.txt -v -t=24
+./abouchez measurements.txt -v -t=32
+./abouchez measurements.txt -v -t=16 -a
+./abouchez measurements.txt -v -t=24 -a
+./abouchez measurements.txt -v -t=32 -a
 ```
 Please run those command lines, to guess which parameters are to be run for the benchmark, and would give the best results on the actual benchmark PC with its Ryzen 9 CPU. We will see if core affinity makes a difference here.
 
@@ -133,6 +133,6 @@ Stay tuned!
 
 ## Ending Note
 
-There is a "pure mORMot" name lookup version available if you undefine the `CUSTOMHASH` conditional, which is around 40% slower, because it needs to copy the name into the stack before using `TDynArrayHashed`, and has a little bit overhead.
+There is a "pure mORMot" name lookup version available if you undefine the `CUSTOMHASH` conditional, which is around 40% slower, because it needs to copy the name into the stack before using `TDynArrayHashed`, and has a little more overhead.
 
 Arnaud :D

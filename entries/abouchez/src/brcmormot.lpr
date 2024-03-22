@@ -245,7 +245,7 @@ end;
 procedure TBrcThread.Execute;
 var
   p, start, stop: PByteArray;
-  v: integer;
+  v, m: integer;
   l, neg: PtrInt;
   s: PBrcStation;
   {$ifndef CUSTOMHASH}
@@ -300,12 +300,16 @@ begin
       {$else}
       s := fList.Search(@name);
       {$endif CUSTOMHASH}
-      inc(s^.Count);
-      if v < s^.Min then
-        s^.Min := v;
-      if v > s^.Max then
-        s^.Max := v;
       inc(s^.Sum, v);
+      inc(s^.Count);
+      m := s^.Min;
+      if v < m then
+        m := v; // branchless cmovl
+      s^.Min := m;
+      m := s^.Max;
+      if v > m then
+        m := v;
+      s^.Max := m;
     until p >= stop;
   end;
   // aggregate this thread values into the main list
