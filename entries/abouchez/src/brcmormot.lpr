@@ -5,7 +5,7 @@ program brcmormot;
 // a dedicated hash table is 40% faster than mORMot generic TDynArrayHashed
 
 {$define CUSTOMASM}
-// a few % faster with some dedicated asm instead of mORMot code on x86_64
+// about 10% faster with some dedicated asm instead of mORMot code on x86_64
 
 {$I mormot.defines.inc}
 
@@ -101,14 +101,14 @@ begin
   SetLength(StationMem, max); // RTL won't align by 64 bytes
   Station := pointer(StationMem);
   if align then
-    while PtrUInt(Station) and 63 <> 0 do // manual alignment
+    while {%H-}PtrUInt(Station) and 63 <> 0 do // manual alignment
       inc(PByte(Station));
   SetLength(StationHash, HASHSIZE);
 end;
 
 {$ifdef CUSTOMASM}
 
-function crc32c(buf: PAnsiChar; len: cardinal): PtrUInt; nostackframe; assembler;
+function dohash(buf: PAnsiChar; len: cardinal): PtrUInt; nostackframe; assembler;
 asm
         xor     eax, eax // it is enough to hash up to 15 bytes for our purpose
         mov     ecx, len
@@ -130,7 +130,7 @@ asm
 @z:
 end;
 
-function MemEqual(a, b: pointer; len: PtrInt): integer; nostackframe; assembler;
+function CompareMem(a, b: pointer; len: PtrInt): boolean; nostackframe; assembler;
 asm
         add     a, len
         add     b, len
@@ -164,9 +164,18 @@ asm
         mov     al, byte ptr [a + len]
         cmp     al, byte ptr [b + len]
         je      @eq
-@diff:  mov     eax, 1
+@diff:  xor     eax, eax
         ret
-@eq:    xor     eax, eax // 0 = found (most common case of no hash collision)
+@eq:    mov     eax, 1 // = found (most common case of no hash collision)
+end;
+
+{$else}
+
+function dohash(buf: PAnsiChar; len: cardinal): PtrUInt; inline;
+begin
+  if len > 16 then
+    len := 16; // it is enough to hash up to 16 bytes for our purpose
+  result := DefaultHasher(0, buf, len); // fast mORMot asm hasher (crc32c)
 end;
 
 {$endif CUSTOMASM}
@@ -176,7 +185,7 @@ var
   h, x: PtrUInt;
 begin
   assert(namelen <= SizeOf(TBrcStation.NameText));
-  h := crc32c({$ifndef CUSTOMASM} 0, {$endif} name, namelen);
+  h := dohash(name, namelen);
   repeat
     h := h and (HASHSIZE - 1);
     x := StationHash[h];
@@ -184,8 +193,7 @@ begin
       break; // void slot
     result := @Station[x - 1];
     if (result^.NameLen = namelen) and
-       ({$ifdef CUSTOMASM}MemEqual{$else}MemCmp{$endif}(
-         @result^.NameText, name, namelen) = 0) then
+       CompareMem(@result^.NameText, name, namelen) then
       exit; // found
     inc(h); // hash collision: try next slot
   until false;
@@ -460,7 +468,7 @@ begin
     result := sa.NameLen - sb.NameLen;
 end;
 
-function Average(sum, count: PtrInt): integer;
+function Average(sum, count: PtrInt): PtrInt;
 // sum and result are temperature * 10 (one fixed decimal)
 var
   x, t: PtrInt; // temperature * 100 (two fixed decimals)
