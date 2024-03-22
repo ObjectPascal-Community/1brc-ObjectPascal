@@ -172,11 +172,11 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms): SSD | Result (m:s.ms): HDD | Compiler | Submitter     | Notes     | Certificates |
 |--:|---------------------:|---------------------:|:---------|:--------------|:----------|:-------------|
-| 1 | 0.2.472   | \*        | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez| Using 16 threads | |
-| 2 | 0:20.046  | \*        | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | using 30 thread | |
-| 3 | 0:16.874  | 2:26.323  | lazarus-3.0, fpc-3.2.2 | Székely Balázs | Using 16 threads | |
-| 4 | 1:16.059  | 1:16.471  | lazarus-3.0, fpc-3.2.2 | Richard Lawson  | Using 1 thread   | |
-| 5 | 12:40.179 | 12:28.007 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah   | Using 1 thread   | |
+| 1 | 0.2.472   | \*        | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez    | Using 16 threads | |
+| 2 | 0:16.874  | 2:26.323  | lazarus-3.0, fpc-3.2.2 | Székely Balázs    | Using 16 threads | |
+| 3 | 0:20.046  | \*        | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | using 30 thread  | |
+| 4 | 1:16.059  | 1:16.471  | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using 1 thread   | |
+| 5 | 12:40.179 | 12:28.007 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using 1 thread   | |
 
 \* : Having issues with Linux watchdog killing the shell process
 
