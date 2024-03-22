@@ -1,4 +1,4 @@
-unit ScriptBuilder.Data.Entries;
+unit Utilities.Data.Entries;
 
 {$IFDEF FPC}
 {$mode ObjFPC}{$H+}
