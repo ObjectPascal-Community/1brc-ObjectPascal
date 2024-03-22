@@ -4,7 +4,7 @@ program weather;
 
 uses
   {$IFDEF UNIX}
-  cmem, cthreads,
+  cthreads, cmem,
   {$ENDIF}
   Classes,
   SysUtils,
