@@ -6,7 +6,7 @@ The approach I implemented here is simplistic.
 
 - Sequentially read the measurement file.
 - Populate a `TDictionary` with station names, min, max, count and sum; without storing all the temperature measurements.
-- Avoided [StrUtil.SplitString](https://www.freepascal.org/docs-html/rtl/strutils/splitstring.html), used [`Pos()`](https://www.freepascal.org/docs-html/rtl/system/pos.html) and [`Copy()`](https://www.freepascal.org/docs-html/rtl/system/copy.html) instead.
+- Format output and sort in `TStringList`.
 - Use a custom comparer to sort the station and temperature statistics in a `TStringList`.
 - Use the rounding method as provided in the `baseline.lpr` (or the `README.md` from 1brc-ObjectPascal).
 - Display the sorted measurements using a simple `for` loop.
@@ -34,6 +34,30 @@ To time the execution, do the following.
 $ time ./OneBRC.exe -i your_measurements.txt
 ```
 
+### Save an output
+
+```bash
+$ ./ikelaiah.exe -i measurements.txt > ikelaiah-output.txt
+```
+
+### Verifying SHA256 output on Windows
+
+Launch `git bash` (make sure you have Git for Windows installed).
+
+Run dos2unix on your output. The `\r\n` on Windows changes calculation of `sha256`.
+
+```bash
+$ dos2unix.exe ikelaiah-output.txt
+dos2unix: converting file ikelaiah-output.txt to Unix format...
+```
+
+Run `sha256sum` on your output.
+
+```bash
+$ sha256sum.exe ikelaiah-output.txt
+db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524 *ikelaiah-output.txt
+```
+
 ## Help
 
 To see flags, use `-h`.
@@ -54,7 +78,7 @@ Use `-v` to check version.
 
 ```bash
 $ ./OneBRC.exe -v
-OneBRC version 1.0
+OneBRC version 1.3
 ```
 
 ## Authors
@@ -65,7 +89,18 @@ Iwan Kelaiah
 ## Version History
 
 * 1.0
-    * Initial Release - Sequential approach.
+    * Initial Release - Sequential approach. 
+    * `AssignFile` -> `Reset` -> Parse weather station and the recorded temperature with `TStringHelper.Split` ->  `TDictionary` -> `TStringList` -> A `for` loop -> output.
+
+* 1.2
+    * Revision release - Sequential approach. 
+    * Replaced `TStringHelper.Split` with `Pos()` and `Copy()`. 2-3 mins faster for 1 billion rows.
+    * Float now stored as Int64. 2-3 mins faster for 1 billion rows.
+    * Applied baseline's rounding.
+
+* 1.3
+    * Revision release - Sequential approach.
+    * Replaced `AssignFile()` and `Reset()` with `TfileStream` and `TStreamReader`. 3-4 mins faster for 1 billion rows.
 
 ## License
 
