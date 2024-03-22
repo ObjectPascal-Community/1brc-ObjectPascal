@@ -178,8 +178,6 @@ These are the results from running all entries into the challenge on my personal
 | 4 | 1:16.059  | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using 1 thread   | |
 | 5 | 12:40.179 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using 1 thread   | |
 
-\* : Having issues with Linux watchdog killing the shell process
-
 > ** NOTE **
 >
 > After some tests performed by @paweld, it makes no sense to have an `HDD` run.
