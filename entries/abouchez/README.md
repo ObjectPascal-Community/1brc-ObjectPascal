@@ -1,4 +1,6 @@
-# mORMot version of The One Billion Row Challenge by Arnaud Bouchez
+# Arnaud Bouchez
+
+**mORMot entry to The One Billion Row Challenge in Object Pascal.**
 
 ## mORMot 2 is Required
 
@@ -6,7 +8,7 @@ This entry requires the **mORMot 2** package to compile.
 
 Download it from https://github.com/synopse/mORMot2
 
-It is better to fork the current state of the mORMot 2 repository, or get the latest release.
+It is better to fork the current state of the *mORMot 2* repository, or get the latest release.
 
 ## Licence Terms
 
@@ -29,7 +31,7 @@ Here are the main ideas behind this implementation proposal:
 - Parse temperatures with a dedicated code (expects single decimal input values);
 - No memory allocation (e.g. no transient `string` or `TBytes`) nor any syscall is done during the parsing process to reduce contention and ensure the process is only CPU-bound and RAM-bound (we checked this with `strace` on Linux);
 - Pascal code was tuned to generate the best possible asm output on FPC x86_64 (which is our target);
-- Some dedicated x86_64 asm has been written to replace mORMot `crc32c` and `MemCmp` general-purpose functions and gain a last few percents (nice to have);
+- Some dedicated x86_64 asm has been written to replace *mORMot* `crc32c` and `MemCmp` general-purpose functions and gain a last few percents (nice to have);
 - Can optionally output timing statistics and hash value on the console to debug and refine settings (with the `-v` command line switch);
 - Can optionally set each thread affinity to a single core (with the `-a` command line switch).
 
@@ -37,7 +39,7 @@ The "64 bytes cache line" trick is quite unique among all implementations of the
 
 ## Usage
 
-If you execute the `abouchez` executable without any parameter, it will give you some hints about its usage (using mORMot `TCommandLine` abilities):
+If you execute the `abouchez` executable without any parameter, it will give you some hints about its usage (using *mORMot* `TCommandLine` abilities):
 
 ```
 ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez 
@@ -139,6 +141,6 @@ Stay tuned!
 
 ## Ending Note
 
-There is a "pure mORMot" name lookup version available if you undefine the `CUSTOMHASH` conditional, which is around 40% slower, because it needs to copy the name into the stack before using `TDynArrayHashed`, and has a little more overhead.
+There is a "*pure mORMot*" name lookup version available if you undefine the `CUSTOMHASH` conditional, which is around 40% slower, because it needs to copy the name into the stack before using `TDynArrayHashed`, and has a little more overhead.
 
 Arnaud :D
