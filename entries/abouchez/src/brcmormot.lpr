@@ -534,7 +534,8 @@ begin
   assert(SizeOf(TBrcStation) = 64); // 64 bytes = CPU L1 cache line size
   // read command line parameters
   Executable.Command.ExeDescription := 'The mORMot One Billion Row Challenge';
-  fn := Executable.Command.ArgString(0, 'the data source #filename');
+  if Executable.Command.Arg(0, 'the data source #filename') then
+    Utf8ToFileName(Executable.Command.Args[0], fn);
   verbose := Executable.Command.Option(
     ['v', 'verbose'], 'generate verbose output with timing');
   affinity := Executable.Command.Option(
