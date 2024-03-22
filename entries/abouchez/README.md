@@ -35,7 +35,15 @@ Here are the main ideas behind this implementation proposal:
 - Can optionally output timing statistics and hash value on the console to debug and refine settings (with the `-v` command line switch);
 - Can optionally set each thread affinity to a single core (with the `-a` command line switch).
 
-The "64 bytes cache line" trick is quite unique among all implementations of the "1brc" I have seen in any language - and it does make a noticeable difference in performance. The L1 cache is well known to be the main bottleneck for any efficient in-memory process. We are very lucky the station names are just big enough to fill no more than 64 bytes, with min/max values reduced as 16-bit smallint - resulting in temperature range of -3276.7..+3276.8 which seems fair on our planet according to the IPCC. ;)
+## Why L1 Cache Matters
+
+The "64 bytes cache line" trick is quite unique among all implementations of the "1brc" I have seen in any language - and it does make a noticeable difference in performance.
+
+The L1 cache is well known in the performance hacking litterature to be the main bottleneck for any efficient in-memory process. If you want things to go fast, you should flatter your CPU L1 cache.
+
+We are very lucky the station names are just big enough to fill no more than 64 bytes, with min/max values reduced as 16-bit smallint - resulting in temperature range of -3276.7..+3276.8 which seems fair on our planet according to the IPCC. ;)
+
+In our first attempt, the `Station[]` array was in fact not aligned to 64 bytes itself. In fact, the RTL `SetLength()` does not align its data to the item size. So the pointer was aligned by 32 bytes, and any memory access would require filling two L1 cache lines. So we added some manual alignement of the data structure, and got 5% better performance.
 
 ## Usage
 
@@ -133,13 +141,59 @@ time ./abouchez measurements.txt -v -t=1
 ```
 This `-t=1` run is for fun: it will run the process in a single thread. It will help to guess how optimized (and lockfree) our parsing code is, and to validate the CPU multi-core abilities. In a perfect world, other `-t=##` runs should stand for a perfect division of `real` time per the number of working threads, and the `user` value reported by `time` should remain almost the same when we add threads up to the number of CPU cores.
 
-## Feedback Needed
+## Back To Reality
 
-Here we will put some additional information, once our proposal has been run on the benchmark hardware.
+Our proposal has been run on the benchmark hardware, using the full automation. 
 
-Stay tuned!
+With 30 threads (on a busy system): 
+```
+-- SSD --
+Benchmark 1: abouchez
+  Time (mean ± σ):      3.634 s ±  0.099 s    [User: 86.580 s, System: 2.012 s]
+  Range (min … max):    3.530 s …  3.834 s    10 runs
+ 
+-- HDD --
+Benchmark 1: abouchez
+  Time (mean ± σ):      3.629 s ±  0.102 s    [User: 86.086 s, System: 2.008 s]
+  Range (min … max):    3.497 s …  3.789 s    10 runs
+```
+
+Later on, only the SSD values are shown, because the HDD version triggered the systemd watchdog, which killed the shell and its benchmark executable. But we can see that once the data is loaded from disk into the RAM cache, there is no difference with a `memmap` file on SSD and HDD. Linux is a great Operating System for sure.
+
+With 24 threads: 
+```
+-- SSD --
+Benchmark 1: abouchez
+  Time (mean ± σ):      2.977 s ±  0.053 s    [User: 53.790 s, System: 1.881 s]
+  Range (min … max):    2.905 s …  3.060 s    10 runs
+```
+
+With 16 threads: 
+```
+-- SSD --
+Benchmark 1: abouchez
+  Time (mean ± σ):      2.472 s ±  0.061 s    [User: 27.787 s, System: 1.720 s]
+  Range (min … max):    2.386 s …  2.588 s    10 runs
+```
+
+With 16 threads and thread affinity (`-a` switch on command line): 
+```
+-- SSD --
+Benchmark 1: abouchez
+  Time (mean ± σ):      3.227 s ±  0.017 s    [User: 39.731 s, System: 1.875 s]
+  Range (min … max):    3.206 s …  3.253 s    10 runs
+```
+
+So it sounds like if we should just run the benchmark with the `-t=16` option.
+
+It may be as expected:
+
+- The Ryzen CPU has 16 cores with 32 threads, and it makes sense that using only the "real" cores with CPU+RAM intensive work is enough to saturate them;
+- It is a known fact from experiment that forcing thread affinity is not a good idea, and it is always much better to let any modern Linux Operating System schedule the threads to the CPU cores, because it has a much better knowledge of the actual system load and status. Even on a "fair" CPU architecture like AMD Zen.
 
 ## Ending Note
+
+You could disable our tuned asm in the project source code, and loose about 10% by using general purpose *mORMot* `crc32c()` and `CompareMem()` functions, which already runs SSE2/SSE4.2 tune assembly.
 
 There is a "*pure mORMot*" name lookup version available if you undefine the `CUSTOMHASH` conditional, which is around 40% slower, because it needs to copy the name into the stack before using `TDynArrayHashed`, and has a little more overhead.
 

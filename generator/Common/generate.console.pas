@@ -12,20 +12,22 @@ uses
 ;
 
 const
-  cShortOptHelp: Char    = 'h';
-  cLongOptHelp           = 'help';
-  cShortOptVersion: Char = 'v';
-  cLongOptVersion        = 'version';
-  cShortOptInput: Char   = 'i';
-  cLongOptInput          = 'input-file';
-  cShortOptOutput: Char  = 'o';
-  cLongOptOutput         = 'output-file';
-  cShortOptNumber: Char  = 'n';
-  cLongOptNumber         = 'line-count';
+  cShortOptHelp: Char     = 'h';
+  cLongOptHelp            = 'help';
+  cShortOptVersion: Char  = 'v';
+  cLongOptVersion         = 'version';
+  cShortOptInput: Char    = 'i';
+  cLongOptInput           = 'input-file';
+  cShortOptOutput: Char   = 'o';
+  cLongOptOutput          = 'output-file';
+  cShortOptNumber: Char   = 'n';
+  cLongOptNumber          = 'line-count';
+  cShortOptStations: Char = '4';
+  cLongOptStations        = '400stations';
   {$IFNDEF FPC}
-  cShortOptions: array of char = ['h', 'v', 'i', 'o', 'n'];
+  cShortOptions: array of char = ['h', 'v', 'i', 'o', 'n', '4'];
   cLongOptions: array of string = ['help', 'version', 'input-file', 'output-file',
-                                   'line-count'];
+                                   'line-count', '400stations'];
   {$ENDIF}
 
 resourcestring
@@ -44,7 +46,8 @@ resourcestring
 var
   inputFilename: String = '';
   outputFilename: String = '';
-  lineCount: Integer = 0;
+  lineCount: Integer = 0;  
+  only400Stations: Boolean = False;
 
 procedure WriteHelp;
 
@@ -64,6 +67,7 @@ begin
   WriteLn('  -i|--input-file <filename>     The file containing the Weather Stations');
   WriteLn('  -o|--output-file <filename>    The file that will contain the generated lines');
   WriteLn('  -n|--line-count <number>       The amount of lines to be generated ( Can use 1_000_000_000 )');
+  WriteLn('  -4|--400stations               Only 400 weather stations in output file');
 end;
 
 end.

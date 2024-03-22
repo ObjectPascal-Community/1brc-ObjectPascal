@@ -37,19 +37,21 @@ var
   tmpLineCount: String;
 begin
   // quick check parameters
-  ErrorMsg:= CheckOptions(Format('%s%s%s:%s:%s:',[
+  ErrorMsg:= CheckOptions(Format('%s%s%s:%s:%s:%s',[
       cShortOptHelp,
       cShortOptVersion,
       cShortOptInput,
       cShortOptOutput,
-      cShortOptNumber
+      cShortOptNumber,
+      cShortOptStations
     ]),
     [
       cLongOptHelp,
       cLongOptVersion,
       cLongOptInput+':',
       cLongOptOutput+':',
-      cLongOptNumber+':'
+      cLongOptNumber+':',
+      cLongOptStations+':'
     ]
   );
   if ErrorMsg<>'' then
@@ -130,6 +132,8 @@ begin
     Exit;
   end;
 
+  only400stations := HasOption(cShortOptStations, cLongOptStations);
+
   inputFilename:= ExpandFileName(inputFilename);
   outputFilename:= ExpandFileName(outputFilename);
 
@@ -138,7 +142,7 @@ begin
   WriteLn(Format(rsLineCount, [ Double(lineCount) ]));
   WriteLn;
 
-  FGenerator:= TGenerator.Create(inputFilename, outputFilename, lineCount);
+  FGenerator:= TGenerator.Create(inputFilename, outputFilename, lineCount, only400stations);
   try
     try
       FGenerator.Generate;
