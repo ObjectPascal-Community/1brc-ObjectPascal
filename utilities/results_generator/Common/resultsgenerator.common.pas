@@ -22,6 +22,8 @@ type
     FResult: THyperfineResult;
 
     function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer): String;
+    function CompareResults(const elem1, elem2): Integer;
+    function FormatTime(ATime: Double): String;
   protected
   public
     constructor Create(AConfigFile: String);
@@ -36,7 +38,20 @@ implementation
 uses
   fpjson
 , jsonparser
+, Math
+, Utilities.ArraySort
 ;
+
+type
+  //PResult = ^TResult;
+  TResult = record
+    Name: TJSONStringType;
+    Notes: TJSONStringType;
+    Compiler: TJSONStringType;
+    Result: Double;
+    Count: Integer;
+  end;
+  TResultsArray = array of TResult;
 
 const
   lineBreak = #13;
@@ -71,24 +86,52 @@ begin
   inherited Destroy;
 end;
 
-procedure TResults.Generate;
-type
-  TResult = record
-    Result: Double;
-    Count: Integer;
-    Compiler: String;
-  end;
-  TResultsArray = array of TResult;
-
+function TResults.CompareResults(const elem1, elem2): Integer;
 var
-  index, index1: Integer;
+  i1 : TResult absolute elem1;
+  i2 : TResult absolute elem2;
+begin
+  if i1.Result = i2.Result then Result:= 0
+  else if i1.Result < i2.Result then Result:= -1
+  else Result:= 1;
+end;
+
+function TResults.FormatTime(ATime: Double): String;
+var
+  intPart, minutes: Integer;
+  millis: String;
+begin
+  Result:= '';
+  intPart:= Trunc(ATime);
+  minutes:= 0;
+  if intPart > 60 then
+  begin
+    repeat
+      Inc(minutes);
+      Dec(intPart, 60);
+    until intPart < 60;
+  end;
+  millis:= Copy(
+    FloatToStr(ATime),
+    Pos('.', FloatToStr(ATime)) + 1,
+    4
+  );
+  Result:= Format('%d:%d.%s',[
+    minutes,
+    intPart,
+    millis
+  ]);
+end;
+
+procedure TResults.Generate;
+var
+  index, index1, index2: Integer;
   content, hyperfineFile: String;
   results: TResultsArray;
   hyperfineStream: TFileStream;
   hyperfineJSON: TJSONData;
 begin
-  content:= '';
-  SetLength(results, FConfig.Entries.Count);
+  SetLength(results, 0);
 
   for index:= 0 to Pred(FConfig.Entries.Count) do
   begin
@@ -99,6 +142,8 @@ begin
         '-1_000_000_000-SSD.json'
       );
     if not FileExists(hyperfineFile) then continue;
+    SetLength(results, Length(results) + 1);
+    index2:= Length(results) - 1;
     hyperfineStream:= TFileStream.Create(
       hyperfineFile,
       fmOpenRead
@@ -112,26 +157,20 @@ begin
         try
           if FConfig.Entries[index].Compiler = 'fpc' then
           begin
-            results[index].Compiler:= 'lazarus-3.0, fpc-3.2.2';
+            results[index2].Compiler:= 'lazarus-3.0, fpc-3.2.2';
           end;
 
-          results[index].Result:= 0.0;
-          results[index].Count:= 0;
+          results[index2].Name:= FConfig.Entries[index].Name;
+          results[index2].Notes:= FConfig.Entries[index].Notes;
+          results[index2].Result:= 0.0;
+          results[index2].Count:= 0;
           for index1:= Low(FResult.Times) to High(FResult.Times) do
           begin
             if (time = FResult.Max) or (time = FResult.Max) then continue;
-            results[index].Result:= results[index].Result + FResult.Times[index1];
-            Inc(results[index].Count);
+            results[index2].Result:= results[index2].Result + FResult.Times[index1];
+            Inc(results[index2].Count);
           end;
-          results[index].Result:= results[index].Result / results[index].Count;
-          { #todo 99 -ogcarreno : needs to be done after sorting array by time }
-          content:= content + Format('| %d | %.2f | %s | %s | %s | |'+LineEnding, [
-            index,
-            results[index].Result,
-            results[index].Compiler,
-            FConfig.Entries[index].Name,
-            FConfig.Entries[index].Notes
-          ]);
+          results[index2].Result:= results[index2].Result / results[index2].Count;
         finally
           FResult.Free;
         end;
@@ -145,8 +184,22 @@ begin
 
   WriteLn;
   WriteLn;
+
+  //AnySort(results, Length(results), SizeOf(TResult), @CompareResults);
+
+  content:= '';
+  for index:= Low(results) to High(results) do
+  begin
+    content:= content + Format('| %d | %s | %s | %s | %s | |'+LineEnding, [
+      index + 1,
+      FormatTime(results[index].Result),
+      results[index].Compiler,
+      results[index].Name,
+      results[index].Notes
+    ]);
+  end;
+
   Write(cTableHeader, content);
-  // The results
   WriteLn;
 end;
 

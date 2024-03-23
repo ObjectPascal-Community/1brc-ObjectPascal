@@ -85,7 +85,7 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="6">
+    <Units Count="7">
       <Unit0>
         <Filename Value="resultsgenerator.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -116,6 +116,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="Utilities.Data.Hyperfine"/>
       </Unit5>
+      <Unit6>
+        <Filename Value="../../../common/utilities.arraysort.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.ArraySort"/>
+      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -128,6 +133,11 @@
       <OtherUnitFiles Value="../../Common;../../../common"/>
       <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf3"/>
+      </Debugging>
+    </Linking>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
