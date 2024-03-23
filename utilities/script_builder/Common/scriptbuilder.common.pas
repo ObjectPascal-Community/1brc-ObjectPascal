@@ -74,7 +74,7 @@ const
   cCompilerFPC         = 'fpc';
   //  cCompilerDelphi      = 'delphi';
   cSSD                 = 'SSD';
-  cHDD                 = 'HDD';
+//  cHDD                 = 'HDD';
 
 resourcestring
   rsEPatternsLengthDOntMatch = 'Patterns length does not match';
@@ -90,8 +90,11 @@ begin
   configStream:= TFileStream.Create(AConfigFile, fmOpenRead);
   try
     configJSONData:= GetJSON(configStream);
-    FConfig:= TConfig.Create(configJSONData);
-    configJSONData.Free;
+    try
+      FConfig:= TConfig.Create(configJSONData);
+    finally
+      configJSONData.Free;
+    end;
   finally
     configStream.Free;
   end;
@@ -312,8 +315,9 @@ begin
         [rfReplaceAll]
       );
       line:= line + 'echo "-- SSD --"' + LineEnding + tmpStr + LineEnding;
+
       // Run for HDD
-      tmpStr:= StringsReplace(
+      {tmpStr:= StringsReplace(
         tmpStr,
         [
           FConfig.InputSSD,
@@ -325,7 +329,8 @@ begin
         ],
         [rfReplaceAll]
       );
-      line:= line + 'echo "-- HDD --"' + LineEnding + tmpStr + LineEnding;
+      line:= line + 'echo "-- HDD --"' + LineEnding + tmpStr + LineEnding;}
+
       line:= line + 'echo "==========="' + LineEnding;
       line:= line + 'echo' + LineEnding + LineEnding;
     end;
