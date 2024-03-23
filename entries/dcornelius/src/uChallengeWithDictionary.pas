@@ -16,7 +16,7 @@ procedure ChallengeWithDictionary;
 implementation
 
 uses
-  System.Classes, System.SysUtils, Generics.Collections, System.StrUtils,
+  System.Classes, System.SysUtils, System.Generics.Collections, System.StrUtils,
   uChallengeCommon;
 
 type

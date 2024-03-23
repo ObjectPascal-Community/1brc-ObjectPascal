@@ -99,14 +99,12 @@
         <Base>true</Base>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base)'!=''">
-        <DCC_DcuOutput>.\$(Platform)</DCC_DcuOutput>
         <DCC_ExeOutput>..\..\..\bin</DCC_ExeOutput>
         <DCC_E>false</DCC_E>
         <DCC_N>false</DCC_N>
         <DCC_S>false</DCC_S>
         <DCC_F>false</DCC_F>
         <DCC_K>false</DCC_K>
-        <DCC_Namespace>System;Xml;Data;Datasnap;Web;Soap;$(DCC_Namespace)</DCC_Namespace>
         <SanitizedProjectName>dcornelius</SanitizedProjectName>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Android)'!=''">
@@ -193,7 +191,6 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win32)'!=''">
         <DCC_UsePackage>FireDACIBDriver;vclwinx;DataSnapServer;fmx;vclie;DbxCommonDriver;bindengine;IndyIPCommon;VCLRESTComponents;DBXMSSQLDriver;FireDACCommonODBC;emsclient;appanalytics;IndyProtocols;vclx;Skia.Package.RTL;dbxcds;vcledge;FmxTeeUI;DBXFirebirdDriver;FireDACSqliteDriver;DbxClientDriver;NexusDB475si290;soapmidas;TeeUI;dbexpress;ccKeyGen_R;PowerPDFDR;inet;NexusDB475sp290;vcltouch;FireDACDBXDriver;fmxdae;CustomIPTransport;FireDACMSSQLDriver;LockBox3DR;NexusDB475sscr290;RDOpenAI;NexusDB475lg290;NexusDB475psd290;fmxinfopower;IndySystem;sbridge290;NexusDB475iv290;NexusDB475ll290;NexusDB475scr290;vclFireDAC;NexusDB475mr290;FireDACCommon;DataSnapServerMidas;FireDACODBCDriver;emsserverresource;DOSCommandDR;NexusDB475th290;NexusDB475ch290;bindcompdbx;rtl;FireDACMySQLDriver;NexusDB475pt290;DBXSqliteDriver;DBXSybaseASEDriver;vclimg;DataSnapFireDAC;inetdbxpress;FireDAC;NexusDB475st290;xmlrtl;dsnap;FireDACDb2Driver;DBXOracleDriver;DBXInformixDriver;fmxobj;bindcompvclsmp;DataSnapNativeClient;DatasnapConnectorsFreePascal;SVGIconImageList;NexusDB475tn290;emshosting;NexusDB475tw290;NexusDB475pv290;FireDACCommonDriver;RadiantShapesFmx_Design;IndyIPClient;NexusDB475sll290;bindcompvclwinx;emsedge;bindcompfmx;indy10sbridge290;inetdb;NexusDB475sq290;GR32_R;FireDACASADriver;Tee;SVGIconImageListFMX;vclactnband;fmxFireDAC;FireDACInfxDriver;NexusDB475sd290;DBXMySQLDriver;VclSmp;DataSnapCommon;NexusDB475re290;fmxase;DBXOdbcDriver;dbrtl;FireDACOracleDriver;Skia.Package.FMX;TeeDB;FireDACMSAccDriver;ccVault_R;DataSnapIndy10ServerTransport;DataSnapConnectors;vcldsnap;DBXInterBaseDriver;FireDACMongoDBDriver;PngComponentsD;NexusDB475tc290;RadiantShapesFmx;FireDACTDataDriver;Skia.Package.VCL;vcldb;NexusDB475rb290;NexusDB475ts290;SynEditDR;bindcomp;IndyCore;RESTBackendComponents;NexusDB475se290;ccLib_R;NexusDB475db290;FireDACADSDriver;RaizeComponentsVclDb;MobilePermissions;RESTComponents;IndyIPServer;vcl;dsnapxml;adortl;dsnapcon;DataSnapClient;DataSnapProviderClient;NexusDB475tm290;DBXDb2Driver;emsclientfiredac;FireDACPgDriver;FireDACDSDriver;tethering;NexusDB475rp290;bindcompvcl;CloudService;DBXSybaseASADriver;BigNumbers;NexusDB475psi290;FMXTee;NexusDB475rc290;NexusDB475rd290;soaprtl;NexusDB475sr290;RaizeComponentsVcl;soapserver;$(DCC_UsePackage)</DCC_UsePackage>
-        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;Bde;$(DCC_Namespace)</DCC_Namespace>
         <BT_BuildType>Debug</BT_BuildType>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
@@ -208,7 +205,6 @@
         <DCC_ConsoleTarget>true</DCC_ConsoleTarget>
         <UWP_DelphiLogo44>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_44.png</UWP_DelphiLogo44>
         <UWP_DelphiLogo150>$(BDS)\bin\Artwork\Windows\UWP\delphi_UwpDefault_150.png</UWP_DelphiLogo150>
-        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
         <BT_BuildType>Debug</BT_BuildType>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
