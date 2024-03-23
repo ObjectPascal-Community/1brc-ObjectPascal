@@ -141,7 +141,7 @@ procedure TBuilder.BuildCompileScriptBash;
 var
   index: Integer;
   //entry: TEntry;
-  line: String;
+  line: TJSONStringType;
 begin
   FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootFolder) + cCompileBash;
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
@@ -157,7 +157,7 @@ begin
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
+      line:= line + '  echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       if FConfig.Entries[index].HasRelease then
       begin
        line:= line  +
@@ -188,8 +188,8 @@ begin
         ] ) +
         LineEnding;
       end;
-      line:= line + 'echo "==========="' + LineEnding;
-      line:= line + 'echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
+      line:= line + '  echo "==========="' + LineEnding;
+      line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
     line:= line + 'if [ $1 == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
@@ -231,7 +231,7 @@ end;
 procedure TBuilder.BuildTestScriptBash;
 var
   index: Integer;
-  line, tmpStr: String;
+  line, tmpStr: TJSONStringType;
 begin
   FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootFolder) + cTestBash;
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
@@ -245,7 +245,7 @@ begin
       if not FConfig.Entries[index].Active then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
+      line:= line + '  echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       tmpStr:= Format('%s%s %s', [
         IncludeTrailingPathDelimiter(FConfig.BinFolder),
         FConfig.Entries[index].EntryBinary,
@@ -263,22 +263,26 @@ begin
         ],
         [rfReplaceAll]
       );
-      tmpStr:= Format('%s > %s%s.output', [
+      tmpStr:= Format('  %s > %s%s.output', [
         tmpStr,
         IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
         FConfig.Entries[index].EntryBinary
       ]);
       line:= line + tmpStr + LineEnding;
-      tmpStr:= Format('sha256sum %s%s.output',[
+      tmpStr:= Format('  sha256sum %s%s.output',[
         IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
         FConfig.Entries[index].EntryBinary
       ]);
       line:= line + tmpStr + LineEnding;
-      line:= line + Format('echo "%s  Official Output Hash"',[
+      line:= line + Format('  echo "%s  Official Output Hash"',[
         FConfig.OutputHash
       ]) + LineEnding;
-      line:= line + 'echo "==========="' + LineEnding;
-      line:= line + 'echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
+      line:= line + Format('  rm %s%s.output',[
+        IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
+        FConfig.Entries[index].EntryBinary
+      ]) + LineEnding;
+      line:= line + '  echo "==========="' + LineEnding;
+      line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
     line:= line + 'if [ $1 == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
@@ -311,7 +315,7 @@ end;
 procedure TBuilder.BuildRunScriptBash;
 var
   index: Integer;
-  line, tmpStr: String;
+  line, tmpStr: TJSONStringType;
 begin
   FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootFolder) + cRunBash;
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
@@ -325,7 +329,7 @@ begin
       if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
+      line:= line + '  echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       // Run for SSD
       tmpStr:= StringsReplace(
         FConfig.Hyperfine,
@@ -360,9 +364,9 @@ begin
         ],
         [rfReplaceAll]
       );
-      line:= line + 'echo "-- SSD --"' + LineEnding + tmpStr + LineEnding;
-      line:= line + 'echo "==========="' + LineEnding;
-      line:= line + 'echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
+      line:= line + '  echo "-- SSD --"' + LineEnding + '  ' + tmpStr + LineEnding;
+      line:= line + '  echo "==========="' + LineEnding;
+      line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
     line:= line + 'if [ $1 == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do

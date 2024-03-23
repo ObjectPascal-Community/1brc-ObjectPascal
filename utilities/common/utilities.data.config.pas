@@ -31,14 +31,14 @@ type
 { TConfig }
   TConfig = class(TObject)
   private
-    FRootFolder: String;
-    FEntriesFolder: String;
-    FResultsFolder: String;
-    FBinFolder: String;
-    FInput: String;
-    FHyperfine: String;
-    FLazbuild: String;
-    FOutputHash: String;
+    FRootFolder: TJSONStringType;
+    FEntriesFolder: TJSONStringType;
+    FResultsFolder: TJSONStringType;
+    FBinFolder: TJSONStringType;
+    FInput: TJSONStringType;
+    FHyperfine: TJSONStringType;
+    FLazbuild: TJSONStringType;
+    FOutputHash: TJSONStringType;
     FEntries: TEntries;
 
     //procedure setFromJSON(const AJSON: TJSONStringType);
@@ -52,28 +52,28 @@ type
 
     destructor Destroy; override;
 
-    property RootFolder: String
+    property RootFolder: TJSONStringType
       read FRootFolder
       write FRootFolder;
-    property EntriesFolder: String
+    property EntriesFolder: TJSONStringType
       read FEntriesFolder
       write FEntriesFolder;
-    property ResultsFolder: String
+    property ResultsFolder: TJSONStringType
       read FResultsFolder
       write FResultsFolder;
-    property BinFolder: String
+    property BinFolder: TJSONStringType
       read FBinFolder
       write FBinFolder;
-    property Input: String
+    property Input: TJSONStringType
       read FInput
       write FInput;
-    property Hyperfine: String
+    property Hyperfine: TJSONStringType
       read FHyperfine
       write FHyperfine;
-    property Lazbuild: String
+    property Lazbuild: TJSONStringType
       read FLazbuild
       write FLazbuild;
-    property OutputHash: String
+    property OutputHash: TJSONStringType
       read FOutputHash
       write FOutputHash;
     property Entries: TEntries
