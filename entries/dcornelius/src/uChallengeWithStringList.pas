@@ -6,7 +6,9 @@ unit uChallengeWithStringList;
  * to: load a text file of cities and temperatures into a TStringList
  *     then collate and sort and print out the summaries
  *
- * Results when reading in a 1-billion row file: Range Check Error!
+ * Very slow--not an official entry.
+ * Results when reading in a 1-billion row file using LoadFromFile: Range Check Error!
+ * Results when using LoadFromStream on a 10-million row file: over 23 minutes!
  *)
 
 interface
@@ -24,6 +26,7 @@ uses
 
 procedure ChallengeWithStringList;
 var
+  WeatherStream: TStream;
   WeatherLines: TStringList;
   SortedList: TStringList;
   WeatherCity: string;
@@ -40,7 +43,14 @@ begin
     var StopWatch := TStopwatch.StartNew;
     {$ENDIF}
 
-    WeatherLines.LoadFromFile(ChallengeCommon.InputFilename);
+    //WeatherLines.LoadFromFile(ChallengeCommon.InputFilename, TEncoding.UTF8);
+
+    WeatherStream := TFileStream.Create(ChallengeCommon.InputFilename, fmOpenRead);
+    try
+      WeatherLines.LoadFromStream(WeatherStream, TEncoding.UTF8);
+    finally
+      WeatherStream.Free;
+    end;
 
     {$IFDEF DEBUG}
     StopWatch.Stop;
@@ -48,9 +58,8 @@ begin
                          StopWatch.ElapsedMilliseconds]));
     {$ENDIF}
 
-    SortedList := TStringList.Create;
+    SortedList := TStringList.Create(TDuplicates.dupAccept, False, True);
     try
-      SortedList.Sorted := True;
       // process all rows
       for CurrLine := 0 to WeatherLines.Count - 1 do begin
         // parse the data and add to our list
@@ -62,6 +71,7 @@ begin
             TWeatherCity(SortedList.Objects[ListCity]).AddNewTemp(CityTemp);
         end;
       end;
+      SortedList.Sort;
 
       Write('{');
       Write(Trim(TWeatherCity(SortedList.Objects[0]).OutputSumLine));

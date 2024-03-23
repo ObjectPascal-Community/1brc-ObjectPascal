@@ -10,7 +10,7 @@
         <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="Script Builder"/>
+      <Title Value="Results Table Generator"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -20,11 +20,11 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../../bin/scriptbuilder"/>
+            <Filename Value="../../../../bin/resultsgenerator"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-            <OtherUnitFiles Value="../../../common;../../Common"/>
+            <OtherUnitFiles Value="../../Common;../../../common"/>
             <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -55,11 +55,11 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../../bin/scriptbuilder"/>
+            <Filename Value="../../../../bin/resultsgenerator"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-            <OtherUnitFiles Value="../../../common;../../Common"/>
+            <OtherUnitFiles Value="../../Common;../../../common"/>
             <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -85,40 +85,47 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="5">
+    <Units Count="6">
       <Unit0>
-        <Filename Value="scriptbuilder.lpr"/>
+        <Filename Value="resultsgenerator.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="ScriptBuilder"/>
+        <UnitName Value="ResultsGenerator"/>
       </Unit0>
       <Unit1>
-        <Filename Value="../../Common/scriptbuilder.console.pas"/>
+        <Filename Value="../../Common/resultsgenerator.console.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="ScriptBuilder.Console"/>
+        <UnitName Value="resultsgenerator.Console"/>
       </Unit1>
       <Unit2>
-        <Filename Value="../../Common/scriptbuilder.common.pas"/>
+        <Filename Value="../../Common/resultsgenerator.common.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="ScriptBuilder.Common"/>
+        <UnitName Value="ResultsGenerator.Common"/>
       </Unit2>
       <Unit3>
         <Filename Value="../../../common/utilities.data.config.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.Data.Config"/>
       </Unit3>
       <Unit4>
         <Filename Value="../../../common/utilities.data.entries.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.Data.Entries"/>
       </Unit4>
+      <Unit5>
+        <Filename Value="../../../common/utilities.data.hyperfine.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.Data.Hyperfine"/>
+      </Unit5>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../../../bin/scriptbuilder"/>
+      <Filename Value="../../../../bin/resultsgenerator"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-      <OtherUnitFiles Value="../../../common;../../Common"/>
+      <OtherUnitFiles Value="../../Common;../../../common"/>
       <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
   </CompilerOptions>

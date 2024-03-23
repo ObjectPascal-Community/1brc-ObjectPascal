@@ -9,8 +9,8 @@ interface
 uses
   Classes
 , SysUtils
-, ScriptBuilder.Data.Config
-, ScriptBuilder.Data.Entries
+, Utilities.Data.Config
+, Utilities.Data.Entries
 ;
 
 type
@@ -74,7 +74,7 @@ const
   cCompilerFPC         = 'fpc';
   //  cCompilerDelphi      = 'delphi';
   cSSD                 = 'SSD';
-  cHDD                 = 'HDD';
+//  cHDD                 = 'HDD';
 
 resourcestring
   rsEPatternsLengthDOntMatch = 'Patterns length does not match';
@@ -90,8 +90,11 @@ begin
   configStream:= TFileStream.Create(AConfigFile, fmOpenRead);
   try
     configJSONData:= GetJSON(configStream);
-    FConfig:= TConfig.Create(configJSONData);
-    configJSONData.Free;
+    try
+      FConfig:= TConfig.Create(configJSONData);
+    finally
+      configJSONData.Free;
+    end;
   finally
     configStream.Free;
   end;
@@ -150,6 +153,7 @@ begin
     //for entry in FConfig.Entries do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
@@ -215,6 +219,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if not FConfig.Entries[index].Active then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       tmpStr:= Format('%s%s %s', [
@@ -272,6 +277,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       // Run for SSD
@@ -309,8 +315,9 @@ begin
         [rfReplaceAll]
       );
       line:= line + 'echo "-- SSD --"' + LineEnding + tmpStr + LineEnding;
+
       // Run for HDD
-      tmpStr:= StringsReplace(
+      {tmpStr:= StringsReplace(
         tmpStr,
         [
           FConfig.InputSSD,
@@ -322,7 +329,8 @@ begin
         ],
         [rfReplaceAll]
       );
-      line:= line + 'echo "-- HDD --"' + LineEnding + tmpStr + LineEnding;
+      line:= line + 'echo "-- HDD --"' + LineEnding + tmpStr + LineEnding;}
+
       line:= line + 'echo "==========="' + LineEnding;
       line:= line + 'echo' + LineEnding + LineEnding;
     end;

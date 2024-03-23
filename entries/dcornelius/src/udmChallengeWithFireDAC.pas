@@ -6,9 +6,9 @@ unit udmChallengeWithFireDAC;
  * to: Read in cities and temperatures from a text file into an in-memory FireDAC table
  *     then use SQL to extract a sorted summary and print it out.
  *
- * NOTE: This is a single-threaded process.
- *
- * Processing time when reading in a 1-billion row file: ___
+ * DO NOT USE THIS METHOD! It's slow even for small tests of 1,000 or 100,000 records but testing of a 1 billion row
+ * file took so long, that after 26 HOURS, I killed the process!  Someday, I might come back and try using the
+ * BatchMove components to see if it loads faster.
  *)
 
 interface
@@ -80,10 +80,12 @@ begin
     dmChallengeWithFireDAC.qryCityTemps.Open;
 
     TotalOutput := 0;
-    if dmChallengeWithFireDAC.qryCityTemps.RecordCount > 0 then begin
+    if dmChallengeWithFireDAC.qryCityTemps.RecordCount > 0 then
+    begin
       dmChallengeWithFireDAC.qryCityTemps.First;
       Write('{', OutputLine);
-      if dmChallengeWithFireDAC.qryCityTemps.RecordCount > 1 then begin
+      if dmChallengeWithFireDAC.qryCityTemps.RecordCount > 1 then
+      begin
         repeat
           dmChallengeWithFireDAC.qryCityTemps.Next;
           if not dmChallengeWithFireDAC.qryCityTemps.Eof then

@@ -36,7 +36,7 @@ The task is to write an Object Pascal program which reads the file, calculates t
 ```
 
 ## Entering The Challenge
-Submissions will be via a `PR`( Pull Request ) to this repository. \
+Submissions will be via a `PR` (Pull Request) to this repository.  
 The challenge will run from the 10th of March until the 10th of May, 2024.
 
 When creating your entry, please do as follows:
@@ -44,28 +44,29 @@ When creating your entry, please do as follows:
 2. If you're worried about anonymity, because the Internet stinks, feel free to use a fictional one: Bruce Wayne, Clark Kent, James Logan, Peter Parker, Diana of Themyscira. Your pick!
 3. Create a `README.md` with some content about your approach, e.g., `entries/gcarreno/README.md`.
 4. Put all your code under `entries/<your name>/src`, e.g., `entries/gcarreno/src`.
-5. If you need to provide a custom `.gitignore` for something not present in the main one, please do.
+5. Send your binary to the `bin` folder off the root of this repository. 
+6. If you need to provide a custom `.gitignore` for something not present in the main one, please do.
+7. Read the [CONTRIBUTING.md](./CONTRIBUTING.md) file for more details.
 
 This challenge is mainly to allow us to learn something new. This means that copying code from others will be allowed, under these conditions:
 1. You can only use pure Object Pascal with no calls to any operating system's `API` or external `C/C++` libraries. \
-  **There's been a bit of confusion about this restriction.** \
-  To clear that out: You can use any package/custom code you want. \
-  As long as it compiles cross-platform and itself is only pure Object Pascal. \
-  Anything from the `Jedi Project` or even `mORMmot` ( or anything else ), if it compiles, runs cross-platform it's allowed.
+  **There's been a bit of confusion about this restriction.**  
+  - To clear that out: You can use any package/custom code you want.
+  - As long as it compiles cross-platform and itself is only pure Object Pascal.
+  - Anything from the `Jedi Project` or even `mORMmot` ( or anything else ), if it compiles, runs cross-platform it's allowed.
 2. The code must have some sort of mention/attribution to the original author, in case you've used someone else's code.
 3. It's not a blatant copy just for the sake of submission.
 4. It adds something of value, not just a different code formatting.
 5. All code should be formatted with the `IDE`'s default formatting tool.
 
-**IMPORTANT** \
-This challenge can be entered even if you only have access to the Community Edition of RAD Studio. \
-I have a Windows VM, with RAD Studio installed, that will do the necessary cross compilation into my Linux host.
+**IMPORTANT**  
+This challenge can be entered even if you only have access to the Community Edition of RAD Studio. I have a Windows VM, with RAD Studio installed, that will do the necessary cross compilation into my Linux host.
 
 Submit your implementation and become part of the leader board!
 
 ## Rounding
 
-Székely Balázs has provided code for rounding towards positive infinity per the original challenge.\
+Székely Balázs has provided code for rounding towards positive infinity per the original challenge.  
 This will be the official way to round the output values:
 ```pas
 function TBaseline.RoundEx(x: Double): Double;
@@ -96,7 +97,7 @@ end;
 ```
 
 ## Generating the measurements.txt
-> **NOTE** \
+> **NOTE**  
 > We now have both a Lazarus version and a Delphi version of the generator for both 32b and 64b.
 
 In order to produce the One Billion Rows of text, we are providing the [source code](./generator) for the official generator, so we all have the same entry data.
@@ -110,7 +111,7 @@ In order to produce the One Billion Rows of text, we are providing the [source c
 | **-n** or **--line-count \<number\>** | The amount of lines to be generated ( Can use 1_000_000_000 ) |
 
 ## Baseline
-> **NOTE** \
+> **NOTE**  
 > This is still a bit in flux, still needing to get the Delphi version done.
 
 In order to verify the official output, we are providing the [source code](./baseline) for the official baseline.
@@ -147,6 +148,21 @@ Expected `SHA256` hash:
 > Until then, this is the current one: `db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524`
 > There's also an archived version of the [baseline output](./data/baseline.output.gz)
 
+## Differences From Original
+I've decided that I would want this challenge to be turned way up to 11!
+
+This means that there are some differences from the original.
+
+The original results are calculated on a smaller set of weather stations: 400.\
+While I haven't tabulated how many reside on the input file, we do not limit it to any number as we use the full ~40K stations present on `data/weather_stations.csv` to generate the input file.
+
+Another difference is the machines these are run on.\
+I'm using my own machine, with the specs mentioned on the [Results](#results) section bellow.\
+I'm also allowing the use of the full 32 threads that my machine provides, where the original challenge limits it to 8.\
+The original challenge also has a second results table with 10K stations and the use of all 64 threads.
+
+With all this said, comparison with the original challenge should be made with this in mind.
+
 ## Results
 These are the results from running all entries into the challenge on my personal computer:
 - Ubuntu 23.10 64b
@@ -155,10 +171,18 @@ These are the results from running all entries into the challenge on my personal
 - 250GB SSD
 - 1TB HDD
 
-| # | Result (m:s.ms): SSD | Result (m:s.ms): HDD | Compiler | Submitter     | Notes     | Certificates |
-|--:|---------------------:|---------------------:|:---------|:--------------|:----------|:-------------|
-| 1 | 0:29.212 |  2:2.504 | lazarus-3.0, fpc-3.2.2 | Székely Balázs | Using 16 threads | |
-| 2 | 15:3.075 | 15:7.630 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah   | Using 1 thread   | |
+| # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
+|--:|----------------:|---------:|:----------|:------|:-------------|
+| 1 | 0:2.472   | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez    | Using 16 threads | |
+| 2 | 0:16.874  | lazarus-3.0, fpc-3.2.2 | Székely Balázs    | Using 16 threads | |
+| 3 | 0:20.046  | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | using 30 thread  | |
+| 4 | 1:16.059  | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using 1 thread   | |
+| 5 | 12:40.179 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using 1 thread   | |
+
+> **NOTE**
+>
+> After some tests performed by @paweld, it makes no sense to have an `HDD` run.
+> I've removed that from the results
 
 ## Evaluating Results
 Each contender is run 10 times in a row for both `SSD` and `HDD` using `hyperfine` for the time taking. \
@@ -183,7 +207,8 @@ A: Ubuntu 23.10 64b.
 I'd like to thank [@paweld](https://github.com/paweld) for taking us from my miserable 20m attempt, to a whopping ~25s, beating the [Python script](https://github.com/gunnarmorling/1brc/blob/main/src/main/python/create_measurements.py) by about 4 and a half minutes.\
 I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator.\
 I'd like to thank [@dtpfl](https://github.com/dtpfl) for his invaluable work on maintaining the `README.md` file up to date with everything.\
-I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.
+I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.\
+I'd like to thank [@corneliusdavid](https://github.com/corneliusdavid) for giving some of the information files a once over and making things more legible and clear.
 
 ## Links
 The original repository: https://github.com/gunnarmorling/1brc \

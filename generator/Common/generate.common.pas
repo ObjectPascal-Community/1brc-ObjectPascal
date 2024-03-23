@@ -16,6 +16,7 @@ type
 { TGenerator }
   TGenerator = class(TObject)
   private
+    FOnly400Stations: Boolean;
     rndState: Array [0..1] of Cardinal;
     FInputFile: String;
     FOutPutFile: String;
@@ -27,7 +28,7 @@ type
       AFileSize: Int64; ATimeElapsed: TDateTime): String;
     function Rng1brc(Range: Integer): Integer;
   public
-    constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64);
+    constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64; AOnly400Stations: Boolean = False);
     destructor Destroy; override;
 
     procedure Generate;
@@ -61,11 +62,12 @@ const
 
 { TGenerator }
 
-constructor TGenerator.Create(AInputFile, AOutputFile: String; ALineCount: Int64);
+constructor TGenerator.Create(AInputFile, AOutputFile: String; ALineCount: Int64; AOnly400Stations: Boolean);
 begin
   FInputFile := AInputFile;
   FOutPutFile := AOutputFile;
   FLineCount := ALineCount;
+  FOnly400Stations := AOnly400Stations;
 
   FStationNames := TStringList.Create;
   FStationNames.Capacity := stationsCapacity;
@@ -195,6 +197,13 @@ begin
 
   progressBatch := floor(FLineCount * (linesPercent / 100));
   start := Now;
+
+  if FOnly400Stations then
+  begin
+    WriteLn('Only 400 weather stations in output file.');
+    while FStationNames.Count > 400 do
+      FStationNames.Delete(Rng1brc(FStationNames.Count));
+  end;
 
   // This is all paweld magic:
   // From here

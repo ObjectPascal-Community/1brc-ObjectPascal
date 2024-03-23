@@ -42,7 +42,7 @@ begin
     WriteLn(Format(rsLineCount, [Double(lineCount)]));
     WriteLn;
 
-    FGenerator := TGenerator.Create(inputFilename, outputFilename, lineCount);
+    FGenerator := TGenerator.Create(inputFilename, outputFilename, lineCount, only400Stations);
     try
       try
         FGenerator.generate;
@@ -146,8 +146,10 @@ begin
 
       if (Length(FParams[I]) = 1) or (FParams[I][2] = '=') then
         ParamOK := CheckShortParams(FParams[I][1])
+      else if Pos('=', FParams[I]) > 0 then
+        ParamOK := CheckLongParams(Copy(FParams[I], 1, Pos('=', FParams[I]) - 1))
       else
-        ParamOK := CheckLongParams(Copy(FParams[I], 1, Pos('=', FParams[I]) - 1));
+        ParamOK := CheckLongParams(FParams[I]);
 
       // if we found a bad parameter, don't need to check the rest of them
       if not ParamOK then
@@ -237,6 +239,11 @@ begin
     end;
     inc(valid);
   end;
+
+  only400Stations := (FParams.IndexOf(cShortOptStations) >= 0) or (FParams.IndexOf(cLongOptStations) >= 0);
+
+  writeln(only400Stations);
+  writeln(fparams.Text);
 
   // check if everything was provided
   Result := (valid = 3) and (invalid = 0);

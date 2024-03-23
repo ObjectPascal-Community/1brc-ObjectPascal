@@ -7,11 +7,18 @@ uses
   Classes,
   SysUtils,
   Generics.Collections,
-  Math
+  Math,
+  streamex
   {$IFDEF DEBUG}
-,  Stopwatch
+  , Stopwatch
   {$ENDIF}
   ;
+
+type
+  TParsedData = record
+    wsName: string;
+    wsTemp: int64;
+  end;
 
 type
   // Create a record of temperature stats
@@ -28,7 +35,6 @@ type
     constructor Create(const newMin: int64; const newMax: int64;
       const newSum: int64; const newCount: int64);
     function ToString: string;
-
   end;
 
 type
@@ -37,6 +43,7 @@ type
 
 // The main algorithm to process the temp measurements from various weather station
 procedure ProcessTempMeasurements(const filename: string);
+procedure ProcessTempMeasurementsV3(const filename: string);
 
 implementation
 
@@ -137,17 +144,26 @@ begin
 
     // Update the stat of this city
     weatherDictionary.AddOrSetValue(cityName, stat);
+    {$IFDEF DEBUG}
+    // Display the line.
+    // WriteLn('Updated: ', cityName);
+    {$ENDIF DEBUG}
   end;
 
   // If city name doesn't exist add a new entry
   if not weatherDictionary.ContainsKey(cityName) then
   begin
     weatherDictionary.Add(cityName, TStat.Create(newTemp, newTemp, newTemp, 1));
+    {$IFDEF DEBUG}
+    // Display the line.
+    // WriteLn('Added: ', cityName);
+    {$ENDIF DEBUG}
   end;
 end;
 
 procedure ProcessTempMeasurements(const filename: string);
 var
+  buf: array[0..2047] of char;
   wd: TWeatherDictionary;
   line, ws, strTemp: string;
   weatherStationList: TStringList;
@@ -164,6 +180,7 @@ begin
 
     // Read text file //////////////////////////////////////////////////////////
     AssignFile(textFile, filename);
+    SetTextBuf(textFile, buf[0], sizeof(buf));
 
     // Perform the read operation in a try..except block to handle errors gracefully
     try
@@ -197,7 +214,10 @@ begin
 
           // Add the weather station and the recorded temp (as int64) in the TDictionary
           Val(strTemp, intTemp, valCode);
-          if valCode <> 0 then Continue;
+
+          if valCode <> 0 then
+            Continue;
+
           AddCityTemperature(ws, intTemp, wd);
         end;
       end; // end while loop reading line at a time
@@ -256,6 +276,106 @@ begin
     wd.Free;
   end; // End of processing TDictionary and TStringList
 
+end;
+
+procedure ProcessTempMeasurementsV3(const filename: string);
+var
+
+  fReader: TStreamReader;
+  fStream: TFileStream;
+  line, parsedStation, strTemp, wsKey, outputList: string;
+  parsedTemp: int64;
+  delimiterPos, valCode, index: integer;
+  wd: TWeatherDictionary;
+  weatherStationList: TStringList;
+begin
+
+  // Create a city - weather dictionary
+  wd := TWeatherDictionary.Create;
+  // Create a city - weather TStringList for sorting
+  weatherStationList := TStringList.Create;
+
+  // Create a file stream, and use TStreamReader to read the contents
+  fStream := TFileStream.Create(filename, fmOpenRead);
+  try
+    fReader := TStreamReader.Create(fStream);
+    try
+      while not fReader.EOF do // Start read file
+      begin
+        line := fReader.ReadLine;
+        // Get position of the delimiter ---------------------------------------
+        delimiterPos := Pos(';', line);
+        if delimiterPos > 0 then
+        begin
+          // Get the weather station name
+          // Using Copy and POS - as suggested by Gemini AI.
+          // This part saves 3 mins faster when processing 1 billion rows.
+          parsedStation := Copy(line, 1, delimiterPos - 1);
+
+          // Get the temperature recorded, as string, remove '.' from string float
+          // because we want to save it as int64.
+          strTemp := Copy(line, delimiterPos + 1, Length(line));
+          strTemp := StringReplace(strTemp, '.', '', [rfReplaceAll]);
+
+          // Add the weather station and the recorded temp (as int64) in the TDictionary
+          Val(strTemp, parsedTemp, valCode);
+          if valCode <> 0 then
+            Continue;
+
+          // Add a record in TWeatherDictionary
+          AddCityTemperature(parsedStation, parsedTemp, wd);
+
+        end; // end of checking delimiter in a line ----------------------------
+      end; // end of reading file
+
+      {$IFDEF DEBUG}
+      Stopwatch.StopTimer;
+      WriteLn('Finished reading and parsing input file');
+      Stopwatch.DisplayTimer;
+      {$ENDIF}
+
+      // Format and sort weather station by name and temp stat /////////////////
+      {$IFDEF DEBUG}
+      Stopwatch.StartTimer;
+      {$ENDIF}
+      wsKey := '';
+      for wsKey in wd.Keys do
+      begin
+        weatherStationList.Add(wsKey + '=' + wd[wsKey].ToString + ', ');
+      end;
+      weatherStationList.CustomSort(@CustomTStringListComparer);
+
+      {$IFDEF DEBUG}
+      Stopwatch.StopTimer;
+      WriteLn('Finished creating TStringList and sorted it');
+      Stopwatch.DisplayTimer;
+      {$ENDIF}
+
+      // Print TStringList - sorted by weather station and temp stat ///////////
+      {$IFDEF DEBUG}
+      Stopwatch.StartTimer;
+      {$ENDIF}
+      outputList := '';
+      // Print the weather station and the temp stat
+      for index := 0 to weatherStationList.Count - 1 do
+        outputList := outputList + weatherStationList[index];
+      // Remove last comma and space; ', ', a neat trick from Gus.
+      SetLength(outputList, Length(outputList) - 2);
+      WriteLn('{', outputList, '}');
+
+      {$IFDEF DEBUG}
+      Stopwatch.StopTimer;
+      WriteLn('Finished printing the sorted weather station and temperatures');
+      Stopwatch.DisplayTimer;
+      {$ENDIF}
+    finally
+      fReader.Free;
+    end;
+  finally
+    fStream.Free;
+    weatherStationList.Free;
+    wd.Free;
+  end;
 end;
 
 end.

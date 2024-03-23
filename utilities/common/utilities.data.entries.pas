@@ -1,4 +1,4 @@
-unit ScriptBuilder.Data.Entries;
+unit Utilities.Data.Entries;
 
 {$IFDEF FPC}
 {$mode ObjFPC}{$H+}
@@ -33,15 +33,16 @@ type
 { TEntry }
   TEntry = class(TObject)
   private
-    FName: String;
-    FNotes: String;
-    FCompiler: String;
-    FEntryFolder: String;
-    FEntryBinary: String;
-    FLPI: String;
+    FActive: Boolean;
+    FName: TJSONStringType;
+    FNotes: TJSONStringType;
+    FCompiler: TJSONStringType;
+    FEntryFolder: TJSONStringType;
+    FEntryBinary: TJSONStringType;
+    FLPI: TJSONStringType;
     FHasRelease: Boolean;
     FThreads: Integer;
-    FRunParams: String;
+    FRunParams: TJSONStringType;
 
     //procedure setFromJSON(const AJSON: TJSONStringType);
     procedure setFromJSONData(const AJSONData: TJSONData);
@@ -54,22 +55,25 @@ type
 
     destructor Destroy; override;
 
-    property Name: String
+    property Active: Boolean
+      read FActive
+      write FActive;
+    property Name: TJSONStringType
       read FName
       write FName;
-    property Notes: String
+    property Notes: TJSONStringType
       read FNotes
       write FNotes;
-    property Compiler: String
+    property Compiler: TJSONStringType
       read FCompiler
       write FCompiler;
-    property EntryFolder: String
+    property EntryFolder: TJSONStringType
       read FEntryFolder
       write FEntryFolder;
-    property EntryBinary: String
+    property EntryBinary: TJSONStringType
       read FEntryBinary
       write FEntryBinary;
-    property LPI: String
+    property LPI: TJSONStringType
       read FLPI
       write FLPI;
     property HasRelease: Boolean
@@ -78,7 +82,7 @@ type
     property Threads: Integer
       read FThreads
       write FThreads;
-    property RunParams: String
+    property RunParams: TJSONStringType
       read FRunParams
       write FRunParams;
   published
@@ -134,6 +138,7 @@ type
 implementation
 
 const
+  cJSONActive      = 'active';
   cJSONName        = 'name';
   cJSONNotes       = 'notes';
   cJSONCompiler    = 'compiler';
@@ -155,6 +160,7 @@ resourcestring
 
 constructor TEntry.Create;
 begin
+  FActive:= false;
   FName:= '';
   FNotes:= '';
   FCompiler:= '';
@@ -188,6 +194,7 @@ end;
 
 procedure TEntry.setFromJSONObject(const AJSONObject: TJSONObject);
 begin
+  FActive:= AJSONObject.Get(cJSONActive, FActive);
   FName:= AJSONObject.Get(cJSONName, FName);
   FNotes:= AJSONObject.Get(cJSONNotes, FNotes);
   FCompiler:= AJSONObject.Get(cJSONCompiler, FCompiler);

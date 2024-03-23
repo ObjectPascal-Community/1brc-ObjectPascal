@@ -1,7 +1,6 @@
 object dmChallengeWithFireDAC: TdmChallengeWithFireDAC
-  Height = 366
-  Width = 435
-  PixelsPerInch = 120
+  Height = 293
+  Width = 348
   object tblWeatherData: TFDMemTable
     ActiveStoredUsage = [auDesignTime]
     Active = True
@@ -25,8 +24,8 @@ object dmChallengeWithFireDAC: TdmChallengeWithFireDAC
     UpdateOptions.AutoCommitUpdates = True
     LocalSQL = FDLocalSQL
     StoreDefs = True
-    Left = 260
-    Top = 100
+    Left = 208
+    Top = 80
     object tblWeatherDataCityName: TStringField
       FieldName = 'CityName'
       Size = 50
@@ -36,24 +35,24 @@ object dmChallengeWithFireDAC: TdmChallengeWithFireDAC
     end
   end
   object FDPhysSQLiteDriverLink: TFDPhysSQLiteDriverLink
-    Left = 90
-    Top = 40
+    Left = 72
+    Top = 32
   end
   object FDConnection: TFDConnection
     Params.Strings = (
       'DriverID=SQLite')
     Connected = True
     LoginPrompt = False
-    Left = 100
-    Top = 120
+    Left = 80
+    Top = 96
   end
   object FDLocalSQL: TFDLocalSQL
     SchemaName = 'measurements'
     Connection = FDConnection
     Active = True
     DataSets = <>
-    Left = 100
-    Top = 210
+    Left = 80
+    Top = 168
   end
   object qryCityTemps: TFDQuery
     ActiveStoredUsage = [auDesignTime]
@@ -71,8 +70,8 @@ object dmChallengeWithFireDAC: TdmChallengeWithFireDAC
       'from measurements.tblWeatherData'
       'group by CityName'
       'order by CityName')
-    Left = 250
-    Top = 180
+    Left = 200
+    Top = 144
     object qryCityTempsCityName: TStringField
       FieldName = 'CityName'
       Origin = 'CityName'

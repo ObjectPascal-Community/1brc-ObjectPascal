@@ -6,9 +6,7 @@ unit uChallengeWithDictionary;
  * to: Read in cities and temperatures from a text file into a TDictionary collection,
  *     then collate and sort and print out the summaries.
  *
- * NOTE: This is a single-threaded process.
- *
- * Processing time when reading in a 1-billion row file: 9 minutes
+ * Processing time when reading in a 1-billion row file: 5~6 minutes
  *)
 
 interface
@@ -18,7 +16,7 @@ procedure ChallengeWithDictionary;
 implementation
 
 uses
-  System.Classes, System.SysUtils, Generics.Collections, System.StrUtils,
+  System.Classes, System.SysUtils, System.Generics.Collections, System.StrUtils,
   uChallengeCommon;
 
 type

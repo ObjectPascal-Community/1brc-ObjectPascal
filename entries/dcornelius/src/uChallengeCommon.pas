@@ -29,17 +29,13 @@ type
   // a global class to provide standard open/close and other functions
   TChallengeCommon = class
   private
-    FWeatherDataFile: TextFile;
     FInputFilename: string;
   public
     constructor Create(const NewInputFilename: string);
-    procedure OpenWeatherData;
-    procedure CloseWeatherData;
     procedure ReadAndParseAllData(WeatherCityProcessor: TWeatherCityProc);
     function PascalRound(x: Double): Double;
     function SplitCityTemp(const StationLine: string; var CityName: string; var CityTemp: Integer): Boolean;
     property InputFilename: string read FInputFilename write FInputFilename;
-    property WeatherDataFile: TextFile read FWeatherDataFile;
   end;
 
 var
@@ -66,15 +62,6 @@ begin
     raise EFileNotFoundException.Create(NewInputFilename + ' not found.');
 end;
 
-procedure TChallengeCommon.OpenWeatherData;
-begin
-  AssignFile(FWeatherDataFile, FInputFilename);
-  Reset(WeatherDataFile);
-  {$IFDEF DEBUG}
-  Writeln('Reading from ' + ChallengeCommon.InputFilename);
-  {$ENDIF}
-end;
-
 function TChallengeCommon.PascalRound(x: Double): Double;
 var
   t: Double;
@@ -91,22 +78,26 @@ end;
 
 procedure TChallengeCommon.ReadAndParseAllData(WeatherCityProcessor: TWeatherCityProc);
 var
+  StreamReader: TStreamReader;
   WeatherLine: string;
   WeatherCity: string;
   CityTemp: Integer;
+  {$IFDEF DEBUG}
   LineCount: Int64;
+  {$ENDIF}
 begin
   {$IFDEF DEBUG}
+  Writeln('Reading from ', FInputFilename);
   var StopWatch := TStopwatch.StartNew;
   LineCount := 0;
   {$ENDIF}
 
-  OpenWeatherData;
+  // read from a stream, buffer at 64K instead of default of 4k
+  StreamReader := TStreamReader.Create(FInputFilename, TEncoding.UTF8, False, 65536);
   try
-    // read all rows
-    while not Eof(WeatherDataFile) do begin
-      // read a row into a temp string
-      Readln(WeatherDataFile, WeatherLine);
+    while not StreamReader.EndOfStream do
+    begin
+      WeatherLine := StreamReader.ReadLine;
       {$IFDEF DEBUG}
       Inc(LineCount);
       {$ENDIF}
@@ -116,7 +107,7 @@ begin
         WeatherCityProcessor(WeatherCity, CityTemp);
     end;
   finally
-    ChallengeCommon.CloseWeatherData;
+    StreamReader.Free;
   end;
 
   {$IFDEF DEBUG}
@@ -124,11 +115,6 @@ begin
   Writeln(Format('Loaded %d lines from %s in %d milliseconds', [LineCount, FInputFilename,
                          StopWatch.ElapsedMilliseconds]));
   {$ENDIF}
-end;
-
-procedure TChallengeCommon.CloseWeatherData;
-begin
-  CloseFile(FWeatherDataFile);
 end;
 
 function TChallengeCommon.SplitCityTemp(const StationLine: string; var CityName: string; var CityTemp: Integer): Boolean;
