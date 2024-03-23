@@ -147,7 +147,7 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
-    line:= line + 'echo "******** Compile All ********"' + LineEnding;
+    line:= line + 'echo "******** Compile ********"' + LineEnding;
     line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     //for entry in FConfig.Entries do
@@ -156,6 +156,7 @@ begin
       if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       if FConfig.Entries[index].HasRelease then
       begin
@@ -188,8 +189,30 @@ begin
         LineEnding;
       end;
       line:= line + 'echo "==========="' + LineEnding;
-      line:= line + 'echo' + LineEnding + LineEnding;
+      line:= line + 'echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
+    line:= line + 'if [ $1 == "" ];then'  + LineEnding;
+    for index:= 0 to Pred(FConfig.Entries.Count) do
+    begin
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      line:= line + '  ' + FConfig.Entries[index].EntryBinary + LineEnding;
+    end;
+    line:= line + 'else'  + LineEnding;
+    line:= line + '  case $1 in'  + LineEnding;
+    for index:= 0 to Pred(FConfig.Entries.Count) do
+    begin
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
+      line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
+      line:= line + '      ;;'  + LineEnding;
+    end;
+    line:= line + '    *)'  + LineEnding;
+    line:= line + '      echo "Do not recognise $1"'  + LineEnding;
+    line:= line + '      ;;'  + LineEnding;
+    line:= line + '  esac'  + LineEnding;
+    line:= line + 'fi'  + LineEnding;
     FScriptStream.WriteBuffer(line[1], Length(line));
   finally
     FScriptStream.Free;
@@ -214,13 +237,14 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
-    line:= line + 'echo "******** Test All ********"' + LineEnding;
+    line:= line + 'echo "******** Test ********"' + LineEnding;
     line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       tmpStr:= Format('%s%s %s', [
         IncludeTrailingPathDelimiter(FConfig.BinFolder),
@@ -234,7 +258,7 @@ begin
           cReplaceEntryThreads
         ],
         [
-          FConfig.InputSSD,
+          FConfig.Input,
           IntToStr(FConfig.Entries[index].Threads)
         ],
         [rfReplaceAll]
@@ -254,8 +278,29 @@ begin
         FConfig.OutputHash
       ]) + LineEnding;
       line:= line + 'echo "==========="' + LineEnding;
-      line:= line + 'echo' + LineEnding + LineEnding;
+      line:= line + 'echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
+    line:= line + 'if [ $1 == "" ];then'  + LineEnding;
+    for index:= 0 to Pred(FConfig.Entries.Count) do
+    begin
+      if not FConfig.Entries[index].Active then continue;
+      line:= line + '  ' + FConfig.Entries[index].EntryBinary + LineEnding;
+    end;
+    line:= line + 'else'  + LineEnding;
+    line:= line + '  case $1 in'  + LineEnding;
+    for index:= 0 to Pred(FConfig.Entries.Count) do
+    begin
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
+      line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
+      line:= line + '      ;;'  + LineEnding;
+    end;
+    line:= line + '    *)'  + LineEnding;
+    line:= line + '      echo "Do not recognise $1"'  + LineEnding;
+    line:= line + '      ;;'  + LineEnding;
+    line:= line + '  esac'  + LineEnding;
+    line:= line + 'fi'  + LineEnding;
     FScriptStream.WriteBuffer(line[1], Length(line));
   finally
     FScriptStream.Free;
@@ -272,13 +317,14 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= '#!/bin/bash' + LineEnding + LineEnding;
-    line:= line + 'echo "******** Run All ********"' + LineEnding;
+    line:= line + 'echo "******** Run ********"' + LineEnding;
     line:= line + 'echo' + LineEnding + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
       line:= line + 'echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
       // Run for SSD
       tmpStr:= StringsReplace(
@@ -309,31 +355,37 @@ begin
           cReplaceEntryThreads
         ],
         [
-          FConfig.InputSSD,
+          FConfig.Input,
           IntToStr(FConfig.Entries[index].Threads)
         ],
         [rfReplaceAll]
       );
       line:= line + 'echo "-- SSD --"' + LineEnding + tmpStr + LineEnding;
-
-      // Run for HDD
-      {tmpStr:= StringsReplace(
-        tmpStr,
-        [
-          FConfig.InputSSD,
-          cSSD
-        ],
-        [
-          FConfig.InputHDD,
-          cHDD
-        ],
-        [rfReplaceAll]
-      );
-      line:= line + 'echo "-- HDD --"' + LineEnding + tmpStr + LineEnding;}
-
       line:= line + 'echo "==========="' + LineEnding;
-      line:= line + 'echo' + LineEnding + LineEnding;
+      line:= line + 'echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
+    line:= line + 'if [ $1 == "" ];then'  + LineEnding;
+    for index:= 0 to Pred(FConfig.Entries.Count) do
+    begin
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      line:= line + '  ' + FConfig.Entries[index].EntryBinary + LineEnding;
+    end;
+    line:= line + 'else'  + LineEnding;
+    line:= line + '  case $1 in'  + LineEnding;
+    for index:= 0 to Pred(FConfig.Entries.Count) do
+    begin
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
+      line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
+      line:= line + '      ;;'  + LineEnding;
+    end;
+    line:= line + '    *)'  + LineEnding;
+    line:= line + '      echo "Do not recognise $1"'  + LineEnding;
+    line:= line + '      ;;'  + LineEnding;
+    line:= line + '  esac'  + LineEnding;
+    line:= line + 'fi'  + LineEnding;
     FScriptStream.WriteBuffer(line[1], Length(line));
   finally
     FScriptStream.Free;

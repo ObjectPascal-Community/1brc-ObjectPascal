@@ -35,8 +35,7 @@ type
     FEntriesFolder: String;
     FResultsFolder: String;
     FBinFolder: String;
-    FInputSSD: String;
-    FInputHDD: String;
+    FInput: String;
     FHyperfine: String;
     FLazbuild: String;
     FOutputHash: String;
@@ -65,12 +64,9 @@ type
     property BinFolder: String
       read FBinFolder
       write FBinFolder;
-    property InputSSD: String
-      read FInputSSD
-      write FInputSSD;
-    property InputHDD: String
-      read FInputHDD
-      write FInputHDD;
+    property Input: String
+      read FInput
+      write FInput;
     property Hyperfine: String
       read FHyperfine
       write FHyperfine;
@@ -92,8 +88,7 @@ const
   cJSONEntriesFolder = 'entries-folder';
   cJSONResultsFolder = 'results-folder';
   cJSONBinFolder     = 'bin-folder';
-  cJSONInputSSD      = 'input-ssd';
-  cJSONInputHDD      = 'input-hdd';
+  cJSONInput         = 'input';
   cJSONHyperfine     = 'hyperfine';
   cJSONLazbuild      = 'lazbuild';
   cJSONOutpuHash     = 'output-hash';
@@ -113,8 +108,7 @@ begin
   FEntriesFolder:= '';
   FResultsFolder:= '';
   FBinFolder:= '';
-  FInputSSD:= '';
-  FInputHDD:= '';
+  FInput:= '';
   FHyperfine:= '';
   FLazbuild:= '';
   FOutputHash:= '';
@@ -177,8 +171,7 @@ begin
   FEntriesFolder:= AJSONObject.Get(cJSONEntriesFolder, FEntriesFolder);
   FResultsFolder:= AJSONObject.Get(cJSONResultsFolder, FResultsFolder);
   FBinFolder:= AJSONObject.Get(cJSONBinFolder, FBinFolder);
-  FInputSSD:= AJSONObject.Get(cJSONInputSSD, FInputSSD);
-  FInputHDD:= AJSONObject.Get(cJSONInputHDD, FInputHDD);
+  FInput:= AJSONObject.Get(cJSONInput, FInput);
   FHyperfine:= AJSONObject.Get(cJSONHyperfine, FHyperfine);
   FLazbuild:= AJSONObject.Get(cJSONLazbuild, FLazbuild);
   FOutputHash:= AJSONObject.Get(cJSONOutpuHash, FOutputHash);
