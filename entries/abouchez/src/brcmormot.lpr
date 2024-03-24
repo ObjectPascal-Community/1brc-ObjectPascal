@@ -361,6 +361,7 @@ var
   st: TRawByteStringStream;
   w: TTextWriter;
   ndx: TSynTempBuffer;
+  tmp: TTextWriterStackBuffer;
 begin
   // compute the sorted-by-name indexes of all stations
   c := fList.Count;
@@ -371,7 +372,7 @@ begin
   FastSetString(result, nil, 1200000); // pre-allocate result
   st := TRawByteStringStream.Create(result);
   try
-    w := TTextWriter.Create(st, @ndx.tmp, SizeOf(ndx.tmp));
+    w := TTextWriter.Create(st, @tmp, SizeOf(tmp));
     try
       w.Add('{');
       n := ndx.buf;
