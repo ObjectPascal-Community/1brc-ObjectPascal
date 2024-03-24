@@ -176,15 +176,8 @@ begin
 
           FList[index2].Name:= FConfig.Entries[index].Name;
           FList[index2].Notes:= FConfig.Entries[index].Notes;
-          FList[index2].Result:= 0.0;
-          FList[index2].Count:= 0;
-          for index1:= Low(FResult.Times) to High(FResult.Times) do
-          begin
-            if (time = FResult.Max) or (time = FResult.Max) then continue;
-            FList[index2].Result:= FList[index2].Result + FResult.Times[index1];
-            Inc(FList[index2].Count);
-          end;
-          FList[index2].Result:= FList[index2].Result / FList[index2].Count;
+          FList[index2].Count := FResult.times.Count;
+          FList[index2].Result:= FResult.times.AvgValueWithOutMinMax;
         finally
           FResult.Free;
         end;
