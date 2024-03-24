@@ -173,11 +173,11 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
-| 1 | 0:1.861   | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez    | Using 32 threads | |
-| 2 | 0:16.874  | lazarus-3.0, fpc-3.2.2 | Székely Balázs    | Using 16 threads | |
-| 3 | 0:20.046  | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | using 30 thread  | |
-| 4 | 1:16.059  | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using 1 thread   | |
-| 5 | 12:40.179 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using 1 thread   | |
+| 1 | 0:1.7599   | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez    | Using `mORMot2`, 32 threads | |
+| 2 | 0:16.874   | lazarus-3.0, fpc-3.2.2 | Székely Balázs    | Using 32 threads | |
+| 3 | 0:20.0693  | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | Using 32 threads | |
+| 4 | 1:16.059   | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using 1 thread   | |
+| 5 | 12:37.7864 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using 1 thread | |
 
 > **NOTE**
 >
