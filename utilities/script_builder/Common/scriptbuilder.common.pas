@@ -295,7 +295,6 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;
@@ -380,7 +379,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;
