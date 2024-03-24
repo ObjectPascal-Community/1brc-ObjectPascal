@@ -8,17 +8,29 @@ uses
   Classes
 , SysUtils
 , fpjson
+, fpjsonrtti
+, fgl
 ;
 
 const
   cJSONHyperfineResult = 'results[0]';
 
 type
+
+  { TDoubleList }
+
+  TDoubleList = class(specialize TFPGList<Double>)
+  public
+    function AvgValue: Double;
+    function AvgValueWithOutMinMax: Double;
+  end;
+
+  TIntegerList = specialize TFPGList<Integer>;
+
 { EResultNotAJSONObject }
   EResultNotAJSONObject = Exception;
 
 { THyperfineResult }
-  TArrayOfTime = array of Double;
   THyperfineResult = class(TObject)
   private
     FCommand: String;
@@ -29,7 +41,8 @@ type
     FSystem: Double;
     FMin: Double;
     FMax: Double;
-    FTimes: TArrayOfTime;
+    FTimes: TDoubleList;
+    FExitCodes: TIntegerList;
 
     procedure setFromJSONData(const AJSONData: TJSONData);
     procedure setFromJSONObject(const AJSONObject: TJSONObject);
@@ -39,52 +52,86 @@ type
     constructor Create(const AJSONData: TJSONData);
 
     destructor Destroy; override;
-
-    property Command: String
+  published
+    property command: String
       read FCommand
       write FCommand;
-    property Mean: Double
+    property mean: Double
       read fMean
       write FMean;
-    property StandardDeviation: Double
+    property stddev: Double
       read FStandardDeviation
       write FStandardDeviation;
-    property Median: Double
+    property median: Double
       read FMedian
       write FMedian;
-    property User: Double
+    property user: Double
       read FUser
       write FUser;
-    property System: Double
+    property system: Double
       read FSystem
       write FSystem;
-    property Min: Double
+    property min: Double
       read FMin
       write FMin;
-    property Max: Double
+    property max: Double
       read FMax
       write FMax;
-    property Times: TArrayOfTime
+    property times: TDoubleList
       read FTimes
       write FTimes;
-  published
+    property exit_codes: TIntegerList
+      read FExitCodes
+      write FExitCodes;
   end;
 
 implementation
 
-const
-  cJSONCommand           = 'command';
-  cJSONMean              = 'mean';
-  cJSONStandardDeviation = 'stddev';
-  cJSONMedian            = 'median';
-  cJSONUser              = 'user';
-  cJSONSystem            = 'system';
-  cJSONMin               = 'min';
-  cJSONMax               = 'max';
-  cJSONTimes             = 'times';
-
 resourcestring
   rsExceptionNotAJSONObject = 'JSON Data is not an object';
+
+function CompareDouble(const d1, d2: Double): Integer;
+begin
+  if d1 = d2 then Result:= 0
+  else if d1 < d2 then Result:= -1
+  else Result:= 1;
+end;
+
+{ TDoubleList }
+
+function TDoubleList.AvgValue: Double;
+var
+  i: Integer;
+  sum: Double;
+begin
+  Result := 0;
+  if Count = 0 then
+    exit;
+  sum := 0;
+  for i := 0 to Count - 1 do
+    sum := sum + Items[i];
+  Result := sum / Count;
+end;
+
+function TDoubleList.AvgValueWithOutMinMax: Double;
+var
+  sortedlist: TDoubleList;
+  i: Integer;
+  sum: Double;
+begin
+  Result := 0;
+  if Count <= 2 then
+    exit;
+  sum := 0;
+  sortedlist := TDoubleList.Create;
+  for i := 0 to Count - 1 do
+    sortedlist.Add(Items[i]);
+  sortedlist.Sort(@CompareDouble);
+  for i := 1 to sortedlist.Count - 2 do
+    sum := sum + sortedlist[i];
+  Result := sum / (sortedlist.Count - 2);
+  sortedlist.Free;
+end;
 
 { THyperfineResult }
 
@@ -98,7 +145,8 @@ begin
   FSystem:= 0.0;
   FMin:= 0.0;
   FMax:= 0.0;
-  SetLength(FTimes, 0);
+  FTimes := TDoubleList.Create;
+  FExitCodes := TIntegerList.Create;
 end;
 
 constructor THyperfineResult.Create(const AJSONData: TJSONData);
@@ -109,6 +157,8 @@ end;
 
 destructor THyperfineResult.Destroy;
 begin
+  FTimes.Free;
+  FExitCodes.Free;
   inherited Destroy;
 end;
 
@@ -123,22 +173,13 @@ end;
 
 procedure THyperfineResult.setFromJSONObject(const AJSONObject: TJSONObject);
 var
-  timesObject: TJSONArray;
-  index: Integer;
+  jds: TJSONDestreamer;
 begin
-  FCommand:= AJSONObject.Get(cJSONCommand, FCommand);
-  FMean:= AJSONObject.Get(cJSONMean, FMean);
-  FStandardDeviation:= AJSONObject.Get(cJSONStandardDeviation, FStandardDeviation);
-  FMedian:= AJSONObject.Get(cJSONMedian, FMedian);
-  FUser:= AJSONObject.Get(cJSONUser, FUser);
-  FSystem:= AJSONObject.Get(cJSONSystem, FSystem);
-  FMin:= AJSONObject.Get(cJSONMin, FMin);
-  FMax:= AJSONObject.Get(cJSONMax, FMax);
-  timesObject:= AJSONObject.Arrays[cJSONTimes];
-  SetLength(FTimes, timesObject.Count);
-  for index:= 0 to Pred(timesObject.Count) do
-  begin
-    FTimes[index]:= timesObject[index].AsFloat;
+  jds := TJSONDestreamer.Create(nil);
+  try
+    jds.JSONToObject(AJSONObject.AsJSON, Self);
+  finally
+    jds.Free;
   end;
 end;
 
