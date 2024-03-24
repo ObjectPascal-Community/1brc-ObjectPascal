@@ -10,6 +10,7 @@ uses
 , fpjson
 , fpjsonrtti
 , fgl
+, typinfo
 ;
 
 const
@@ -46,6 +47,7 @@ type
 
     procedure setFromJSONData(const AJSONData: TJSONData);
     procedure setFromJSONObject(const AJSONObject: TJSONObject);
+    procedure OnRestoreProperty(Sender: TObject; AObject: TObject; Info: PPropInfo; AValue: TJSONData; var Handled: Boolean);
   protected
   public
     constructor Create;
@@ -176,10 +178,30 @@ var
   jds: TJSONDestreamer;
 begin
   jds := TJSONDestreamer.Create(nil);
+  jds.OnRestoreProperty := @OnRestoreProperty;
   try
     jds.JSONToObject(AJSONObject.AsJSON, Self);
   finally
     jds.Free;
+  end;
+end;
+
+procedure THyperfineResult.OnRestoreProperty(Sender: TObject; AObject: TObject; Info: PPropInfo; AValue: TJSONData; var Handled: Boolean);
+var
+  i: Integer;
+begin
+  Handled := False;
+  if (Info^.Name = 'times') then
+  begin
+    Handled := True;
+    for i := 0 to AValue.Count - 1 do
+      THyperfineResult(AObject).times.Add(Avalue.Items[i].AsFloat);
+  end
+  else if (Info^.Name = 'exit_codes') then
+  begin
+    Handled := True;
+    for i := 0 to AValue.Count - 1 do
+      THyperfineResult(AObject).exit_codes.Add(Avalue.Items[i].AsInteger);
   end;
 end;
 
