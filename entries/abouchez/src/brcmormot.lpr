@@ -420,7 +420,8 @@ begin
   affinity := Executable.Command.Option(
     ['a', 'affinity'], 'force thread affinity to a single CPU core');
   Executable.Command.Get(
-    ['t', 'threads'], threads, '#number of threads to run', 16);
+    ['t', 'threads'], threads, '#number of threads to run',
+      SystemInfo.dwNumberOfProcessors);
   help := Executable.Command.Option(['h', 'help'], 'display this help');
   if Executable.Command.ConsoleWriteUnknown then
     exit

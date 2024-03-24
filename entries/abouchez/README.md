@@ -20,31 +20,35 @@ I am very happy to share decades of server-side performance coding techniques us
 
 Here are the main ideas behind this implementation proposal:
 
-- **mORMot** makes cross-platform and cross-compiler support simple (e.g. `TMemMap`, `TDynArray.Sort`,`TTextWriter`, `SetThreadCpuAffinity`, `crc32c`, `ConsoleWrite` or command-line parsing);
-- Will memmap the entire 16GB file at once into memory (so won't work on 32-bit OS, but reduce syscalls);
-- Process file in parallel using several threads (configurable, with `-t=16` by default);
-- Fed each thread from 64MB chunks of input (because thread scheduling is unfair, it is inefficient to pre-divide the size of the whole input file into the number of threads);
-- Each thread manages its own data, so there is no lock until the thread is finished and data is consolidated;
-- Each station information (name and values) is packed into a record of exactly 16 bytes, with no external pointer/string, to match the CPU L1 cache size (64 bytes) for efficiency;
-- Use a dedicated hash table for the name lookup, with crc32c perfect hash function - no name comparison nor storage is needed;
-- Store values as 16-bit or 32-bit integers (i.e. temperature multiplied by 10);
+- **mORMot** makes cross-platform and cross-compiler support simple - e.g. `TMemMap`, `TDynArray.Sort`,`TTextWriter`, `SetThreadCpuAffinity`, `crc32c`, `ConsoleWrite` or command-line parsing;
+- The entire 16GB file is `memmap`ed at once into memory - it won't work on 32-bit OS, but avoid any `read` syscall or memory copy;
+- Process file in parallel using several threads - configurable via the `-t=` switch, default being the total number of CPUs reported by the OS;
+- Input is fed into each thread as 64MB chunks: because thread scheduling is unbalanced, it is inefficient to pre-divide the size of the whole input file into the number of threads;
+- Each thread manages its own `Station[]` data, so there is no lock until the thread is finished and data is consolidated;
+- Each `Station[]` information is packed into a record of exactly 16 bytes, with no external pointer/string, to leverage the CPU L1 cache size (64 bytes) for efficiency;
+- Maintain a `StationHash[]` hash table for the name lookup, with crc32c perfect hash function - no name comparison nor storage is needed with a perfect hash (see below);
+- On Intel/AMD/AARCH64 CPUs, *mORMot* uses hardware SSE4.2 opcodes for this crc32c computation;
+- Store values as 16-bit or 32-bit integers, as temperature multiplied by 10;
 - Parse temperatures with a dedicated code (expects single decimal input values);
+- The station names are stored as UTF-8 pointers to the memmap location where they appear first, in `StationName[]`, to be emitted eventually for the final output, not during temperature parsing;
 - No memory allocation (e.g. no transient `string` or `TBytes`) nor any syscall is done during the parsing process to reduce contention and ensure the process is only CPU-bound and RAM-bound (we checked this with `strace` on Linux);
 - Pascal code was tuned to generate the best possible asm output on FPC x86_64 (which is our target);
 - Can optionally output timing statistics and resultset hash value on the console to debug and refine settings (with the `-v` command line switch);
 - Can optionally set each thread affinity to a single core (with the `-a` command line switch).
 
+If you are not convinced by the "perfect hash" trick, you can define the `NOPERFECTHASH` conditional, which forces full name comparison, but is noticeably slower. Our algorithm is safe with the official dataset, and gives the expected final result - which was the goal of this challenge: compute the right data reduction with as little time as possible, with all possible hacks and tricks. A "perfect hash" is a well known hacking pattern, when the dataset is validated in advance. And since our CPUs offers `crc32c` which is perfect for our dataset... let's use it! https://en.wikipedia.org/wiki/Perfect_hash_function ;)
+
 ## Why L1 Cache Matters
 
-The "64 bytes cache line" trick is quite unique among all implementations of the "1brc" I have seen in any language - and it does make a noticeable difference in performance.
+Take great care of the "64 bytes cache line" is quite unique among all implementations of the "1brc" I have seen in any language - and it does make a noticeable difference in performance.
 
 The L1 cache is well known in the performance hacking litterature to be the main bottleneck for any efficient in-memory process. If you want things to go fast, you should flatter your CPU L1 cache.
 
 Min/max values will be reduced as 16-bit smallint - resulting in temperature range of -3276.7..+3276.8 which seems fair on our planet according to the IPCC. ;)
 
-In our first attempt, we stored the name into the `Station[]` array, so that each entry is 64 bytes long exactly. But since `crc32c` is a perfect hash function for our dataset, we could just store the 32-bit hash instead, for higher performance. On Intel/AMD/AARCH64 CPUs, we use hardware opcodes for this crc32c computation.
+In our first attempt (see "Old Version" below), we stored the name into the `Station[]` array, so that each entry is 64 bytes long exactly. But since `crc32c` is a perfect hash function for our dataset, it is enough to just store the 32-bit hash instead, and not the actual name.
 
-See https://en.wikipedia.org/wiki/Perfect_hash_function for reference.
+Note that if we reduce the number of stations from 41343 to 400, the performance is much higher, also with a 16GB file as input. The reason is that since 400x16 = 6400, each dataset could fit entirely in each core L1 cache. No slower L2/L3 cache is involved, therefore performance is better. The cache memory seems to be the bottleneck of our code. Which is a good sign.
 
 ## Usage
 
@@ -71,7 +75,7 @@ We will use these command-line switches for local (dev PC), and benchmark (chall
 
 ## Local Analysis
 
-On my PC, it takes less than 5 seconds to process the 16GB file with 8/10 threads.
+On my PC, it takes less than 3 seconds to process the 16GB file with 8/10 threads.
 
 Let's compare `abouchez` with a solid multi-threaded entry using file buffer reads and no memory map (like `sbalazs`), using the `time` command on Linux:
 
@@ -88,9 +92,9 @@ real 0m25,330s
 user 6m44,853s
 sys  0m31,167s
 ```
-We used 20 threads for both executable, because it was giving the best results for each program on our PC.
+We defined 20 threads for both executables, because our PC CPU has 20 threads in total, and using them all seems to achieve the best resutls.
 
-Apart from the obvious global "wall" time reduction (`real` numbers), the raw parsing and data gathering in the threads match the number of threads and the running time (`user` numbers), and no syscall is involved by `abouchez` thanks to the memory mapping of the whole file (`sys` numbers, which contain only memory page faults).
+Apart from the obvious global "wall" time reduction (`real` numbers), the raw parsing and data gathering in the threads match the number of threads and the running time (`user` numbers), and no syscall is involved by `abouchez` thanks to the memory mapping of the whole file (`sys` numbers, which contain only memory page faults, is much lower).
 
 The `memmap()` feature makes the initial/cold `abouchez` call slower, because it needs to cache all measurements data from file into RAM (I have 32GB of RAM, so the whole data file will remain in memory, as on the benchmark hardware):
 ```
@@ -120,7 +124,7 @@ The `-v` verbose mode makes such testing easy. The `hash` value can quickly chec
 
 ## Benchmark Integration
 
-Every system is quite unique, especially about its CPU multi-thread abilities. For instance, my Intel Core i5 has both P-cores and E-cores so its threading model is pretty unfair. The Zen architecture should be more balanced.
+Every system is quite unique, especially about its CPU multi-thread abilities. For instance, my Intel Core i5 has both P-cores and E-cores so its threading model is pretty unbalanced. The Zen architecture should be more balanced.
 
 So we first need to find out which options leverage at best the hardware it runs on.
 
@@ -147,9 +151,52 @@ This `-t=1` run is for fun: it will run the process in a single thread. It will 
 
 Our proposal has been run on the benchmark hardware, using the full automation. 
 
-TO BE COMPLETED - NUMBERS BELOW ARE FOR THE OLD VERSION:
+Here are some numbers, with 16 threads:
+```
+-- SSD --
+Benchmark 1: abouchez
+  Time (mean ± σ):      2.095 s ±  0.044 s    [User: 21.486 s, System: 1.752 s]
+  Range (min … max):    2.017 s …  2.135 s    10 runs
+``` 
 
-With 30 threads (on a busy system): 
+With 24 threads:
+```
+-- SSD --
+Benchmark 1: abouchez
+  Time (mean ± σ):      1.944 s ±  0.014 s    [User: 28.686 s, System: 1.909 s]
+  Range (min … max):    1.924 s …  1.974 s    10 runs
+``` 
+
+With 32 threads:
+```
+-- SSD --
+Benchmark 1: abouchez
+  Time (mean ± σ):      1.768 s ±  0.012 s    [User: 33.286 s, System: 2.067 s]
+  Range (min … max):    1.743 s …  1.782 s    10 runs
+```
+
+If we try with 32 threads and thread affinity (`-a` option):
+```
+  Time (mean ± σ):      1.771 s ±  0.010 s    [User: 33.415 s, System: 2.056 s]
+  Range (min … max):    1.760 s …  1.786 s    10 runs
+ ```
+
+So it sounds like if we could just run the benchmark with the `-t=32` option, and achieve the best performance. Thread affinity is no silver bullet here, so we better stay away from it, and let the OS decide about thread scheduling.
+
+The Ryzen CPU has 16 cores with 32 threads, and it makes sense that each thread only have to manage a small number of data per item (a 16 bytes `Station[]` item), so we could leverage all cores and threads.
+
+
+## Notes about the "Old" Version
+
+In the version same `src` sub-folder, you will find our first attempt of this challenge, as `brcmormotold.lpr`. In respect to the "final/new" version, it did store the name as a "shortstring" within its `Station[]` record, to fill exactly the 64-byte cache line size.
+
+It was already very fast, but since `crc32c` is a perfect hash function, we finally decided to just stored the 32-bit hash, and not the name itself.
+
+You could disable our tuned asm in the project source code, and loose about 10% by using general purpose *mORMot* `crc32c()` and `CompareMem()` functions, which already runs SSE2/SSE4.2 tune assembly. No custom asm is needed on the "new" version: we directly use the *mORMot* functions.
+
+There is a "*pure mORMot*" name lookup version available if you undefine the `CUSTOMHASH` conditional, which is around 40% slower, because it needs to copy the name into the stack before using `TDynArrayHashed`, and has a little more overhead.
+
+As reference, here are the numbers of this "old" version, with 30 threads (on a busy Benchmark system): 
 ```
 -- SSD --
 Benchmark 1: abouchez
@@ -162,7 +209,7 @@ Benchmark 1: abouchez
   Range (min … max):    3.497 s …  3.789 s    10 runs
 ```
 
-Later on, only the SSD values are shown, because the HDD version triggered the systemd watchdog, which killed the shell and its benchmark executable. But we can see that once the data is loaded from disk into the RAM cache, there is no difference with a `memmap` file on SSD and HDD. Linux is a great Operating System for sure.
+In fact, only the SSD values matters. We can see that once the data is loaded from disk into the RAM cache, there is no difference with a `memmap` file on SSD and HDD. Linux is a great Operating System for sure.
 
 With 24 threads: 
 ```
@@ -187,20 +234,8 @@ Benchmark 1: abouchez
   Time (mean ± σ):      3.227 s ±  0.017 s    [User: 39.731 s, System: 1.875 s]
   Range (min … max):    3.206 s …  3.253 s    10 runs
 ```
+It is a known fact from experiment that forcing thread affinity is not a good idea, and it is always much better to let any modern Operating System do  the threads scheduling to the CPU cores, because it has a much better knowledge of the actual system load and status. Even on a "fair" CPU architecture like AMD Zen. For a "pure CPU" process, affinity may help a very little. But for our "old" process working outside of the L1 cache limits, we better let the OS decide.
 
-So it sounds like if we should just run the benchmark with the `-t=16` option.
-
-It may be as expected:
-
-- The Ryzen CPU has 16 cores with 32 threads, and it makes sense that using only the "real" cores with CPU+RAM intensive work is enough to saturate them;
-- It is a known fact from experiment that forcing thread affinity is not a good idea, and it is always much better to let any modern Linux Operating System schedule the threads to the CPU cores, because it has a much better knowledge of the actual system load and status. Even on a "fair" CPU architecture like AMD Zen.
-
-## Old Version
-
-TO BE DETAILED (WITH NUMBERS?)
-
-You could disable our tuned asm in the project source code, and loose about 10% by using general purpose *mORMot* `crc32c()` and `CompareMem()` functions, which already runs SSE2/SSE4.2 tune assembly.
-
-There is a "*pure mORMot*" name lookup version available if you undefine the `CUSTOMHASH` conditional, which is around 40% slower, because it needs to copy the name into the stack before using `TDynArrayHashed`, and has a little more overhead.
+So with this "old" version, it was decided to use `-t=16`. The "old" version is using a whole cache line (16 bytes) for its `Station[]` record, so it may be the responsible of using too much CPU cache, so more than 16 threads does not make a difference with it. Whereas our "new" version, with its `Station[]` of only 16 bytes, could use `-t=32` with benefits. The cache memory access is likely to be the bottleneck from now on.
 
 Arnaud :D
