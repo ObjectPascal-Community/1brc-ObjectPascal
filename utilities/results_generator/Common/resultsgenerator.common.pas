@@ -164,8 +164,8 @@ begin
             FList[index2].Compiler:= 'lazarus-3.0, fpc-3.2.2';
           end;
 
-          FList[index2].Name:= FConfig.Entries[index].Name;
-          FList[index2].Notes:= FConfig.Entries[index].Notes;
+          FList[index2].Name:= UTF8Encode(FConfig.Entries[index].Name);
+          FList[index2].Notes:= UTF8Encode(FConfig.Entries[index].Notes);
           FList[index2].Count := FResult.times.Count;
           FList[index2].Result:= FResult.times.AvgValueWithOutMinMax;
         finally
