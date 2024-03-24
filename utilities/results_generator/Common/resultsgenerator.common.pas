@@ -116,19 +116,9 @@ var
 begin
   Result:= '';
   intPart:= Trunc(ATime);
-  minutes:= 0;
-  if intPart >= 60 then
-  begin
-    repeat
-      Inc(minutes);
-      Dec(intPart, 60);
-    until intPart < 60;
-  end;
-  millis:= Copy(
-    FloatToStr(ATime),
-    Pos('.', FloatToStr(ATime)) + 1,
-    4
-  );
+  millis := FormatFloat('000', Trunc((ATime - intPart) * 1000));
+  minutes := intPart div 60;
+  intPart := intPart mod 60;
   Result:= Format('%d:%d.%s',[
     minutes,
     intPart,
