@@ -17,8 +17,7 @@ uses
 
 type
 
-  { TResult }
-
+{ TResult }
   TResult = class
     Name: String;
     Notes: String;
@@ -28,10 +27,10 @@ type
     constructor Create;
   end;
 
+{ TResultsList }
   TResultsList = specialize TFPGObjectList<TResult>;
 
-  { TResults }
-
+{ TResults }
   TResults = class(TObject)
   private
     FConfig: TConfig;
@@ -54,8 +53,6 @@ implementation
 uses
   fpjson
 , jsonparser
-, Math
-, Utilities.ArraySort
 ;
 
 const
@@ -120,7 +117,7 @@ begin
   Result:= '';
   intPart:= Trunc(ATime);
   minutes:= 0;
-  if intPart > 60 then
+  if intPart >= 60 then
   begin
     repeat
       Inc(minutes);
