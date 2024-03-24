@@ -30,22 +30,24 @@ var
   outputFilename: String = '';
   FParams: TStringList;
 
-function ParseConsoleParams: boolean;
+function ParseConsoleParams: Boolean;
 
 implementation
 
 procedure WriteHelp;
 begin
-  WriteLn('OneBRC -- An entry to the One Billion Row Challenge for Object Pascal');
+  WriteLn('bfire -- An entry to the One Billion Row Challenge for Object Pascal');
   WriteLn;
   WriteLn('Usage');
-  WriteLn('  OneBRC -h                      |  Write this help message and exit');
-  WriteLn('  OneBRC -v                      |  Write the version and exit');
-  WriteLn('  OneBRC -i <file_1> -o <file_2> |  <file_1> contains Weather Data');
+  WriteLn('  bfire -h                       |  Write this help message and exit');
+  WriteLn('  bfire -v                       |  Write the version and exit');
+  WriteLn('  bfire -i <file_1>              |  <file_1> contains Weather Data');
+  WriteLn('  bfire -i <file_1> -o <file_2>  |  <file_1> contains Weather Data');
   WriteLn('                                 |  <file_2> contains result');
+  WriteLn('  If <file_2> is not defined, result goes to CONSOLE (STDOUT)');
 end;
 
-function CheckShortParams(const AParam: Char): boolean;
+function CheckShortParams(const AParam: Char): Boolean;
 var
   J: Integer;
 begin
@@ -60,11 +62,11 @@ begin
   end;
 end;
 
-function ParseConsoleParams: boolean;
+function ParseConsoleParams: Boolean;
 var
   I, J, valid: Integer;
-  ParamOK: boolean;
-  SkipNext: boolean;
+  ParamOK: Boolean;
+  SkipNext: Boolean;
 begin
   // initialize values
   valid := 0;
@@ -129,18 +131,14 @@ begin
   // check help
   if (FParams.Find(cShortOptHelp, J)) then
   begin
-{$IFNDEF DEBUG}
     WriteHelp;
-{$IFEND}
     exit;
   end;
 
   // check version
   if (FParams.Find(cShortOptVersion, J)) then
   begin
-{$IFNDEF DEBUG}
     WriteLn(Format(rsGeneratorVersion, [cVersion]));
-{$IFEND}
     exit;
   end;
 
@@ -149,9 +147,7 @@ begin
   J := FParams.IndexOfName(cShortOptInput);
   if J = -1 then
   begin
-{$IFNDEF DEBUG}
     WriteLn(Format(rsErrorMessage, [rsMissingInputFlag]));
-{$IFEND}
   end
   else
   begin
@@ -162,11 +158,11 @@ begin
   // check outputfilename
   J := -1;
   J := FParams.IndexOfName(cShortOptOutput);
-  if J = -1 then
+  if J = -1 then // send to console
   begin
-{$IFNDEF DEBUG}
-    WriteLn(Format(rsErrorMessage, [rsMissingOutputFlag]));
-{$IFEND}
+    // WriteLn(Format(rsErrorMessage, [rsMissingOutputFlag]));
+    outputFilename := 'CONSOLE';
+    inc(valid);
   end
   else
   begin

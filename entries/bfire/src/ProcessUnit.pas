@@ -107,6 +107,7 @@ var
 begin
   try
     outputFileStream := TFileStream.Create(outFile, fmCreate);
+    // not used for console
     StationCount := Stations.count;
 
     for index := 0 to StationCount - 1 do
@@ -128,22 +129,36 @@ begin
       bufferStr := bufferStr + Stations[index] + '=' + IntegerFixup(EntryMin) +
         '/' + MeanFixup(EntrySum, EntryCount) + '/' + IntegerFixup(EntryMax);
 
-      outputFileStream.WriteBuffer(TEncoding.UTF8.GetBytes(bufferStr),
-        TEncoding.UTF8.GetByteCount(bufferStr));
+      if outFile = 'CONSOLE' then // send to STDOUT, where it gets mangled
+      begin
+        write(bufferStr);
+      end
+      else
+      begin
+        outputFileStream.WriteBuffer(TEncoding.UTF8.GetBytes(bufferStr),
+          TEncoding.UTF8.GetByteCount(bufferStr));
+      end;
     end;
 
     bufferStr := '}' + Chr(10); // linefeed appears at end of baseline file
-    outputFileStream.WriteBuffer(TEncoding.UTF8.GetBytes(bufferStr),
-      TEncoding.UTF8.GetByteCount(bufferStr));
-
+    if outFile = 'CONSOLE' then // send to STDOUT, where it gets mangled
+    begin
+      write(bufferStr);
+    end
+    else
+    begin
+      outputFileStream.WriteBuffer(TEncoding.UTF8.GetBytes(bufferStr),
+        TEncoding.UTF8.GetByteCount(bufferStr));
+    end;
     outputFileStream.Free;
 
   finally
-{$IFNDEF DEBUG}
-    WriteLn;
-    WriteLn;
-    WriteLn('Done');
-{$IFEND}
+    if outFile <> 'CONSOLE' then
+    begin
+      WriteLn;
+      WriteLn;
+      WriteLn('Done');
+    end;
   end;
 
 end;
@@ -165,9 +180,11 @@ var
 
 begin
   InitCities;
-{$IFNDEF DEBUG}
-  WriteLn('Building Weather Station List...');
-{$IFEND}
+  if outFile <> 'CONSOLE' then
+  begin
+    WriteLn('Building Weather Station List...');
+  end;
+
   // Load the Weather Station names
   if FileExists(inFile) then
   begin

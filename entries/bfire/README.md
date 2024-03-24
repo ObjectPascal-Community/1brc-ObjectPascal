@@ -1,4 +1,4 @@
-# EagleAglow
+# Brian Fire
 
 An Entry to the One Billion Row Challenge in Object Pascal using Delphi 12 by [EagleAglow](https://github.com/EagleAglow), Discord: briar.on.fire
 
@@ -13,24 +13,31 @@ Project uses Delphi units: 'Classes', 'System.SysUtils', 'System.StrUtils' and '
 ### UTF8 vs. Windows Terminal
 
 The text in the Windows Terminal console uses the system code page, which does not play well with UTF8.
-Although I tried various ways to make this work, the only reliable approach was to write the results to a file.
-For the challenge, compiling in DEBUG mode suppresses console output.
+The only way to match the approved result is to write the output to a file, with resulting
+SHA256 hash: db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524
+
+If the Windows console output is redirected to a file, some characters are mangled, and the resulting SHA256 hash is:
+82411ba76c59ae765e85b497f135a8f4e68d7a14cb7c0909ba96dea0d0635a28
+
+For the challenge, compiled for LINUX, the console result will (hopefully) be correct.
 
 ### Execution
 ```
     Usage
-    OneBRC -h                      |  Write this help message and exit
-    OneBRC -v                      |  Write the version and exit
-    OneBRC -i <file_1> -o <file_2> |  <file_1> contains Weather Data
+    bfire -h                       |  Write this help message and exit
+    bfire -v                       |  Write the version and exit
+    bfire -i <file_1>              |  <file_1> contains Weather Data
+    bfire -i <file_1> -o <file_2>  |  <file_1> contains Weather Data
                                    |  <file_2> contains result
+    If <file_2> is not defined, result goes to CONSOLE (STDOUT)
 ```
 
 #### Contest Mode
 
-To run the challenge, compile a DEBUG version, read from the 'challenge.csv' file and write to 'results.txt' file:
+To run the challenge, read from the 'challenge.csv' file:
 
 ```
-C:> OneBRC -i challenge.csv -o results.txt
+C:> bfire -i challenge.csv
 ```
 
 ## Remarks
