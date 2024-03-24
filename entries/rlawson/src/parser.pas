@@ -29,7 +29,6 @@ const
   BUFFER_SIZE = READ_SIZE + 1024;
   REC_SEP: char = ';';
   LF: char = chr(10);
-  ANSI_ZERO: integer = 48;
   DECIMAL_POINT: char = '.';
   NEGATIVE_SIGN: char = '-';
 
@@ -47,6 +46,7 @@ begin
     // read the city by looking for semicolon
     city := '';
     cityStart := idx;
+    Inc(idx); // city has to be at least one character
     while buffer[idx] <> REC_SEP do Inc(idx);
     SetString(city, @buffer[cityStart], (idx - cityStart));
     // parse the temp reading
@@ -58,17 +58,20 @@ begin
       currentTempSign := -1;
       Inc(idx);
     end;
-    // look ahead - is decimal point 2 spaces away then we have two digits
+    // look ahead - is decimal point 2 spaces away then we have temp = dd.d
+    // other wise d.d
     temp := 0;
     if buffer[idx + 2] = DECIMAL_POINT then
     begin
-      temp := 100 * (byte(buffer[idx]) - ANSI_ZERO);
-      Inc(idx);
+      temp := currentTempSign * (100 * Integer(buffer[idx]) + 10 *
+        Integer(buffer[idx + 1]) + Integer(buffer[idx + 3]) - 5328);
+      idx := idx + 6;
+    end
+    else
+    begin
+      temp := currentTempSign * (10 * Integer(buffer[idx]) + Integer(buffer[idx + 2]) - 528);
+      idx := idx + 5;
     end;
-    temp := temp + 10 * (byte(buffer[idx]) - ANSI_ZERO);
-    idx := idx + 2;
-    temp := currentTempSign * (temp + (byte(buffer[idx]) - ANSI_ZERO));
-    idx := idx + 3;
     reading := results.Find(city);
     if reading = nil then
     begin
