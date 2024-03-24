@@ -10,7 +10,7 @@ uses
 , SysUtils
 , CustApp
 , ResultsGenerator.Console
-, ResultsGenerator.Common, Utilities.Data.Hyperfine
+, ResultsGenerator.Common
 ;
 
 {$I version.inc}

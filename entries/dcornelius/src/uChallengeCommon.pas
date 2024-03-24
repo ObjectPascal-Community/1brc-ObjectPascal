@@ -29,7 +29,6 @@ type
   // a global class to provide standard open/close and other functions
   TChallengeCommon = class
   private
-    FWeatherDataFile: TextFile;
     FInputFilename: string;
   public
     constructor Create(const NewInputFilename: string);

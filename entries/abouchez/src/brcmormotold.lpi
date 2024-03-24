@@ -10,7 +10,7 @@
         <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="Results Table Generator"/>
+      <Title Value="brcmormotold"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -20,12 +20,11 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../../bin/resultsgenerator"/>
+            <Filename Value="../../../bin/abouchez"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-            <OtherUnitFiles Value="../../Common;../../../common"/>
-            <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
             <SyntaxOptions>
@@ -55,15 +54,15 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../../bin/resultsgenerator"/>
+            <Filename Value="../../../bin/abouchez"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-            <OtherUnitFiles Value="../../Common;../../../common"/>
-            <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
+            <TargetProcessor Value="COREAVX2"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -71,7 +70,6 @@
           <Linking>
             <Debugging>
               <GenerateDebugInfo Value="False"/>
-              <RunWithoutDebug Value="True"/>
             </Debugging>
             <LinkSmart Value="True"/>
           </Linking>
@@ -85,54 +83,38 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="7">
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="mormot2"/>
+      </Item1>
+    </RequiredPackages>
+    <Units Count="1">
       <Unit0>
-        <Filename Value="resultsgenerator.lpr"/>
+        <Filename Value="brcmormotold.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="ResultsGenerator"/>
+        <UnitName Value="brcmormot"/>
       </Unit0>
-      <Unit1>
-        <Filename Value="../../Common/resultsgenerator.console.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="resultsgenerator.Console"/>
-      </Unit1>
-      <Unit2>
-        <Filename Value="../../Common/resultsgenerator.common.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="ResultsGenerator.Common"/>
-      </Unit2>
-      <Unit3>
-        <Filename Value="../../../common/utilities.data.config.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Utilities.Data.Config"/>
-      </Unit3>
-      <Unit4>
-        <Filename Value="../../../common/utilities.data.entries.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Utilities.Data.Entries"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="../../../common/utilities.data.hyperfine.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Utilities.Data.Hyperfine"/>
-      </Unit5>
-      <Unit6>
-        <Filename Value="../../../common/utilities.arraysort.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Utilities.ArraySort"/>
-      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../../../bin/resultsgenerator"/>
+      <Filename Value="../../../bin/abouchez"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir);../../Common"/>
-      <OtherUnitFiles Value="../../Common;../../../common"/>
-      <UnitOutputDirectory Value="../../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <IncludeAssertionCode Value="True"/>
+      </SyntaxOptions>
+    </Parsing>
+    <CodeGeneration>
+      <Optimizations>
+        <OptimizationLevel Value="3"/>
+      </Optimizations>
+    </CodeGeneration>
     <Linking>
       <Debugging>
         <DebugInfoType Value="dsDwarf3"/>
