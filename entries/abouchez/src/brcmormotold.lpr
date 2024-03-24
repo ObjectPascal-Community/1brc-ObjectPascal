@@ -1,8 +1,12 @@
 /// MIT code (c) Arnaud Bouchez, using the mORMot 2 framework
-program brcmormot;
+// - initial revision with full hashing and transient storage of the names
+program brcmormotold;
 
-{.$define NOPERFECTHASH}
-// you can define this conditional to force name comparison (2.5x slower)
+{$define CUSTOMHASH}
+// a dedicated hash table is 40% faster than mORMot generic TDynArrayHashed
+
+{$define CUSTOMASM}
+// about 10% faster with some dedicated asm instead of mORMot code on x86_64
 
 {$I mormot.defines.inc}
 
@@ -23,22 +27,33 @@ uses
   mormot.core.data;
 
 type
-  // a weather station info, using 1/4rd of a CPU L1 cache line (64/4=16 bytes)
+  // a weather station info, using a whole CPU L1 cache line (64 bytes)
   TBrcStation = packed record
-    NameHash: cardinal;   // crc32c perfect hash of the name
+    NameLen: byte; // name as first "shortstring" field for TDynArray
+    NameText: array[1 .. 64 - 1 - 2 * 4 - 2 * 2] of byte;
     Sum, Count: integer;  // we ensured no overflow occurs with 32-bit range
     Min, Max: SmallInt;   // 16-bit (-32767..+32768) temperatures * 10
   end;
   PBrcStation = ^TBrcStation;
+  TBrcStationDynArray = array of TBrcStation;
+
+  TBrcStations = array[word] of TBrcStation;
+  PBrcStations = ^TBrcStations;
 
   TBrcList = record
   public
-    StationHash: array of word;      // store 0 if void, or Station[] index + 1
-    Station: array of TBrcStation;
-    StationName: array of PUtf8Char; // directly point to input memmap file
-    Count: PtrInt;
-    procedure Init(max: integer);
+    Count: integer;
+    {$ifdef CUSTOMHASH}
+    Station: PBrcStations; // perfectly aligned to 64 bytes from StationMem[]
+    StationHash: array of word; // store 0 if void, or Station[] index + 1
+    StationMem: TBrcStationDynArray;
     function Search(name: pointer; namelen: PtrInt): PBrcStation;
+    {$else}
+    Station: TBrcStationDynArray;
+    Stations: TDynArrayHashed;
+    function Search(name: PByteArray): PBrcStation;
+    {$endif CUSTOMHASH}
+    procedure Init(max: integer; align: boolean);
   end;
 
   TBrcMain = class
@@ -72,46 +87,167 @@ type
 
 { TBrcList }
 
+{$ifdef CUSTOMHASH}
+
+{$ifndef OSLINUXX64}
+  {$undef CUSTOMASM} // asm below is for FPC + Linux x86_64 only
+{$endif OSLINUXX64}
+
 const
   HASHSIZE = 1 shl 18; // slightly oversized to avoid most collisions
 
-procedure TBrcList.Init(max: integer);
+procedure TBrcList.Init(max: integer; align: boolean);
 begin
   assert(max <= high(StationHash[0]));
-  SetLength(Station, max);
+  SetLength(StationMem, max); // RTL won't align by 64 bytes
+  Station := pointer(StationMem);
+  if align then
+    while {%H-}PtrUInt(Station) and 63 <> 0 do // manual alignment
+      inc(PByte(Station));
   SetLength(StationHash, HASHSIZE);
-  SetLength(StationName, max);
 end;
+
+{$ifdef CUSTOMASM}
+
+function dohash(buf: PAnsiChar; len: cardinal): PtrUInt; nostackframe; assembler;
+asm
+        xor     eax, eax // it is enough to hash up to 15 bytes for our purpose
+        mov     ecx, len
+        cmp     len, 8
+        jb      @less8
+        crc32   rax, qword ptr [buf]
+        add     buf, 8
+@less8: test    cl, 4
+        jz      @less4
+        crc32   eax, dword ptr [buf]
+        add     buf, 4
+@less4: test    cl, 2
+        jz      @less2
+        crc32   eax, word ptr [buf]
+        add     buf, 2
+@less2: test    cl, 1
+        jz      @z
+        crc32   eax, byte ptr [buf]
+@z:
+end;
+
+function CompareMem(a, b: pointer; len: PtrInt): boolean; nostackframe; assembler;
+asm
+        add     a, len
+        add     b, len
+        neg     len
+        cmp     len, -8
+        ja      @less8
+        align   8
+@by8:   mov     rax, qword ptr [a + len]
+        cmp     rax, qword ptr [b + len]
+        jne     @diff
+        add     len, 8
+        jz      @eq
+        cmp     len, -8
+        jna     @by8
+@less8: cmp     len, -4
+        ja      @less4
+        mov     eax, dword ptr [a + len]
+        cmp     eax, dword ptr [b + len]
+        jne     @diff
+        add     len, 4
+        jz      @eq
+@less4: cmp     len, -2
+        ja      @less2
+        movzx   eax, word ptr [a + len]
+        movzx   ecx, word ptr [b + len]
+        cmp     eax, ecx
+        jne     @diff
+        add     len, 2
+@less2: test    len, len
+        jz      @eq
+        mov     al, byte ptr [a + len]
+        cmp     al, byte ptr [b + len]
+        je      @eq
+@diff:  xor     eax, eax
+        ret
+@eq:    mov     eax, 1 // = found (most common case of no hash collision)
+end;
+
+{$else}
+
+function dohash(buf: PAnsiChar; len: cardinal): PtrUInt; inline;
+begin
+  if len > 16 then
+    len := 16; // it is enough to hash up to 16 bytes for our purpose
+  result := DefaultHasher(0, buf, len); // fast mORMot asm hasher (crc32c)
+end;
+
+{$endif CUSTOMASM}
 
 function TBrcList.Search(name: pointer; namelen: PtrInt): PBrcStation;
 var
-  h32: cardinal;
   h, x: PtrUInt;
 begin
-  h32 := crc32c(0, name, namelen);
-  h := h32;
+  assert(namelen <= SizeOf(TBrcStation.NameText));
+  h := dohash(name, namelen);
   repeat
     h := h and (HASHSIZE - 1);
     x := StationHash[h];
     if x = 0 then
       break; // void slot
     result := @Station[x - 1];
-    if result^.NameHash = h32 then
-      {$ifdef NOPERFECTHASH}
-      if MemCmp(pointer(StationName[x - 1]), name, namelen + 1) = 0 then
-      {$endif NOPERFECTHASH}
-        exit; // found this perfect hash = found this name
-    inc(h); // hash modulo collision: linear probing
+    if (result^.NameLen = namelen) and
+       CompareMem(@result^.NameText, name, namelen) then
+      exit; // found
+    inc(h); // hash collision: try next slot
   until false;
-  assert(Count < length(Station));
-  StationName[Count] := name;
   result := @Station[Count];
   inc(Count);
   StationHash[h] := Count;
-  result^.NameHash := h32;
+  result^.NameLen := namelen;
+  MoveFast(name^, result^.NameText, namelen);
   result^.Min := high(result^.Min);
   result^.Max := low(result^.Max);
 end;
+
+{$else}
+
+function StationHash(const Item; Hasher: THasher): cardinal;
+var
+  s: TBrcStation absolute Item; // s.Name should be the first field
+begin
+  result := Hasher(0, @s.NameText, s.NameLen);
+end;
+
+function StationComp(const A, B): integer;
+var
+  sa: TBrcStation absolute A;
+  sb: TBrcStation absolute B;
+begin
+  result := MemCmp(@sa.NameLen, @sb.NameLen, sa.NameLen + 1);
+end;
+
+procedure TBrcList.Init(max: integer; align: boolean);
+begin
+  // align is just ignored, because TDynArray requires natural alignment
+  Stations.Init(
+    TypeInfo(TBrcStationDynArray), Station, @StationHash, @StationComp, nil, @Count);
+  Stations.Capacity := max;
+end;
+
+function TBrcList.Search(name: PByteArray): PBrcStation;
+var
+  i: PtrUInt;
+  added: boolean;
+begin
+  assert(name^[0] < SizeOf(TBrcStation.NameText));
+  i := Stations.FindHashedForAdding(name^, added);
+  result := @Station[i]; // in two steps (Station[] may be reallocated)
+  if not added then
+    exit;
+  MoveFast(name^, result^.NameLen, name^[0] + 1);
+  result^.Min := high(result^.Min);
+  result^.Max := low(result^.Max);
+end;
+
+{$endif CUSTOMHASH}
 
 
 { TBrcThread }
@@ -120,7 +256,7 @@ constructor TBrcThread.Create(owner: TBrcMain);
 begin
   fOwner := owner;
   FreeOnTerminate := true;
-  fList.Init(fOwner.fMax);
+  fList.Init(fOwner.fMax, {align=}true);
   InterlockedIncrement(fOwner.fRunning);
   inherited Create({suspended=}false);
 end;
@@ -131,6 +267,10 @@ var
   v, m: integer;
   l, neg: PtrInt;
   s: PBrcStation;
+  {$ifndef CUSTOMHASH}
+  c: byte;
+  name: array[0..63] of byte; // efficient map of a temp shortstring on FPC
+  {$endif CUSTOMHASH}
 begin
   while fOwner.GetChunk(start, stop) do
   begin
@@ -139,9 +279,20 @@ begin
     repeat
       // parse the name;
       l := 2;
+      {$ifdef CUSTOMHASH}
       start := p;
       while p[l] <> ord(';') do
         inc(l); // small local loop is faster than SSE2 ByteScanIndex()
+      {$else}
+      repeat
+        c := p[l];
+        if c = ord(';') then
+          break;
+        inc(l);
+        name[l] := c; // fill name[] as a shortstring
+      until false;
+      name[0] := l;
+      {$endif CUSTOMHASH}
       p := @p[l + 1]; // + 1 to ignore ;
       // parse the temperature (as -12.3 -3.4 5.6 78.9 patterns) into value * 10
       if p[0] = ord('-') then
@@ -163,7 +314,11 @@ begin
         p := @p[5];
       end;
       // store the value
+      {$ifdef CUSTOMHASH}
       s := fList.Search(start, l);
+      {$else}
+      s := fList.Search(@name);
+      {$endif CUSTOMHASH}
       inc(s^.Sum, v);
       inc(s^.Count);
       m := s^.Min;
@@ -193,7 +348,7 @@ begin
   if not fMem.Map(fn) then
     raise ESynException.CreateUtf8('Impossible to find %', [fn]);
   fMax := max;
-  fList.Init(fMax);
+  fList.Init(fMax, {align=}false); // not aligned for TDynArray.Sort to work
   fCurrentChunk := pointer(fMem.Buffer);
   fCurrentRemain := fMem.Size;
   core := 0;
@@ -250,40 +405,29 @@ begin
   fSafe.UnLock;
 end;
 
-function NameLen(p: PUtf8Char): PtrInt; inline;
-begin
-  result := 2;
-  while p[result] <> ';' do
-    inc(result);
-end;
-
 procedure TBrcMain.Aggregate(const another: TBrcList);
 var
-  n: integer;
   s, d: PBrcStation;
-  p: PPUtf8Char;
+  n: integer;
 begin
   fSafe.Lock; // several TBrcThread may finish at the same time
-  if fList.Count = 0 then
-    fList := another
-  else
-  begin
-    n := another.Count;
-    s := pointer(another.Station);
-    p := pointer(another.StationName);
-    repeat
-      d := fList.Search(p^, NameLen(p^));
-      inc(d^.Count, s^.Count);
-      inc(d^.Sum, s^.Sum);
-      if s^.Max > d^.Max then
-        d^.Max := s^.Max;
-      if s^.Min < d^.Min then
-        d^.Min := s^.Min;
-      inc(s);
-      inc(p);
-      dec(n);
-    until n = 0;
-  end;
+  n := another.Count;
+  s := pointer(another.Station);
+  repeat
+    {$ifdef CUSTOMHASH}
+    d := fList.Search(@s^.NameText, s^.NameLen);
+    {$else}
+    d := fList.Search(@s^.NameLen);
+    {$endif CUSTOMHASH}
+    inc(d^.Count, s^.Count);
+    inc(d^.Sum, s^.Sum);
+    if s^.Max > d^.Max then
+      d^.Max := s^.Max;
+    if s^.Min < d^.Min then
+      d^.Min := s^.Min;
+    inc(s);
+    dec(n);
+  until n = 0;
   fSafe.UnLock;
   if InterlockedDecrement(fRunning) = 0 then
     fEvent.SetEvent; // all threads finished: release main console thread
@@ -310,6 +454,21 @@ begin
   w.Add(AnsiChar(val - d10 * 10 + ord('0')));
 end;
 
+function ByStationName(const A, B): integer;
+var
+  sa: TBrcStation absolute A;
+  sb: TBrcStation absolute B;
+  la, lb: PtrInt;
+begin
+  la := sa.NameLen;
+  lb := sb.NameLen;
+  if la < lb then
+    la := lb;
+  result := MemCmp(@sa.NameText, @sb.NameText, la);
+  if result = 0 then
+    result := sa.NameLen - sb.NameLen;
+end;
+
 function Average(sum, count: PtrInt): PtrInt;
 // sum and result are temperature * 10 (one fixed decimal)
 var
@@ -327,69 +486,41 @@ begin
   //ConsoleWrite([sum / (count * 10), ' ', result / 10]);
 end;
 
-function ByStationName(const A, B): integer;
-var
-  pa, pb: PByte;
-begin
-  result := 0;
-  pa := pointer(A);
-  pb := pointer(B);
-  if pa = pb then
-    exit;
-  repeat
-    if pa^ <> pb^ then
-      break
-    else if pa^ = ord(';') then
-      exit; // Str1 = Str2
-    inc(pa);
-    inc(pb);
-  until false;
-  if pa^ = ord(';') then
-    result := -1
-  else if pb^ = ord(';') then
-    result := 1
-  else
-    result := pa^ - pb^;
-end;
-
 function TBrcMain.SortedText: RawUtf8;
 var
-  c: PtrInt;
-  n: PCardinal;
+  n: integer;
   s: PBrcStation;
-  p: PUtf8Char;
   st: TRawByteStringStream;
   w: TTextWriter;
-  ndx: TSynTempBuffer;
   tmp: TTextWriterStackBuffer;
 begin
-  // compute the sorted-by-name indexes of all stations
-  c := fList.Count;
-  assert(c <> 0);
-  DynArraySortIndexed(
-    pointer(fList.StationName), SizeOf(PUtf8Char), c, ndx, ByStationName);
-  // generate output
+  {$ifdef CUSTOMHASH}
+  DynArrayFakeLength(fList.Station, fList.Count);
+  DynArray(TypeInfo(TBrcStationDynArray), fList.Station).Sort(ByStationName);
+  {$else}
+  fList.Stations.Sort(ByStationName);
+  {$endif CUSTOMHASH}
   FastSetString(result, nil, 1200000); // pre-allocate result
   st := TRawByteStringStream.Create(result);
   try
     w := TTextWriter.Create(st, @tmp, SizeOf(tmp));
     try
       w.Add('{');
-      n := ndx.buf;
-      repeat
-        s := @fList.Station[n^];
-        assert(s^.Count <> 0);
-        p := fList.StationName[n^];
-        w.AddNoJsonEscape(p, NameLen(p));
-        AddTemp(w, '=', s^.Min);
-        AddTemp(w, '/', Average(s^.Sum, s^.Count));
-        AddTemp(w, '/', s^.Max);
-        dec(c);
-        if c = 0 then
-          break;
-        w.Add(',', ' ');
-        inc(n);
-      until false;
+      s := pointer(fList.Station);
+      n := fList.Count;
+      if n > 0 then
+        repeat
+          assert(s^.Count <> 0);
+          w.AddNoJsonEscape(@s^.NameText, s^.NameLen);
+          AddTemp(w, '=', s^.Min);
+          AddTemp(w, '/', Average(s^.Sum, s^.Count));
+          AddTemp(w, '/', s^.Max);
+          dec(n);
+          if n = 0 then
+            break;
+          w.Add(',', ' ');
+          inc(s);
+        until false;
       w.Add('}');
       w.FlushFinal;
       FakeLength(result, w.WrittenBytes);
@@ -398,7 +529,6 @@ begin
     end;
   finally
     st.Free;
-    ndx.Done;
   end;
 end;
 
@@ -410,18 +540,17 @@ var
   res: RawUtf8;
   start, stop: Int64;
 begin
-  assert(SizeOf(TBrcStation) = 64 div 4); // 64 = CPU L1 cache line size
+  assert(SizeOf(TBrcStation) = 64); // 64 bytes = CPU L1 cache line size
   // read command line parameters
   Executable.Command.ExeDescription := 'The mORMot One Billion Row Challenge';
   if Executable.Command.Arg(0, 'the data source #filename') then
-    Utf8ToFileName(Executable.Command.Args[0], fn{%H-});
+    Utf8ToFileName(Executable.Command.Args[0], fn);
   verbose := Executable.Command.Option(
     ['v', 'verbose'], 'generate verbose output with timing');
   affinity := Executable.Command.Option(
     ['a', 'affinity'], 'force thread affinity to a single CPU core');
   Executable.Command.Get(
-    ['t', 'threads'], threads, '#number of threads to run',
-      SystemInfo.dwNumberOfProcessors);
+    ['t', 'threads'], threads, '#number of threads to run', 16);
   help := Executable.Command.Option(['h', 'help'], 'display this help');
   if Executable.Command.ConsoleWriteUnknown then
     exit

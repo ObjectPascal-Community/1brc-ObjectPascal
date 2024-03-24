@@ -104,10 +104,12 @@
       <Unit3>
         <Filename Value="../../../common/utilities.data.config.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.Data.Config"/>
       </Unit3>
       <Unit4>
         <Filename Value="../../../common/utilities.data.entries.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Utilities.Data.Entries"/>
       </Unit4>
     </Units>
   </ProjectOptions>
