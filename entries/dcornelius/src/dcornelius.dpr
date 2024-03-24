@@ -1,5 +1,5 @@
 program dcornelius;
-(* as: OBRC_DCornelius.dpr
+(* as: DCornelius.dpr
  * by: David Cornelius
  * on: March, 2024
  * in: Delphi 12 Athens
