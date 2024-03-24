@@ -34,13 +34,9 @@ type
     constructor Create(AConfigFile: String);
     destructor Destroy; override;
 
-    {$IFDEF UNIX}
     procedure BuildCompileScriptBash;
     procedure BuildTestScriptBash;
     procedure BuildRunScriptBash;
-    {$ELSE}
-    procedure BuildCompileScriptPowerShell;
-    {$ENDIF}
   published
   end;
 
@@ -50,7 +46,9 @@ uses
   {$IFDEF FPC}
   fpjson
 , jsonparser
+  {$IFDEF UNIX}
 , BaseUnix
+  {$ENDIF}
   {$ELSE}
   {$ENDIF}
 ;
@@ -72,9 +70,8 @@ const
 
   cBaselineBinary      = 'baseline';
   cCompilerFPC         = 'fpc';
-  //  cCompilerDelphi      = 'delphi';
+  cCompilerDelphi      = 'delphi';
   cSSD                 = 'SSD';
-//  cHDD                 = 'HDD';
 
 resourcestring
   rsEPatternsLengthDOntMatch = 'Patterns length does not match';
@@ -86,7 +83,6 @@ var
   configStream: TFileStream;
   configJSONData: TJSONData;
 begin
-  { #todo 99 -ogcarreno : Config file must be used here }
   configStream:= TFileStream.Create(AConfigFile, fmOpenRead);
   try
     configJSONData:= GetJSON(configStream);
@@ -154,10 +150,15 @@ begin
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
+      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      {$ELSE}
+      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
+      {$ENDIF}
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
       line:= line + '  echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
+      {$IFDEF UNIX}
       if FConfig.Entries[index].HasRelease then
       begin
        line:= line  +
@@ -188,6 +189,9 @@ begin
         ] ) +
         LineEnding;
       end;
+      {$ELSE}
+      line:= line + '  # Needs the Delphi command line stuff' + LineEnding;
+      {$ENDIF}
       line:= line + '  echo "==========="' + LineEnding;
       line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
@@ -195,7 +199,11 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
+      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      {$ELSE}
+      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
+      {$ENDIF}
       line:= line + '  ' + FConfig.Entries[index].EntryBinary + LineEnding;
     end;
     line:= line + 'else'  + LineEnding;
@@ -203,7 +211,11 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
+      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      {$ELSE}
+      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
+      {$ENDIF}
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;
@@ -217,16 +229,10 @@ begin
   finally
     FScriptStream.Free;
   end;
+  {$IFDEF UNIX}
   FpChmod(PChar(FScriptFile), &775);
+  {$ENDIF}
 end;
-
-{$IFNDEF UNIX}
-procedure TBuilder.BuildCompileScriptPowerShell;
-begin
-  { #todo 99 -ogcarreno : Using the command line compiler, compile the binary for Linux 64b }
-  { #todo 99 -ogcarreno : Using scp copy the resulting binary to Linux }
-end;
-{$ENDIF}
 
 procedure TBuilder.BuildTestScriptBash;
 var
@@ -295,7 +301,6 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;
@@ -309,7 +314,9 @@ begin
   finally
     FScriptStream.Free;
   end;
+  {$IFDEF UNIX}
   FpChmod(PChar(FScriptFile), &775);
+  {$ENDIF}
 end;
 
 procedure TBuilder.BuildRunScriptBash;
@@ -342,7 +349,7 @@ begin
           FConfig.Entries[index].EntryBinary,
           Format('%s%s', [
             IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
-            FConfig.Entries[index].EntryBinary + '-1_000_000_000-SSD.json'
+            FConfig.Entries[index].EntryBinary + '-1_000_000_000-' + cSSD + '.json'
           ]),
           Format('%s%s %s', [
             IncludeTrailingPathDelimiter(FConfig.BinFolder),
@@ -364,7 +371,7 @@ begin
         ],
         [rfReplaceAll]
       );
-      line:= line + '  echo "-- SSD --"' + LineEnding + '  ' + tmpStr + LineEnding;
+      line:= line + '  echo "-- ' + cSSD + ' --"' + LineEnding + '  ' + tmpStr + LineEnding;
       line:= line + '  echo "==========="' + LineEnding;
       line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
@@ -380,7 +387,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
+      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;
@@ -394,7 +401,9 @@ begin
   finally
     FScriptStream.Free;
   end;
+  {$IFDEF UNIX}
   FpChmod(PChar(FScriptFile), &775);
+  {$ENDIF}
 end;
 
 end.

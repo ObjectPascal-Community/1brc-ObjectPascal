@@ -361,6 +361,7 @@ var
   st: TRawByteStringStream;
   w: TTextWriter;
   ndx: TSynTempBuffer;
+  tmp: TTextWriterStackBuffer;
 begin
   // compute the sorted-by-name indexes of all stations
   c := fList.Count;
@@ -371,7 +372,7 @@ begin
   FastSetString(result, nil, 1200000); // pre-allocate result
   st := TRawByteStringStream.Create(result);
   try
-    w := TTextWriter.Create(st, @ndx.tmp, SizeOf(ndx.tmp));
+    w := TTextWriter.Create(st, @tmp, SizeOf(tmp));
     try
       w.Add('{');
       n := ndx.buf;
@@ -419,7 +420,8 @@ begin
   affinity := Executable.Command.Option(
     ['a', 'affinity'], 'force thread affinity to a single CPU core');
   Executable.Command.Get(
-    ['t', 'threads'], threads, '#number of threads to run', 16);
+    ['t', 'threads'], threads, '#number of threads to run',
+      SystemInfo.dwNumberOfProcessors);
   help := Executable.Command.Option(['h', 'help'], 'display this help');
   if Executable.Command.ConsoleWriteUnknown then
     exit

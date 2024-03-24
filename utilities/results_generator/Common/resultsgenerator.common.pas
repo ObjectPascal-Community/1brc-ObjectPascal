@@ -9,20 +9,35 @@ interface
 uses
   Classes
 , SysUtils
+, fgl
 , Utilities.Data.Config
 , Utilities.Data.Entries
 , Utilities.Data.Hyperfine
 ;
 
 type
+
+{ TResult }
+  TResult = class
+    Name: String;
+    Notes: String;
+    Compiler: String;
+    Result: Double;
+    Count: Integer;
+    constructor Create;
+  end;
+
+{ TResultsList }
+  TResultsList = specialize TFPGObjectList<TResult>;
+
 { TResults }
   TResults = class(TObject)
   private
     FConfig: TConfig;
     FResult: THyperfineResult;
+    FList: TResultsList;
 
     function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer): String;
-    function CompareResults(const elem1, elem2): Integer;
     function FormatTime(ATime: Double): String;
   protected
   public
@@ -38,20 +53,7 @@ implementation
 uses
   fpjson
 , jsonparser
-, Math
-, Utilities.ArraySort
 ;
-
-type
-  //PResult = ^TResult;
-  TResult = record
-    Name: TJSONStringType;
-    Notes: TJSONStringType;
-    Compiler: TJSONStringType;
-    Result: Double;
-    Count: Integer;
-  end;
-  TResultsArray = array of TResult;
 
 const
   lineBreak = #13;
@@ -59,6 +61,25 @@ const
   cTableHeader =
     '| # | Result (m:s.ms): SSD | Compiler | Submitter     | Notes     | Certificates |'#10 +
     '|--:|---------------------:|:---------|:--------------|:----------|:-------------|'#10;
+
+function CompareResults(const elem1, elem2: TResult): Integer;
+begin
+  if elem1.Result = elem2.Result then Result:= 0
+  else if elem1.Result < elem2.Result then Result:= -1
+  else Result:= 1;
+end;
+
+{ TResult }
+
+constructor TResult.Create;
+begin
+  inherited Create;
+  Name := '';
+  Notes := '';
+  Compiler := '';
+  Result := 0;
+  Count := 0;
+end;
 
 { TResults }
 
@@ -78,22 +99,14 @@ begin
   finally
     configStream.Free;
   end;
+  FList := TResultsList.Create;
 end;
 
 destructor TResults.Destroy;
 begin
   FConfig.Free;
+  FList.Free;
   inherited Destroy;
-end;
-
-function TResults.CompareResults(const elem1, elem2): Integer;
-var
-  i1 : TResult absolute elem1;
-  i2 : TResult absolute elem2;
-begin
-  if i1.Result = i2.Result then Result:= 0
-  else if i1.Result < i2.Result then Result:= -1
-  else Result:= 1;
 end;
 
 function TResults.FormatTime(ATime: Double): String;
@@ -103,19 +116,9 @@ var
 begin
   Result:= '';
   intPart:= Trunc(ATime);
-  minutes:= 0;
-  if intPart > 60 then
-  begin
-    repeat
-      Inc(minutes);
-      Dec(intPart, 60);
-    until intPart < 60;
-  end;
-  millis:= Copy(
-    FloatToStr(ATime),
-    Pos('.', FloatToStr(ATime)) + 1,
-    4
-  );
+  millis := FormatFloat('000', Trunc((ATime - intPart) * 1000));
+  minutes := intPart div 60;
+  intPart := intPart mod 60;
   Result:= Format('%d:%d.%s',[
     minutes,
     intPart,
@@ -127,11 +130,11 @@ procedure TResults.Generate;
 var
   index, index1, index2: Integer;
   content, hyperfineFile: String;
-  results: TResultsArray;
+  resultitem: TResult;
   hyperfineStream: TFileStream;
   hyperfineJSON: TJSONData;
 begin
-  SetLength(results, 0);
+  FList.Clear;
 
   for index:= 0 to Pred(FConfig.Entries.Count) do
   begin
@@ -142,8 +145,9 @@ begin
         '-1_000_000_000-SSD.json'
       );
     if not FileExists(hyperfineFile) then continue;
-    SetLength(results, Length(results) + 1);
-    index2:= Length(results) - 1;
+    resultitem := TResult.Create;
+    FList.Add(resultitem);
+    index2 := FList.Count - 1;
     hyperfineStream:= TFileStream.Create(
       hyperfineFile,
       fmOpenRead
@@ -157,20 +161,13 @@ begin
         try
           if FConfig.Entries[index].Compiler = 'fpc' then
           begin
-            results[index2].Compiler:= 'lazarus-3.0, fpc-3.2.2';
+            FList[index2].Compiler:= 'lazarus-3.0, fpc-3.2.2';
           end;
 
-          results[index2].Name:= FConfig.Entries[index].Name;
-          results[index2].Notes:= FConfig.Entries[index].Notes;
-          results[index2].Result:= 0.0;
-          results[index2].Count:= 0;
-          for index1:= Low(FResult.Times) to High(FResult.Times) do
-          begin
-            if (time = FResult.Max) or (time = FResult.Max) then continue;
-            results[index2].Result:= results[index2].Result + FResult.Times[index1];
-            Inc(results[index2].Count);
-          end;
-          results[index2].Result:= results[index2].Result / results[index2].Count;
+          FList[index2].Name:= UTF8Encode(FConfig.Entries[index].Name);
+          FList[index2].Notes:= UTF8Encode(FConfig.Entries[index].Notes);
+          FList[index2].Count := FResult.times.Count;
+          FList[index2].Result:= FResult.times.AvgValueWithOutMinMax;
         finally
           FResult.Free;
         end;
@@ -185,17 +182,17 @@ begin
   WriteLn;
   WriteLn;
 
-  //AnySort(results, Length(results), SizeOf(TResult), @CompareResults);
+  FList.Sort(@CompareResults);
 
   content:= '';
-  for index:= Low(results) to High(results) do
+  for index:= 0 to FList.Count - 1 do
   begin
     content:= content + Format('| %d | %s | %s | %s | %s | |'+LineEnding, [
       index + 1,
-      FormatTime(results[index].Result),
-      results[index].Compiler,
-      results[index].Name,
-      results[index].Notes
+      FormatTime(FList[index].Result),
+      FList[index].Compiler,
+      FList[index].Name,
+      FList[index].Notes
     ]);
   end;
 
