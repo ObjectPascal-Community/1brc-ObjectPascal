@@ -89,24 +89,18 @@ begin
   FBuilder:= TBuilder.Create(configFilename);
   try
     WriteLn('=== Compile Script ===');
-    {$IFDEF UNIX}
     FBuilder.BuildCompileScriptBash;
-    {$ELSE}
-    FBuilder.BuildCompileScriptPowerShell;
-    {$ENDIF}
     WriteLn;
 
     {$IFDEF UNIX}
     WriteLn('=== Test Script ===');
     FBuilder.BuildTestScriptBash;
-    {$ENDIF}
     WriteLn;
 
-    {$IFDEF UNIX}
     WriteLn('=== Run Script ===');
     FBuilder.BuildRunScriptBash;
-    {$ENDIF}
     WriteLn;
+    {$ENDIF}
   finally
     FBuilder.Free;
   end;
