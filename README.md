@@ -2,6 +2,8 @@
 <p>
     <a href="https://discord.gg/c382VBk"><img src="https://img.shields.io/discord/623794270255579146?label=Delphi Community Discord" alt="Delphi Community" /></a>
     <a href="https://discord.gg/3VdxbSFyJP"><img src="https://img.shields.io/discord/570025060312547359?label=Unofficial Free Pacal Discord" alt="Unofficial Free Pacal" /></a>
+    <a href="https://forum.lazarus.freepascal.org/index.php/topic,66571.0.html"><img src="https://img.shields.io/badge/Lazarus_Forum-1BRC_Thread-blue" /></a>
+    <a href="https://en.delphipraxis.net/topic/11209-offical-launch-of-the-1-billion-row-challenge-in-object-pascal/"><img src="https://img.shields.io/badge/Delphi_Praxis_Forum-1BRC_Thread-blue" /></a>
 </p>
 
 This is the repository that will coordinate the 1 Billion Row Challenge for Object Pascal.
