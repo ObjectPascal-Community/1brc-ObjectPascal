@@ -22,8 +22,7 @@ type
 var
   Stations: TStringList;
   start: TDateTime; // for timing
-  midway: String; // for timing
-
+  
 procedure ProcessFile(inFile: String; outFile: String);
 procedure DumpFile(outFile: String);
 
