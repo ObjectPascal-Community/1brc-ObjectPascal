@@ -74,9 +74,9 @@ begin
       SortedList.Sort;
 
       Write('{');
-      Write(Trim(TWeatherCity(SortedList.Objects[0]).OutputSumLine));
+      Write(Trim(TWeatherCity(SortedList.Objects[0]).OutputSumLine(True)));
       for var i := 1 to SortedList.Count - 1 do
-        Write(TWeatherCity(SortedList.Objects[i]).OutputSumLine);
+        Write(TWeatherCity(SortedList.Objects[i]).OutputSumLine(False));
       Writeln('}');
       {$IFDEF DEBUG}
       Writeln('Unique Stations: ', SortedList.Count);

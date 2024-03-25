@@ -16,7 +16,7 @@ procedure ChallengeWithDictionary;
 implementation
 
 uses
-  System.Classes, System.SysUtils, System.Generics.Collections, System.StrUtils,
+  System.Classes, System.SysUtils, System.Generics.Collections, System.StrUtils, System.Generics.Defaults,
   uChallengeCommon;
 
 type
@@ -27,8 +27,9 @@ var
 
 procedure ChallengeWithDictionary;
 var
-  SortedList: TStringList;
+  CityArray: TArray<string>;
   CurrWeatherCity: TWeatherCity;
+  FirstOutput: Boolean;
 begin
   WeatherCityList := TDictionary<string, TWeatherCity>.Create;
   try
@@ -41,18 +42,16 @@ begin
       end);
 
       // create the output list
-      SortedList := TStringList.Create(TDuplicates.dupAccept, False, True);
-      try
-        for var WeatherSum in WeatherCityList do
-          SortedList.Append(WeatherSum.Value.OutputSumLine);
-
-        // sort and write out the data
-        SortedList.Sort;
-        SortedList.QuoteChar := #0;
-        Writeln('{', Trim(SortedList.DelimitedText), '}');
-      finally
-        SortedList.Free;
+      CityArray := WeatherCityList.Keys.ToArray;
+      TArray.Sort<string>(CityArray, TStringComparer.Ordinal);
+      FirstOutput := True;
+      Write('{');
+      for var City in CityArray do
+      begin
+        Write(WeatherCityList.Items[City].OutputSumLine(FirstOutput));
+        FirstOutput := False;
       end;
+      Writeln('}');
       {$IFDEF DEBUG}
       Writeln('Unique Stations: ', WeatherCityList.Count);
       {$ENDIF}

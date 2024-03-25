@@ -20,7 +20,7 @@ type
     constructor Create(const NewCityName: string; const NewTemp: Integer);
     procedure AddNewTemp(const NewTemp: Integer);
     function Mean: Double;
-    function OutputSumLine: string;
+    function OutputSumLine(const FirstOutput: Boolean): string;
   end;
 
   // anonymous method type
@@ -169,13 +169,17 @@ begin
   Result := ChallengeCommon.PascalRound(TotalTemp / DataCount);
 end;
 
-function TWeatherCity.OutputSumLine: string;
+function TWeatherCity.OutputSumLine(const FirstOutput: Boolean): string;
 begin
-  Result := Format(' %s=%0.1f/%0.1f/%0.1f', [CityName,
-                                             MinTemp / 10,
-                                             Mean,
-                                             MaxTemp / 10]);
+  if FirstOutput then
+    Result := ''
+  else
+    Result := ', ';
 
+  Result := Result + Format('%s=%0.1f/%0.1f/%0.1f', [CityName,
+                                                     MinTemp / 10,
+                                                     Mean,
+                                                     MaxTemp / 10]);
 end;
 
 end.
