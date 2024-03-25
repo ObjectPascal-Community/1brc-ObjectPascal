@@ -22,9 +22,9 @@ type
 var
   Stations: TStringList;
   start: TDateTime; // for timing
-  
-procedure ProcessFile(inFile: String; outFile: String);
-procedure DumpFile(outFile: String);
+
+procedure ProcessFile(inFile: String; outFile: String; UseStdOut: Boolean);
+procedure DumpFile(outFile: String; UseStdOut: Boolean);
 
 implementation
 
@@ -92,7 +92,7 @@ begin
   MeanFixup := RoundTowardPositiveInfinity(Mean);
 end;
 
-procedure DumpFile(outFile: String);
+procedure DumpFile(outFile: String; UseStdOut: Boolean);
 var
   outputFileStream: TFileStream;
   StationCount: Integer;
@@ -105,7 +105,10 @@ var
 
 begin
   try
-    outputFileStream := TFileStream.Create(outFile, fmCreate);
+    if Not(UseStdOut) then
+    begin
+      outputFileStream := TFileStream.Create(outFile, fmCreate);
+    end;
     // not used for console
     StationCount := Stations.count;
 
@@ -128,7 +131,7 @@ begin
       bufferStr := bufferStr + Stations[index] + '=' + IntegerFixup(EntryMin) +
         '/' + MeanFixup(EntrySum, EntryCount) + '/' + IntegerFixup(EntryMax);
 
-      if outFile = 'CONSOLE' then // send to STDOUT, where it gets mangled
+      if UseStdOut then // send to STDOUT, where it gets mangled
       begin
         write(bufferStr);
       end
@@ -140,7 +143,7 @@ begin
     end;
 
     bufferStr := '}' + Chr(10); // linefeed appears at end of baseline file
-    if outFile = 'CONSOLE' then // send to STDOUT, where it gets mangled
+    if UseStdOut then // send to STDOUT, where it gets mangled
     begin
       write(bufferStr);
     end
@@ -148,11 +151,11 @@ begin
     begin
       outputFileStream.WriteBuffer(TEncoding.UTF8.GetBytes(bufferStr),
         TEncoding.UTF8.GetByteCount(bufferStr));
+      outputFileStream.Free;
     end;
-    outputFileStream.Free;
 
   finally
-    if outFile <> 'CONSOLE' then
+    if Not(UseStdOut) then
     begin
       WriteLn;
       WriteLn;
@@ -162,7 +165,7 @@ begin
 
 end;
 
-procedure ProcessFile(inFile: String; outFile: String);
+procedure ProcessFile(inFile: String; outFile: String; UseStdOut: Boolean);
 
 var
   inputStream: TFileStream;
@@ -179,7 +182,7 @@ var
 
 begin
   InitCities;
-  if outFile <> 'CONSOLE' then
+  if Not(UseStdOut) then
   begin
     WriteLn('Building Weather Station List...');
   end;
