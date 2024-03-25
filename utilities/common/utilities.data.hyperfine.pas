@@ -18,18 +18,18 @@ const
 
 type
 
-  { TDoubleList }
+{ EResultNotAJSONObject }
+  EResultNotAJSONObject = Exception;
 
+{ TDoubleList }
   TDoubleList = class(specialize TFPGList<Double>)
   public
     function AvgValue: Double;
     function AvgValueWithOutMinMax: Double;
   end;
 
+{ TIntegerList }
   TIntegerList = specialize TFPGList<Integer>;
-
-{ EResultNotAJSONObject }
-  EResultNotAJSONObject = Exception;
 
 { THyperfineResult }
   THyperfineResult = class(TObject)
