@@ -17,7 +17,7 @@ The only way to match the approved result is to write the output to a file, with
 `db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524`
 
 If the Windows console output is redirected to a file, some characters are mangled, and the resulting `SHA256` hash is:\
-82411ba76c59ae765e85b497f135a8f4e68d7a14cb7c0909ba96dea0d0635a28
+`82411ba76c59ae765e85b497f135a8f4e68d7a14cb7c0909ba96dea0d0635a28`
 
 For the challenge, compiled for LINUX, the console result will (hopefully) be correct.
 
