@@ -327,29 +327,31 @@ begin
   //ConsoleWrite([sum / (count * 10), ' ', result / 10]);
 end;
 
-function ByStationName(const A, B): integer;
+function ByStationName(const A, B): integer; // = StrComp() but ending with ';'
 var
   pa, pb: PByte;
+  c: byte;
 begin
   result := 0;
   pa := pointer(A);
   pb := pointer(B);
-  if pa = pb then
+  dec(pa, {%H-}PtrUInt(pb));
+  if pa = nil then
     exit;
   repeat
-    if pa^ <> pb^ then
+    c := PByteArray(pa)[{%H-}PtrUInt(pb)];
+    if c <> pb^ then
       break
-    else if pa^ = ord(';') then
+    else if c = ord(';') then
       exit; // Str1 = Str2
-    inc(pa);
     inc(pb);
   until false;
-  if pa^ = ord(';') then
+  if (c = ord(';')) or
+     ((pb^ <> ord(';')) and
+      (c < pb^)) then
     result := -1
-  else if pb^ = ord(';') then
-    result := 1
   else
-    result := pa^ - pb^;
+    result := 1;
 end;
 
 function TBrcMain.SortedText: RawUtf8;
@@ -368,36 +370,39 @@ begin
   assert(c <> 0);
   DynArraySortIndexed(
     pointer(fList.StationName), SizeOf(PUtf8Char), c, ndx, ByStationName);
-  // generate output
-  FastSetString(result, nil, 1200000); // pre-allocate result
-  st := TRawByteStringStream.Create(result);
   try
-    w := TTextWriter.Create(st, @tmp, SizeOf(tmp));
+    // generate output
+    FastSetString(result, nil, 1200000); // pre-allocate result
+    st := TRawByteStringStream.Create(result);
     try
-      w.Add('{');
-      n := ndx.buf;
-      repeat
-        s := @fList.Station[n^];
-        assert(s^.Count <> 0);
-        p := fList.StationName[n^];
-        w.AddNoJsonEscape(p, NameLen(p));
-        AddTemp(w, '=', s^.Min);
-        AddTemp(w, '/', Average(s^.Sum, s^.Count));
-        AddTemp(w, '/', s^.Max);
-        dec(c);
-        if c = 0 then
-          break;
-        w.Add(',', ' ');
-        inc(n);
-      until false;
-      w.Add('}');
-      w.FlushFinal;
-      FakeLength(result, w.WrittenBytes);
+      w := TTextWriter.Create(st, @tmp, SizeOf(tmp));
+      try
+        w.Add('{');
+        n := ndx.buf;
+        repeat
+          s := @fList.Station[n^];
+          assert(s^.Count <> 0);
+          p := fList.StationName[n^];
+          w.AddNoJsonEscape(p, NameLen(p));
+          AddTemp(w, '=', s^.Min);
+          AddTemp(w, '/', Average(s^.Sum, s^.Count));
+          AddTemp(w, '/', s^.Max);
+          dec(c);
+          if c = 0 then
+            break;
+          w.Add(',', ' ');
+          inc(n);
+        until false;
+        w.Add('}');
+        w.FlushFinal;
+        FakeLength(result, w.WrittenBytes);
+      finally
+        w.Free;
+      end;
     finally
-      w.Free;
+      st.Free;
     end;
   finally
-    st.Free;
     ndx.Done;
   end;
 end;
