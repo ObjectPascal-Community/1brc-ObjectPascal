@@ -24,7 +24,7 @@ For the challenge, compiled for LINUX, the console result will (hopefully) be co
 ### Execution
 ```
     Usage
-    bfire -h                       |  Write this help message and exit
+    bfire -h                       |  Write this help message and exit
     bfire -v                       |  Write the version and exit
     bfire -i <file_1>              |  <file_1> contains Weather Data
     bfire -i <file_1> -o <file_2>  |  <file_1> contains Weather Data
