@@ -20,7 +20,7 @@ I am very happy to share decades of server-side performance coding techniques us
 
 Here are the main ideas behind this implementation proposal:
 
-- **mORMot** makes cross-platform and cross-compiler support simple - e.g. `TMemMap`, `TDynArray.Sort`,`TTextWriter`, `SetThreadCpuAffinity`, `crc32c`, `ConsoleWrite` or command-line parsing;
+- **mORMot** makes cross-platform and cross-compiler support simple - e.g. `TMemMap`, `TDynArray`,`TTextWriter`, `SetThreadCpuAffinity`, `crc32c`, `ConsoleWrite` or command-line parsing;
 - The entire 16GB file is `memmap`ed at once into memory - it won't work on 32-bit OS, but avoid any `read` syscall or memory copy;
 - Process file in parallel using several threads - configurable via the `-t=` switch, default being the total number of CPUs reported by the OS;
 - Input is fed into each thread as 64MB chunks: because thread scheduling is unbalanced, it is inefficient to pre-divide the size of the whole input file into the number of threads;
@@ -40,11 +40,13 @@ If you are not convinced by the "perfect hash" trick, you can define the `NOPERF
 
 ## Why L1 Cache Matters
 
-Take great care of the "64 bytes cache line" is quite unique among all implementations of the "1brc" I have seen in any language - and it does make a noticeable difference in performance.
+Taking special care of the "64 bytes cache line" is quite unique among all implementations of the "1brc" I have seen in any language - and it does make a noticeable difference in performance.
 
 The L1 cache is well known in the performance hacking litterature to be the main bottleneck for any efficient in-memory process. If you want things to go fast, you should flatter your CPU L1 cache.
 
 Min/max values will be reduced as 16-bit smallint - resulting in temperature range of -3276.7..+3276.8 which seems fair on our planet according to the IPCC. ;)
+
+As a result, each `Station[]` entry takes only 16 bytes, so we can fit exactly 4 entries in a single CPU L1 cache line. To be fair, if we put some more data into the record (e.g. use `Int64` instead of `smallint`/`integer`), the performance degrades only for a few percents. The main fact seems to be that the entry is likely to fit into a single cache line, even if filling two cache lines may be sometimes needed for misaligned data.
 
 In our first attempt (see "Old Version" below), we stored the name into the `Station[]` array, so that each entry is 64 bytes long exactly. But since `crc32c` is a perfect hash function for our dataset, it is enough to just store the 32-bit hash instead, and not the actual name.
 
@@ -236,6 +238,6 @@ Benchmark 1: abouchez
 ```
 It is a known fact from experiment that forcing thread affinity is not a good idea, and it is always much better to let any modern Operating System do  the threads scheduling to the CPU cores, because it has a much better knowledge of the actual system load and status. Even on a "fair" CPU architecture like AMD Zen. For a "pure CPU" process, affinity may help a very little. But for our "old" process working outside of the L1 cache limits, we better let the OS decide.
 
-So with this "old" version, it was decided to use `-t=16`. The "old" version is using a whole cache line (16 bytes) for its `Station[]` record, so it may be the responsible of using too much CPU cache, so more than 16 threads does not make a difference with it. Whereas our "new" version, with its `Station[]` of only 16 bytes, could use `-t=32` with benefits. The cache memory access is likely to be the bottleneck from now on.
+So with this "old" version, it was decided to use `-t=16`. The "old" version is using a whole cache line (64 bytes) for its `Station[]` record, so it may be the responsible of using too much CPU cache, so more than 16 threads does not make a difference with it. Whereas our "new" version, with its `Station[]` of only 16 bytes, could use `-t=32` with benefits. The cache memory access is likely to be the bottleneck from now on.
 
 Arnaud :D
