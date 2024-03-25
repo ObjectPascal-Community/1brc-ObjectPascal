@@ -71,6 +71,9 @@ begin
   // initialize values
   valid := 0;
   ParamOK := false;
+  ParseConsoleParams := false; // default
+  inputFilename := '';
+  outputFilename := '';
   // initialize the params list
   if not Assigned(FParams) then
     FParams := TStringList.Create(dupIgnore, false, false);
@@ -78,7 +81,7 @@ begin
   J := 0;
   for I := 1 to ParamCount do
   begin
-    if pos('-', ParamStr(I)) > 0 then
+    if pos('-', ParamStr(I)) = 1 then
     begin
       FParams.Add(Copy(ParamStr(I), 2, ParamStr(I).Length));
       inc(J);
@@ -161,7 +164,7 @@ begin
   if J = -1 then // send to console
   begin
     // WriteLn(Format(rsErrorMessage, [rsMissingOutputFlag]));
-    outputFilename := 'CONSOLE';
+    outputFilename := '';
     inc(valid);
   end
   else
@@ -171,7 +174,7 @@ begin
   end;
 
   // check if everything was provided
-  Result := valid = 2;
+  ParseConsoleParams := valid = 2;
 end;
 
 end.
