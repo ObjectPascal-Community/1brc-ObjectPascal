@@ -47,13 +47,13 @@ type
     fEvent: TSynEvent;
     fRunning, fMax: integer;
     fCurrentChunk: PByteArray;
-    fCurrentRemain: PtrUInt;
+    fCurrentRemain, fChunkSize: PtrUInt;
     fList: TBrcList;
     fMem: TMemoryMap;
     procedure Aggregate(const another: TBrcList);
     function GetChunk(out start, stop: PByteArray): boolean;
   public
-    constructor Create(const fn: TFileName; threads, max: integer;
+    constructor Create(const fn: TFileName; threads, chunkmb, max: integer;
       affinity: boolean);
     destructor Destroy; override;
     procedure WaitFor;
@@ -183,7 +183,7 @@ end;
 
 { TBrcMain }
 
-constructor TBrcMain.Create(const fn: TFileName; threads, max: integer;
+constructor TBrcMain.Create(const fn: TFileName; threads, chunkmb, max: integer;
   affinity: boolean);
 var
   i, cores, core: integer;
@@ -193,6 +193,7 @@ begin
   if not fMem.Map(fn) then
     raise ESynException.CreateUtf8('Impossible to find %', [fn]);
   fMax := max;
+  fChunkSize := chunkmb shl 20;
   fList.Init(fMax);
   fCurrentChunk := pointer(fMem.Buffer);
   fCurrentRemain := fMem.Size;
@@ -217,11 +218,6 @@ begin
   fEvent.Free;
 end;
 
-const
-  CHUNKSIZE = 64 shl 20; // fed each TBrcThread with 64MB chunks
-  // it is faster than naive parallel process of size / threads input because
-  // OS thread scheduling is never fair so some threads will finish sooner
-
 function TBrcMain.GetChunk(out start, stop: PByteArray): boolean;
 var
   chunk: PtrUInt;
@@ -232,9 +228,9 @@ begin
   if chunk <> 0 then
   begin
     start := fCurrentChunk;
-    if chunk > CHUNKSIZE then
+    if chunk > fChunkSize then
     begin
-      stop := pointer(GotoNextLine(pointer(@start[CHUNKSIZE])));
+      stop := pointer(GotoNextLine(pointer(@start[fChunkSize])));
       chunk := PAnsiChar(stop) - PAnsiChar(start);
     end
     else
@@ -409,7 +405,7 @@ end;
 
 var
   fn: TFileName;
-  threads: integer;
+  threads, chunkmb: integer;
   verbose, affinity, help: boolean;
   main: TBrcMain;
   res: RawUtf8;
@@ -427,6 +423,8 @@ begin
   Executable.Command.Get(
     ['t', 'threads'], threads, '#number of threads to run',
       SystemInfo.dwNumberOfProcessors);
+  Executable.Command.Get(
+    ['c', 'chunk'], chunkmb, 'size in #megabytes used for per-thread chunking', 4);
   help := Executable.Command.Option(['h', 'help'], 'display this help');
   if Executable.Command.ConsoleWriteUnknown then
     exit
@@ -438,11 +436,11 @@ begin
   end;
   // actual process
   if verbose then
-    ConsoleWrite(['Processing ', fn, ' with ', threads, ' threads',
-                  ' and affinity=', BOOL_STR[affinity]]);
+    ConsoleWrite(['Processing ', fn, ' with ', threads, ' threads, chunkmb=',
+      chunkmb, ' and affinity=', BOOL_STR[affinity]]);
   QueryPerformanceMicroSeconds(start);
   try
-    main := TBrcMain.Create(fn, threads, {max=}45000, affinity);
+    main := TBrcMain.Create(fn, threads, chunkmb, {max=}45000, affinity);
     // note: current stations count = 41343 for 2.5MB of data per thread
     try
       main.WaitFor;
