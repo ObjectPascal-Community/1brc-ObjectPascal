@@ -36,7 +36,6 @@ end;
     procedure AddToHashList(AStation: String; ATemp: Int64);
     procedure BuildHashList;
     function RoundEx(x: Double): Double;
-    function PascalRound(x: Double): Double;
   protected
   public
     constructor Create(AInputFile: String);
@@ -185,28 +184,7 @@ end;
 
 function TBaseline.RoundEx(x: Double): Double;
 begin
-  Result := PascalRound(x*10.0)/10.0;
-end;
-
-function TBaseline.PascalRound(x: Double): Double;
-var
-  t: Double;
-begin
-  //round towards positive infinity
-  t := Trunc(x);
-  if (x < 0.0) and (t - x = 0.5) then
-  begin
-    // Do nothing
-  end
-  else if Abs(x - t) >= 0.5 then
-  begin
-    t := t + Math.Sign(x);
-  end;
-
-  if t = 0.0 then
-    Result := 0.0
-  else
-    Result := t;
+  Result := Ceil(x * 10) / 10;
 end;
 
 procedure TBaseline.Generate;
@@ -221,7 +199,6 @@ begin
 
   BuildHashList;
 
-  //FStationNames.DefaultEncoding := TEncoding.UTF8;
   FStationNames.BeginUpdate;
   for index := 0 to FHashStationList.Count - 1 do
   begin

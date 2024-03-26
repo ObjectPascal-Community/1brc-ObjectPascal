@@ -68,33 +68,51 @@ Submit your implementation and become part of the leader board!
 
 ## Rounding
 
-Székely Balázs has provided code for rounding towards positive infinity per the original challenge.  
-This will be the official way to round the output values:
+While I recognize that Székely's rounding code was a good effort, it was not simple and made a lot of people doubt it was even correct for negative temperatures.\
+In a discussion with [Mr. Packman](https://pack.ac/) themselves, we came up with a simpler solution. They even added some _Unit Testing_ :D.
+
+This will be the official way to round the output values, so pick your poison:
 ```pas
-function TBaseline.RoundEx(x: Double): Double;
+function RoundEx(x: Double): Double; inline;
 begin
-  Result := PascalRound(x*10.0)/10.0;
+  Result := Ceil(x * 10) / 10;
 end;
 
-function TBaseline.PascalRound(x: Double): Double;
-var
-  t: Double;
+function RoundExInteger(x: Double): Integer; inline;
 begin
-  //round towards positive infinity
-  t := Trunc(x);
-  if (x < 0.0) and (t - x = 0.5) then
-  begin
-    // Do nothing
-  end
-  else if Abs(x - t) >= 0.5 then
-  begin
-    t := t + Math.Sign(x);
-  end;
+  Result := Ceil(x * 10);
+end;
 
-  if t = 0.0 then
-    Result := 0.0
+function RoundExString(x: Double): String; inline;
+var
+  V, Q, R: Integer;
+begin
+  V := RoundExInteger(x);
+  if V < 0 then
+  begin
+    Result := '-';
+    V := -V;
+  end
   else
-    Result := t;
+    Result := '';
+  Q := V div 10;
+  R := V - (Q * 10);
+  Result := IntToStr(Q) + '.' + IntToStr(R);
+end;
+
+procedure Test;
+var
+  F: Double;
+begin
+  for F in [10.01, 10.04, -10.01, -10.0, 0, -0, -0.01] do
+    WriteLn(RoundExInteger(F), ' ', RoundExString(F), ' ', RoundEx(F));
+  //101 10.1  1.0100000000000000E+001
+  //101 10.1  1.0100000000000000E+001
+  //-100 -10.0 -1.0000000000000000E+001
+  //-100 -10.0 -1.0000000000000000E+001
+  //0 0.0  0.0000000000000000E+000
+  //0 0.0  0.0000000000000000E+000
+  //0 0.0  0.0000000000000000E+000
 end;
 ```
 
@@ -148,7 +166,7 @@ Expected `SHA256` hash:
 >
 > We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
 >
-> Until then, this is the current one: `db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524`
+> Until then, this is the current one: `4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910`
 > There's also an archived version of the [baseline output](./data/baseline.output.gz)
 
 ## Differences From Original
@@ -211,7 +229,8 @@ I'd like to thank [@paweld](https://github.com/paweld) for taking us from my mis
 I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time to provide the Delphi version of the generator.\
 I'd like to thank [@dtpfl](https://github.com/dtpfl) for his invaluable work on maintaining the `README.md` file up to date with everything.\
 I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.\
-I'd like to thank [@corneliusdavid](https://github.com/corneliusdavid) for giving some of the information files a once over and making things more legible and clear.
+I'd like to thank [@corneliusdavid](https://github.com/corneliusdavid) for giving some of the information files a once over and making things more legible and clear.\
+I'd like to thank Mr. **Pack**man, aka O, for clearing the fog around the rounding issues.
 
 ## Links
 The original repository: https://github.com/gunnarmorling/1brc \
