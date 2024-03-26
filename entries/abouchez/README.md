@@ -117,14 +117,14 @@ This is the expected behavior, and will be fine with the benchmark challenge, wh
 
 On my Intel 13h gen processor with E-cores and P-cores, forcing thread to core affinity does not make any huge difference (we are within the error margin):
 ```
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -t=10 -v
-Processing measurements.txt with 20 threads and affinity=false
-result hash=8A6B746A,, result length=1139418, stations count=41343, valid utf8=1
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -v
+Processing measurements.txt with 20 threads, chunkmb=4 and affinity=false
+result hash=85614446, result length=1139418, stations count=41343, valid utf8=1
 done in 2.36s 6.6 GB/s
 
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -t=10 -v -a
-Processing measurements.txt with 20 threads and affinity=true
-result hash=8A6B746A, result length=1139418, stations count=41343, valid utf8=1
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -v -a
+Processing measurements.txt with 20 threads, chunkmb=4 and affinity=true
+result hash=85614446, result length=1139418, stations count=41343, valid utf8=1
 done in 2.44s 6.4 GB/s
 ```
 Affinity may help on Ryzen 9, because its Zen 3 architecture is made of identical 16 cores with 32 threads, not this Intel E/P cores mess. But we will validate that on real hardware - no premature guess!

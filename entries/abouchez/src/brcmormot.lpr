@@ -306,23 +306,6 @@ begin
   w.Add(AnsiChar(val - d10 * 10 + ord('0')));
 end;
 
-function Average(sum, count: PtrInt): PtrInt;
-// sum and result are temperature * 10 (one fixed decimal)
-var
-  x, t: PtrInt; // temperature * 100 (two fixed decimals)
-begin
-  x := (sum * 10) div count; // average
-  // this weird algo follows the "official" PascalRound() implementation
-  t := (x div 10) * 10; // truncate
-  if abs(x - t) >= 5 then
-    if x < 0 then
-      dec(t, 10)
-    else
-      inc(t, 10);
-  result := t div 10; // truncate back to one decimal (temperature * 10)
-  //ConsoleWrite([sum / (count * 10), ' ', result / 10]);
-end;
-
 function ByStationName(const A, B): integer; // = StrComp() but ending with ';'
 var
   pa, pb: PByte;
@@ -348,6 +331,11 @@ begin
     result := -1
   else
     result := 1;
+end;
+
+function ceil(x: double): PtrInt; // "official" rounding method
+begin
+  result := trunc(x) + ord(frac(x) > 0);  // using FPU is fast enough here
 end;
 
 function TBrcMain.SortedText: RawUtf8;
@@ -381,7 +369,7 @@ begin
           p := fList.StationName[n^];
           w.AddNoJsonEscape(p, NameLen(p));
           AddTemp(w, '=', s^.Min);
-          AddTemp(w, '/', Average(s^.Sum, s^.Count));
+          AddTemp(w, '/', ceil(s^.Sum / s^.Count));
           AddTemp(w, '/', s^.Max);
           dec(c);
           if c = 0 then
