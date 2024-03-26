@@ -110,6 +110,7 @@ Iwan Kelaiah
   * Replaced `TFileStream` with `TBufferedFileStream`. Now, ~1 min faster. Total time for 1BRC (Object Pascal) is now approx. 11 mins on my laptop.
   * Replaced `TDictionary` with `TGHashMapQP`. Now ~4 mins faster. Total time for 1BRC (Object Pascal) is now approx. 7 mins on my laptop.
   * Replaced `StringReplace` with a simpler function avoiding creating a new string for each replacement. This saves 15-30 seconds on my laptop. The run time now is approx. 6-8 minutes.
+  * Updated the rounding method as per the latest README.md in the 1BRC GitHub page.
 
 ## License
 
