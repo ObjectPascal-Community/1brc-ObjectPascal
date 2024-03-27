@@ -125,24 +125,24 @@ begin
   inherited Create({suspended=}false);
 end;
 
-{$ifdef FPC_CPUX64_actuallySLOWER:(}
+{$ifdef FPC_CPUX64}
 function NameLen(p: PUtf8Char): PtrInt; assembler; nostackframe;
 asm
-         lea      rdx, qword ptr [p + 2]
+         lea      rdx,  qword ptr [p + 2]
          movaps   xmm0, oword ptr [rip + @chr]
          movups   xmm1, oword ptr [rdx] // check first 16 bytes
          pcmpeqb  xmm1, xmm0
-         pmovmskb eax, xmm1
-         bsf      eax, eax
+         pmovmskb eax,  xmm1
+         bsf      eax,  eax
          jnz      @found
-@by16:   add      rdx, 16
+@by16:   add      rdx,  16
          movups   xmm1, oword ptr [rdx] // next 16 bytes
          pcmpeqb  xmm1, xmm0
-         pmovmskb eax, xmm1
-         bsf      eax, eax
+         pmovmskb eax,  xmm1
+         bsf      eax,  eax
          jz       @by16
-@found:  add      rax, rdx  // point to exact match
-         sub      rax, p    // return position
+@found:  add      rax,  rdx  // point to exact match
+         sub      rax,  p    // return position
          ret
          align    16
 @chr:    dq $3b3b3b3b3b3b3b3b
