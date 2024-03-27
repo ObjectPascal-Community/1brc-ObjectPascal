@@ -84,21 +84,14 @@ begin
   Result := Ceil(x * 10);
 end;
 
+{ Neater version by @bytebites from Lazarus forum }
 function RoundExString(x: Double): String; inline;
 var
   V, Q, R: Integer;
 begin
   V := RoundExInteger(x);
-  if V < 0 then
-  begin
-    Result := '-';
-    V := -V;
-  end
-  else
-    Result := '';
-  Q := V div 10;
-  R := V - (Q * 10);
-  Result := Result + IntToStr(Q) + '.' + IntToStr(R);
+  divmod(V, 10, Q, R);
+  Result := IntToStr(Q) + '.' + chr(48 + Abs(R))
 end;
 
 procedure Test;
