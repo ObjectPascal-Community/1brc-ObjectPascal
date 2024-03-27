@@ -3,7 +3,7 @@
     <a href="https://discord.gg/c382VBk"><img src="https://img.shields.io/discord/623794270255579146?label=Delphi Community&logo=discord" alt="Delphi Community" /></a>
     <a href="https://discord.gg/3VdxbSFyJP"><img src="https://img.shields.io/discord/570025060312547359?label=Unofficial Free Pascal&logo=discord" alt="Unofficial Free Pacal" /></a>
     <a href="https://t.me/delphidevelopers"><img src="https://img.shields.io/badge/Telegram-Delphi_Developers-blue?logo=telegram" /></a>
-    <a href="https://t.me/freepascal_en"><img src="https://img.shields.io/badge/Telegram-Free_Pascal_and_Lazarus-blue?logo=telegram" /></a>
+    <a href="https://t.me/freepascal_en"><img src="https://img.shields.io/badge/Telegram-Free_Pascal_%38_Lazarus-blue?logo=telegram" /></a>
     <a href="https://forum.lazarus.freepascal.org/index.php/topic,66571.0.html"><img src="https://img.shields.io/badge/Lazarus_Forum-1BRC_Thread-blue" /></a>
     <a href="https://en.delphipraxis.net/topic/11209-offical-launch-of-the-1-billion-row-challenge-in-object-pascal/"><img src="https://img.shields.io/badge/Delphi_Praxis_Forum-1BRC_Thread-blue" /></a>
 </p>
