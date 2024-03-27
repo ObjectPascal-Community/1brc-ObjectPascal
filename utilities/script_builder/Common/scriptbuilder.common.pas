@@ -157,7 +157,7 @@ begin
       {$ENDIF}
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + '  echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
+      line:= line + '  echo "===== '+ UTF8Encode(FConfig.Entries[index].Name) +' ======"' + LineEnding;
       {$IFDEF UNIX}
       if FConfig.Entries[index].HasRelease then
       begin
@@ -251,7 +251,7 @@ begin
       if not FConfig.Entries[index].Active then continue;
       //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + '  echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
+      line:= line + '  echo "===== '+ UTF8Encode(FConfig.Entries[index].Name) +' ======"' + LineEnding;
       tmpStr:= Format('%s%s %s', [
         IncludeTrailingPathDelimiter(FConfig.BinFolder),
         FConfig.Entries[index].EntryBinary,
@@ -336,7 +336,7 @@ begin
       if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + '  echo "===== '+ FConfig.Entries[index].Name +' ======"' + LineEnding;
+      line:= line + '  echo "===== '+ UTF8Encode(FConfig.Entries[index].Name)  +' ======"' + LineEnding;
       // Run for SSD
       tmpStr:= StringsReplace(
         FConfig.Hyperfine,
