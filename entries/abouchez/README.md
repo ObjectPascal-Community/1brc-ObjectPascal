@@ -118,12 +118,12 @@ This is the expected behavior, and will be fine with the benchmark challenge, wh
 On my Intel 13h gen processor with E-cores and P-cores, forcing thread to core affinity does not make any huge difference (we are within the error margin):
 ```
 ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -v
-Processing measurements.txt with 20 threads, chunkmb=4 and affinity=false
+Processing measurements.txt with 20 threads, 4MB chunks and affinity=0
 result hash=85614446, result length=1139418, stations count=41343, valid utf8=1
 done in 2.36s 6.6 GB/s
 
 ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -v -a
-Processing measurements.txt with 20 threads, chunkmb=4 and affinity=true
+Processing measurements.txt with 20 threads, 4MB chunks and affinity=1
 result hash=85614446, result length=1139418, stations count=41343, valid utf8=1
 done in 2.44s 6.4 GB/s
 ```

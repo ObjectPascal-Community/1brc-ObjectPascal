@@ -125,6 +125,49 @@ begin
   inherited Create({suspended=}false);
 end;
 
+{$ifdef FPC_CPUX64_actuallySLOWER:(}
+function NameLen(p: PUtf8Char): PtrInt; assembler; nostackframe;
+asm
+         lea      rdx, qword ptr [p + 2]
+         movaps   xmm0, oword ptr [rip + @chr]
+         movups   xmm1, oword ptr [rdx] // check first 16 bytes
+         pcmpeqb  xmm1, xmm0
+         pmovmskb eax, xmm1
+         bsf      eax, eax
+         jnz      @found
+@by16:   add      rdx, 16
+         movups   xmm1, oword ptr [rdx] // next 16 bytes
+         pcmpeqb  xmm1, xmm0
+         pmovmskb eax, xmm1
+         bsf      eax, eax
+         jz       @by16
+@found:  add      rax, rdx  // point to exact match
+         sub      rax, p    // return position
+         ret
+         align    16
+@chr:    dq $3b3b3b3b3b3b3b3b
+         dq $3b3b3b3b3b3b3b3b
+end;
+{$else}
+function NameLen(p: PUtf8Char): PtrInt; inline;
+begin
+  result := 2;
+  if p[result] <> ';' then
+    repeat
+      inc(result);
+      if p[result] = ';' then
+        break;
+      inc(result);
+      if p[result] = ';' then
+        break;
+      inc(result);
+      if p[result] = ';' then
+        break;
+      inc(result);
+    until p[result] = ';'; // small (unrolled) inlined loop is faster than SSE2
+end;
+{$endif FPC_CPUX64}
+
 procedure TBrcThread.Execute;
 var
   p, start, stop: PByteArray;
@@ -138,10 +181,8 @@ begin
     p := start;
     repeat
       // parse the name;
-      l := 2;
       start := p;
-      while p[l] <> ord(';') do
-        inc(l); // small local loop is faster than SSE2 ByteScanIndex()
+      l := NameLen(pointer(p));
       p := @p[l + 1]; // + 1 to ignore ;
       // parse the temperature (as -12.3 -3.4 5.6 78.9 patterns) into value * 10
       if p[0] = ord('-') then
@@ -244,13 +285,6 @@ begin
     result := true;
   end;
   fSafe.UnLock;
-end;
-
-function NameLen(p: PUtf8Char): PtrInt; inline;
-begin
-  result := 2;
-  while p[result] <> ';' do
-    inc(result);
 end;
 
 procedure TBrcMain.Aggregate(const another: TBrcList);
@@ -369,7 +403,7 @@ begin
           p := fList.StationName[n^];
           w.AddNoJsonEscape(p, NameLen(p));
           AddTemp(w, '=', s^.Min);
-          AddTemp(w, '/', ceil(s^.Sum / s^.Count));
+          AddTemp(w, '/', ceil(s^.Sum / s^.Count)); // average
           AddTemp(w, '/', s^.Max);
           dec(c);
           if c = 0 then
@@ -424,8 +458,8 @@ begin
   end;
   // actual process
   if verbose then
-    ConsoleWrite(['Processing ', fn, ' with ', threads, ' threads, chunkmb=',
-      chunkmb, ' and affinity=', BOOL_STR[affinity]]);
+    ConsoleWrite(['Processing ', fn, ' with ', threads, ' threads, ',
+      chunkmb, 'MB chunks and affinity=', affinity]);
   QueryPerformanceMicroSeconds(start);
   try
     main := TBrcMain.Create(fn, threads, chunkmb, {max=}45000, affinity);
