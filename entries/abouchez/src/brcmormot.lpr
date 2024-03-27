@@ -145,26 +145,34 @@ asm
          sub      rax,  p    // return position
          ret
          align    16
-@chr:    dq $3b3b3b3b3b3b3b3b
+@chr:    dq $3b3b3b3b3b3b3b3b // xmm0 of ';'
          dq $3b3b3b3b3b3b3b3b
 end;
 {$else}
 function NameLen(p: PUtf8Char): PtrInt; inline;
 begin
   result := 2;
-  if p[result] <> ';' then
-    repeat
-      inc(result);
-      if p[result] = ';' then
-        break;
-      inc(result);
-      if p[result] = ';' then
-        break;
-      inc(result);
-      if p[result] = ';' then
-        break;
-      inc(result);
-    until p[result] = ';'; // small (unrolled) inlined loop is faster than SSE2
+  while true do
+    if p[result] <> ';' then
+      if p[result + 1] <> ';' then
+        if p[result + 2] <> ';' then
+          if p[result + 3] <> ';' then
+            if p[result + 4] <> ';' then
+              if p[result + 5] <> ';' then
+                inc(result, 6)
+              else
+                exit(result + 5)
+            else
+              exit(result + 4)
+          else
+            exit(result + 3)
+        else
+          exit(result + 2)
+      else
+        exit(result + 1)
+    else
+      exit;
+  // this small (unrolled) inlined loop is as fast as the SSE2 :)
 end;
 {$endif FPC_CPUX64}
 
@@ -181,7 +189,6 @@ begin
     p := start;
     repeat
       // parse the name;
-      start := p;
       l := NameLen(pointer(p));
       p := @p[l + 1]; // + 1 to ignore ;
       // parse the temperature (as -12.3 -3.4 5.6 78.9 patterns) into value * 10
@@ -215,6 +222,7 @@ begin
       if v > m then
         m := v;
       s^.Max := m;
+      start := p;
     until p >= stop;
   end;
   // aggregate this thread values into the main list
