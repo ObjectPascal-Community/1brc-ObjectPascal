@@ -84,8 +84,7 @@ type
 
   TWSThreadsWatcher = class(TWSThreadBase)
   private
-    function RoundEx(x: Double): Double;
-    function PascalRound(x: Double): Double;
+    function RoundEx(x: Double): Double; inline;
     procedure CreateFinalList;
   protected
     procedure Execute; override;
@@ -472,30 +471,9 @@ begin
   end;
 end;
 
-function TWSThreadsWatcher.RoundEx(x: Double): Double;
+function TWSThreadsWatcher.RoundEx(x: Double): Double; inline;
 begin
-  Result := PascalRound(x*10.0)/10.0;
-end;
-
-function TWSThreadsWatcher.PascalRound(x: Double): Double;
-var
-  t: Double;
-begin
-  //round towards positive infinity
-  t := Trunc(x);
-  if (x < 0.0) and (t - x = 0.5) then
-  begin
-    // Do nothing
-  end
-  else if Abs(x - t) >= 0.5 then
-  begin
-    t := t + Math.Sign(x);
-  end;
-
-  if t = 0.0 then
-    Result := 0.0
-  else
-    Result := t;
+  Result := Ceil(x * 10) / 10;
 end;
 
 procedure TWSThreadsWatcher.CreateFinalList;
