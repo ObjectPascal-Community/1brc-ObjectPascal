@@ -96,7 +96,7 @@ begin
     Result := '';
   Q := V div 10;
   R := V - (Q * 10);
-  Result := IntToStr(Q) + '.' + IntToStr(R);
+  Result := Result + IntToStr(Q) + '.' + IntToStr(R);
 end;
 
 procedure Test;
