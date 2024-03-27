@@ -33,14 +33,14 @@ Back to my blog and pascal still in the race of performance:
 - ... and eventually an upcoming article about *1brc-ObjectPascal* itself. :)
 
 Recently, I just found some very educational material is available at:
-https://en.algorithmica.org/hpc/
+- https://en.algorithmica.org/hpc/
 
 The reference tables of opcodes per Intel/AMD CPU generation can be found at:
-https://agner.org/optimize/
+- https://agner.org/optimize/
 
 Amazing videos about modern compilers:
-https://www.youtube.com/watch?v=bSkpMdDe4g4
-https://www.youtube.com/watch?v=kIoZDUd5DKw
+- https://www.youtube.com/watch?v=bSkpMdDe4g4
+- https://www.youtube.com/watch?v=kIoZDUd5DKw
 
 ## Presentation
 
