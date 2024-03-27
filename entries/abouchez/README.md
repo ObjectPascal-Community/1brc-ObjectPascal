@@ -30,7 +30,7 @@ Back to my blog and pascal still in the race of performance:
 - [Three locks to rule them all](https://blog.synopse.info/?post/2022/01/22/Three-Locks-To-Rule-Them-All)
 - [mORMot on Ampere-aarch64 CPU](https://blog.synopse.info/?post/2021/08/17/mORMot-2-on-Ampere-AARM64-CPU)
 - [From Delphi to AVX2](https://blog.synopse.info/?post/2020/11/04/EKON-24-Presentation-Slides)
-... and eventually an upcoming article about *1brc-ObjectPascal* itself. :)
+- ... and eventually an upcoming article about *1brc-ObjectPascal* itself. :)
 
 Recently, I just found some very educational material is available at:
 https://en.algorithmica.org/hpc/
