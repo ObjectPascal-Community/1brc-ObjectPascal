@@ -16,6 +16,32 @@ This code is licenced by its sole author (A. Bouchez) as MIT terms, to be used f
 
 I am very happy to share decades of server-side performance coding techniques using FPC on x86_64. ;)
 
+## Do Not Guess, Measure
+
+As old/legacy/outdated/potbellied/coffee-addicted FPC or Delphi code writers, we are still very influenced by the [FastCode](https://en.wikipedia.org/wiki/FastCode) project style of coding, or even some Turbo Pascal tricks - I know some good Delphi programmers still believing that `if length(s)=0 then` is faster than `if s='' then`.
+
+Performance is not about ideology. Or tips and tricks. The main is idea is to measure, not guess. There is no "well-educated guess" in computer performance. Just a clock on the wall, and how many data you can process per second, in a sustainable way. Because modern CPUs are very complex beasts. Far away from the Z80 I started programming on, or even the 80386 our Delphi/FPC compilers are still working with.
+
+There are plenty of material about high-performance computing, on the Internet. But we have to embrace the fact that modern hardware is complex, and some hacks from 1980s - e.g. [Hacker's Delight](https://github.com/hcs0/Hackers-Delight?tab=readme-ov-file) - do not apply any more with our modern out-of-order and pipelined CPUs with very powerful ALU. For instance, today an integer multiplication takes one cycle, or compilers are able to automatically apply (or un-apply!) some of the techniques.
+
+Back to my blog and pascal still in the race of performance:
+[Pascal in the race: the TFB challenge](https://blog.synopse.info/?post/2023/10/31/Pascal-in-the-race%3A-TFB-Challenge-Benchmarks)
+[Modern Pascal in the race: CSV parsing](https://blog.synopse.info/?post/2022/11/26/Modern-Pascal-is-Still-in-the-Race)
+[Three locks to rule them all](https://blog.synopse.info/?post/2022/01/22/Three-Locks-To-Rule-Them-All)
+[mORMot on Ampere-aarch64 CPU](https://blog.synopse.info/?post/2021/08/17/mORMot-2-on-Ampere-AARM64-CPU)
+[From Delphi to AVX2](https://blog.synopse.info/?post/2020/11/04/EKON-24-Presentation-Slides)
+... and eventually an upcoming article about *1brc-ObjectPascal* itself. :)
+
+Recently, I just found some very educational material is available at:
+https://en.algorithmica.org/hpc/
+
+The reference tables of opcodes per Intel/AMD CPU generation can be found at:
+https://agner.org/optimize/
+
+Amazing videos about modern compilers:
+https://www.youtube.com/watch?v=bSkpMdDe4g4
+https://www.youtube.com/watch?v=kIoZDUd5DKw
+
 ## Presentation
 
 Here are the main ideas behind this implementation proposal:
@@ -54,6 +80,9 @@ In our first attempt (see "Old Version" below), we stored the name into the `Sta
 We tried to remove the `StationHash[]` array of `word` lookup table. It made one data read less, but performed almost three times slower. Data locality and cache pollution prevails on absolute number of memory reads. It is faster to access twice the memory, if this memory could remain in the CPU caches. Only profiling and timing would show this. The shortest code is not the fastest with modern CPUs.
 
 Note that if we reduce the number of stations from 41343 to 400 (as other languages 1brc projects do), the performance is much higher, also with a 16GB file as input. My guess is that since 400x16 = 6400, each dataset could fit entirely in each core L1 cache. No slower L2/L3 cache is involved, therefore performance is better.
+
+Once again, some reference material is available at https://en.algorithmica.org/hpc/cpu-cache/
+and some very mind-blowing experiment [about cache associativity](https://en.algorithmica.org/hpc/cpu-cache/associativity/). I told you CPUs were complex! :D
 
 The cache memory seems to be the bottleneck of our code. Which is a good sign, even if it may be difficult to make it any faster. But who knows?
 
