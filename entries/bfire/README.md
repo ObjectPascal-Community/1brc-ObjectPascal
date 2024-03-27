@@ -14,10 +14,10 @@ Project uses Delphi units: `Classes`, `System.SysUtils`, `System.StrUtils` and `
 
 The text in the Windows Terminal console uses the system code page, which does not play well with `UTF8`.
 The only way to match the approved result is to write the output to a file, with resulting `SHA256` hash:\
-`db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524`
+`4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910`
 
 If the Windows console output is redirected to a file, some characters are mangled, and the resulting `SHA256` hash is:\
-`82411ba76c59ae765e85b497f135a8f4e68d7a14cb7c0909ba96dea0d0635a28`
+`5c1942377034a69c7457f7cf671b5f8605df597ef18037c1baf4b9ead3c84678`
 
 For the challenge, compiled for LINUX, the console result will (hopefully) be correct.
 
@@ -48,4 +48,5 @@ Now that this entry is set up, I can play with improvements. Maybe even get a ti
 
 ## History
 
-- Version 1.0: first working version.
+- Version 1.0: first working version, based on TStringList.
+- Version 1.1: modified rounding to new baseline.
