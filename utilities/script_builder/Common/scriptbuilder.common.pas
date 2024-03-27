@@ -161,7 +161,7 @@ begin
       {$IFDEF UNIX}
       if FConfig.Entries[index].HasRelease then
       begin
-       line:= line  +
+       line:= line + '  ' +
        Format(cLazbuildRelease, [
          FConfig.Lazbuild,
          ExpandFileName(
@@ -176,7 +176,7 @@ begin
       end
       else
       begin
-        line:= line  +
+        line:= line + '  ' +
         Format(cLazbuildDefault, [
           FConfig.Lazbuild,
           ExpandFileName(
@@ -195,7 +195,7 @@ begin
       line:= line + '  echo "==========="' + LineEnding;
       line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
-    line:= line + 'if [ $1 == "" ];then'  + LineEnding;
+    line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
@@ -290,7 +290,7 @@ begin
       line:= line + '  echo "==========="' + LineEnding;
       line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
-    line:= line + 'if [ $1 == "" ];then'  + LineEnding;
+    line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
@@ -375,7 +375,7 @@ begin
       line:= line + '  echo "==========="' + LineEnding;
       line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
     end;
-    line:= line + 'if [ $1 == "" ];then'  + LineEnding;
+    line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;

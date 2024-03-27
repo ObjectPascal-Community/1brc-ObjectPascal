@@ -68,7 +68,6 @@ Submit your implementation and become part of the leader board!
 
 ## Rounding
 
-While I recognize that Székely's rounding code was a good effort, it was not simple and made a lot of people doubt it was even correct for negative temperatures.\
 In a discussion with [Mr. Packman](https://pack.ac/) themselves, we came up with a simpler solution. They even added some _Unit Testing_ :D.
 
 This will be the official way to round the output values, so pick your poison:
@@ -97,7 +96,7 @@ begin
     Result := '';
   Q := V div 10;
   R := V - (Q * 10);
-  Result := IntToStr(Q) + '.' + IntToStr(R);
+  Result := Result + IntToStr(Q) + '.' + IntToStr(R);
 end;
 
 procedure Test;

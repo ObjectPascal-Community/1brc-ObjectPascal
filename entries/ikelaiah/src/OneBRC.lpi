@@ -72,7 +72,6 @@
           </SearchPaths>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
-            <RelocatableUnit Value="True"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -94,6 +93,11 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="LGenerics"/>
+      </Item1>
+    </RequiredPackages>
     <Units Count="3">
       <Unit0>
         <Filename Value="OneBRC.lpr"/>
