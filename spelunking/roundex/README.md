@@ -24,6 +24,12 @@ e432eeb4be87e52abc4993f80289a644ca8a71bbbcb007076438147a7c239da3 *RoundExDouble.
 
 ### Linux
 
+```console
+$ sha256sum *.txt
+c46b85b4004ab4d01b9bea87f1aca68ef0826b86117e023153fce34c28254890  RoundExDouble.txt
+b64b43934182fdf63fb85ea7118230e9d249f27a76c63c59ea42afbb18b16dc9  RoundExInteger.txt
+```
+
 ### Windows
 
 ```console
