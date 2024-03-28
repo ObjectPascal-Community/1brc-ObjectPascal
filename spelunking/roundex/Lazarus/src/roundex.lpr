@@ -25,7 +25,11 @@ begin
     output:= output + FloatToStr(RoundExDouble(temperature / 10))  + ', ';
   end;
   SetLength(output, Length(output) - 2);
-  outputStream:= TFileStream.Create('RoundExDouble.txt', fmCreate);
+  {$IFDEF UNIX}
+  outputStream:= TFileStream.Create('RoundExDouble-Linux.txt', fmCreate);
+  {$ELSE}
+  outputStream:= TFileStream.Create('RoundExDouble-Windows.txt', fmCreate);
+  {$ENDIF}
   outputStream.WriteBuffer(output[1], Length(output));
   outputStream.Free;
 
@@ -41,7 +45,11 @@ begin
     output:= output + IntToStr(RoundExInteger(temperature / 10))  + ', ';
   end;
   SetLength(output, Length(output) - 2);
-  outputStream:= TFileStream.Create('RoundExInteger.txt', fmCreate);
+  {$IFDEF UNIX}
+  outputStream:= TFileStream.Create('RoundExInteger-Linux.txt', fmCreate);
+  {$ELSE}
+  outputStream:= TFileStream.Create('RoundExInteger-Windows.txt', fmCreate);
+  {$ENDIF}
   outputStream.WriteBuffer(output[1], Length(output));
   outputStream.Free;
 
