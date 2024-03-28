@@ -25,3 +25,9 @@ e432eeb4be87e52abc4993f80289a644ca8a71bbbcb007076438147a7c239da3 *RoundExDouble.
 ### Linux
 
 ### Windows
+
+```console
+$ sha256sum *.txt
+5c825e537589688d20d82b1871a00be64587834c82922b98159fc362c1739e9b *RoundExDouble.txt
+be44b2fd0f87ec2aa564817608aa48294fdbd5d15f884610b06e313abeb1fff7 *RoundExInteger.txt
+```
