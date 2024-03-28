@@ -74,18 +74,18 @@ In a discussion with [Mr. Packman](https://pack.ac/) themselves, we came up with
 
 This will be the official way to round the output values, so pick your poison:
 ```pas
-function RoundEx(x: Double): Double; inline;
+function RoundEx(x: Currency): Double; inline;
 begin
   Result := Ceil(x * 10) / 10;
 end;
 
-function RoundExInteger(x: Double): Integer; inline;
+function RoundExInteger(x: Currency): Integer; inline;
 begin
   Result := Ceil(x * 10);
 end;
 
 { Neater version by @bytebites from Lazarus forum }
-function RoundExString(x: Double): String; inline;
+function RoundExString(x: Currency): String; inline;
 var
   V, Q, R: Integer;
 begin
