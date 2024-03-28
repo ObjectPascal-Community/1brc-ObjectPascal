@@ -13,8 +13,10 @@ var
   temperature: Integer;
   output: String;
   outputStream: TFileStream;
+  fs: TFormatSettings;
 
 begin
+  fs.DecimalSeparator := '.';
   WriteLn('Lazarus RoundExDouble');
   index:= 0;
   output:= '';
@@ -22,7 +24,7 @@ begin
   begin
     Inc(index);
     Write(GenerateProgressBar(index, 1999, 50), #13);
-    output:= output + FloatToStr(RoundExDouble(temperature / 10))  + ', ';
+    output:= output + FloatToStr(RoundExDouble(temperature / 10), fs)  + ', ';
   end;
   SetLength(output, Length(output) - 2);
   {$IFDEF UNIX}

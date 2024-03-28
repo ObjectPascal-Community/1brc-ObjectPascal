@@ -11,18 +11,18 @@ uses
 , Math
 ;
 
-function RoundExDouble(x: Double): Double;
-function RoundExInteger(x: Double): Integer;
+function RoundExDouble(x: Currency): Double;
+function RoundExInteger(x: Currency): Integer;
 function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer): String;
 
 implementation
 
-function RoundExDouble(x: Double): Double;
+function RoundExDouble(x: Currency): Double;
 begin
   Result := Ceil(x * 10) / 10;
 end;
 
-function RoundExInteger(x: Double): Integer;
+function RoundExInteger(x: Currency): Integer;
 begin
   Result := Ceil(x * 10);
 end;

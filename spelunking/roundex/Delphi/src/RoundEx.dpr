@@ -7,16 +7,18 @@ program RoundEx;
 uses
   System.SysUtils
 , System.Classes
-, RoundEx.Common
+, RoundEx.Common in '../../Common/roundex.common.pas'
 ;
 
 var
   index: Integer;
   temperature: Integer;
-  output: String;
+  output: AnsiString;
   outputStream: TFileStream;
+  fs: TFormatSettings;
 
 begin
+  fs.DecimalSeparator := '.';
   WriteLn('Delphi RoundExDouble');
   index:= 0;
   output:= '';
@@ -24,7 +26,7 @@ begin
   begin
     Inc(index);
     Write(GenerateProgressBar(index, 1999, 50), #13);
-    output:= output + FloatToStr(RoundExDouble(temperature / 10))  + ', ';
+    output:= output + FloatToStr(RoundExDouble(temperature / 10), fs)  + ', ';
   end;
   SetLength(output, Length(output) - 2);
   {$IFDEF LINUX}
