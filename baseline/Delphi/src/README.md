@@ -1,0 +1,1 @@
+direct port of the Lazarus implementation, with minimal changes only where necessary
