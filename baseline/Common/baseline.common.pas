@@ -35,7 +35,7 @@ end;
     FHashStationList: TFPHashList;
     procedure AddToHashList(AStation: String; ATemp: Int64);
     procedure BuildHashList;
-    function RoundEx(x: Double): Double;
+    function RoundEx(x: Currency): Double;
   protected
   public
     constructor Create(AInputFile: String);
@@ -182,7 +182,7 @@ begin
   end;
 end;
 
-function TBaseline.RoundEx(x: Double): Double;
+function TBaseline.RoundEx(x: Currency): Double;
 begin
   Result := Ceil(x * 10) / 10;
 end;
