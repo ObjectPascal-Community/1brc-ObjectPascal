@@ -10,7 +10,7 @@ uses
 , SysUtils
 , CustApp
 , Baseline.Console
-, Baseline.Common
+, Baseline.Lazarus
 ;
 
 {$I version.inc}
