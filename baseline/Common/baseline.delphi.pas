@@ -1,17 +1,19 @@
-﻿unit OneBRC;
+﻿unit Baseline.Delphi;
 
 interface
 
 uses
-  System.Classes, System.Generics.Collections;
+  System.Classes
+, System.Generics.Collections
+;
 
 type
-  // alias, to easily try various types (Int64, Currency, Double)
-  // due to rounding problems during the average calculation,
-  // and the mismatch between Delphi and Lazarus.
+// alias, to easily try various types (Int64, Currency, Double)
+// due to rounding problems during the average calculation,
+// and the mismatch between Delphi and Lazarus.
   TAmount = Int64;
 
-  { TWeatherStation }
+{ TWeatherStation }
   PWeatherStation = ^TWeatherStation;
   TWeatherStation = record
     FStation: string;
@@ -21,7 +23,7 @@ type
     FCnt: Integer;
   end;
 
-  { TBaseline }
+{ TBaseline }
   TBaseline = class
   private
     FInputFile: String;
@@ -29,20 +31,23 @@ type
     FHashStationList: TDictionary<string, PWeatherStation>;
     procedure AddToHashList (AStation: String; ATemp: TAmount);
     procedure BuildHashList;
-    function RoundEx (x: Currency): Double;
   protected
   public
     constructor Create (AInputFile: String);
     destructor Destroy; override;
 
     procedure Generate;
-  end;
+end;
 
 
 implementation
 
 uses
-  System.SysUtils, System.StrUtils, System.Math;
+  System.SysUtils
+, System.StrUtils
+, System.Math
+, Baseline.Common
+;
 
 
 function Compare (AList: TStringList; AIndex1, AIndex2: Integer): Integer;
@@ -63,7 +68,6 @@ begin
   end;
 end;
 
-//---------------------------------------------------
 { TBaseline }
 
 constructor TBaseline.Create (AInputFile: String);
@@ -81,7 +85,8 @@ destructor TBaseline.Destroy;
 var
   iStation: PWeatherStation;
 begin
-  for iStation in FHashStationList.Values do begin
+  for iStation in FHashStationList.Values do
+  begin
     Dispose(iStation);
   end;
   FStationNames.Free;
@@ -93,8 +98,8 @@ procedure TBaseline.AddToHashList(AStation: String; ATemp: TAmount);
 var
   vWeatherStation: PWeatherStation;
 begin
-  // on Delphi, the below station returns a different average from the baseline.output provided
-  // this issue was resolved after
+// on Delphi, the below station returns a different average from the baseline.output provided
+// this issue was resolved after
 //  if aStation = 'Danau Kändimarg' then begin
 //    FProblematicSum := FProblematicSum + aTemp;
 //    Inc (FProblematicCount);
@@ -156,11 +161,6 @@ begin
   end;
 end;
 
-function TBaseline.RoundEx(x: Currency): Double;
-begin
-  Result := Ceil(x * 10) / 10;
-end;
-
 procedure TBaseline.Generate;
 var
   index: Integer;
@@ -170,15 +170,18 @@ var
   mean: Double;
   weatherStation: PWeatherStation;
   iStation: string;
+  {$IFDEF DEBUG}
   vStream: TStringStream;
+  {$ENDIF}
 begin
   BuildHashList;
   FStationNames.BeginUpdate;
-  for iStation in FHashStationList.Keys do begin
+  for iStation in FHashStationList.Keys do
+  begin
     FHashStationList.TryGetValue(iStation, weatherStation);
     Min := weatherStation^.FMin/10;
     Max := weatherStation^.FMax/10;
-    Mean := RoundEx(weatherStation^.FTot/weatherStation^.FCnt/10);
+    Mean := RoundExDouble(weatherStation^.FTot/weatherStation^.FCnt/10);
     strTemp := weatherStation^.FStation + '=' + FormatFloat('0.0', Min) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', Max) + ',';
     FStationNames.Add(strTemp);
   end;
@@ -186,7 +189,8 @@ begin
   FStationNames.CustomSort(Compare);
 
   strTemp:= '';
-  for index:= 0 to FStationNames.Count - 1 do begin
+  for index:= 0 to FStationNames.Count - 1 do
+  begin
     strTemp:= strTemp + FStationNames[index] + ' ';
   end;
   SetLength(strTemp, Length(strTemp) - 2);

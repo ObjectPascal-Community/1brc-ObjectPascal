@@ -20,8 +20,8 @@ TWeatherStation = record
   FMax: Int64;
   FTot: Int64;
   FCnt: Integer;
-
 end;
+
 { TBaseline }
   TBaseline = class(TObject)
   private

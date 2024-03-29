@@ -25,6 +25,8 @@ const
   cOptionInput:   array of string = ['-i', '--input-file'];
   {$ENDIF}
 
+{$I version.inc}
+
 resourcestring
   rsAppTitle         = 'One Billion Row Challenge Baseline';
   rsGeneratorVersion = 'baseline v%s';
@@ -69,8 +71,10 @@ var
   iValue: string;
 begin
   Result := False;
-  for iValue in aArray do begin
-    if aValue.ToLower = iValue then begin
+  for iValue in aArray do
+  begin
+    if aValue.ToLower = iValue then
+    begin
       Result := True;
       break;
     end;
@@ -85,22 +89,27 @@ begin
   aInputFile := '';
 
   // 0 is the exe path, so we start at 1
-  for I := 1 to ParamCount do begin
-    if ArrayContains (cOptionHelp, ParamStr(I)) then begin
+  for I := 1 to ParamCount do
+  begin
+    if ArrayContains (cOptionHelp, ParamStr(I)) then
+    begin
       WriteHelp;
       exit;
     end
-    else if ArrayContains (cOptionVersion, ParamStr(I)) then begin
+    else if ArrayContains (cOptionVersion, ParamStr(I)) then
+    begin
       WriteLn(Format(rsGeneratorVersion, [ cVersion ]));
       exit;
     end
-    else if ArrayContains (cOptionInput, ParamStr(I)) then begin
+    else if ArrayContains (cOptionInput, ParamStr(I)) then
+    begin
       // must be followed by the user's specified input file
       if (I+1) <= ParamCount then
         aInputFile := ExpandFileName (ParamStr (I+1));
       if not TFile.Exists (aInputFile) then
         WriteLn(Format(rsErrorMessage, [ Format(rsNoInputFile, [aInputFile]) ]))
-      else begin
+      else
+      begin
         Result := True;
         exit;
       end;

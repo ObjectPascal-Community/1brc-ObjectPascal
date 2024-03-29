@@ -5,17 +5,19 @@
 {$R *.res}
 
 uses
-  System.SysUtils,
-  Baseline.Console in 'Baseline.Console.pas',
-  OneBRC in 'OneBRC.pas';
+  System.SysUtils
+, Baseline.Console
+, Baseline.Delphi
+;
 
 var
-  vInputFilePath: string;
+  //vInputFilePath: string;
   vBaseline: TBaseline;
 begin
   try
-    if ParseCmdLineParams (vInputFilePath) then begin
-      vBaseline := TBaseline.Create (vInputFilePath);
+    if ParseCmdLineParams (inputFilename) then
+    begin
+      vBaseline := TBaseline.Create (inputFilename);
       try
         vBaseline.Generate;
       finally
@@ -25,6 +27,6 @@ begin
 
   except
     on E: Exception do
-      Writeln(E.ClassName, ': ', E.Message);
+      Writeln(Format(rsErrorMessage, [ E.ClassName, ': ', E.Message ]));
   end;
 end.

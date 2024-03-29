@@ -13,8 +13,6 @@ uses
 , Baseline.Lazarus
 ;
 
-{$I version.inc}
-
 type
 
 { TOneBRCBaseline }
