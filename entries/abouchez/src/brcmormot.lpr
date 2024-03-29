@@ -125,7 +125,7 @@ begin
   inherited Create({suspended=}false);
 end;
 
-{$ifdef FPC_CPUX64}
+{$ifdef FPC_CPUX64_disabled_slower}
 function NameLen(p: PUtf8Char): PtrInt; assembler; nostackframe;
 asm
          lea      rdx,  qword ptr [p + 2]
@@ -454,7 +454,7 @@ begin
     ['t', 'threads'], threads, '#number of threads to run',
       SystemInfo.dwNumberOfProcessors);
   Executable.Command.Get(
-    ['c', 'chunk'], chunkmb, 'size in #megabytes used for per-thread chunking', 4);
+    ['c', 'chunk'], chunkmb, 'size in #megabytes used for per-thread chunking', 16);
   help := Executable.Command.Option(['h', 'help'], 'display this help');
   if Executable.Command.ConsoleWriteUnknown then
     exit
