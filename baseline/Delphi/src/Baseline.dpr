@@ -11,13 +11,12 @@ uses
 ;
 
 var
-  //vInputFilePath: string;
   vBaseline: TBaseline;
 begin
   try
-    if ParseCmdLineParams (inputFilename) then
+    if ParseCmdLineParams(inputFilename) then
     begin
-      vBaseline := TBaseline.Create (inputFilename);
+      vBaseline := TBaseline.Create(inputFilename);
       try
         vBaseline.Generate;
       finally
@@ -27,6 +26,6 @@ begin
 
   except
     on E: Exception do
-      Writeln(Format(rsErrorMessage, [ E.ClassName, ': ', E.Message ]));
+      WriteLn(Format(rsErrorMessage, [ E.ClassName, ': ', E.Message ]));
   end;
 end.
