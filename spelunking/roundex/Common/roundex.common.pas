@@ -7,22 +7,28 @@ unit RoundEx.Common;
 interface
 
 uses
-  SysUtils
-, Math
-;
+  SysUtils;
 
-function RoundExDouble(x: Currency): Double;
-function RoundExInteger(x: Currency): Integer;
+function RoundExDouble(x: double): Double;
+function RoundExInteger(x: double): Integer;
 function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer): String;
 
 implementation
 
-function RoundExDouble(x: Currency): Double;
+// we define our own "official" cross-compiler ceil() rounding method: the math
+// unit seems not consistent between Delphi and FPC
+
+function ceil(x: double): integer;
+begin
+  result := trunc(x) + ord(frac(x) > 0);  // using FPU is fast enough here
+end;
+
+function RoundExDouble(x: double): Double;
 begin
   Result := Ceil(x * 10) / 10;
 end;
 
-function RoundExInteger(x: Currency): Integer;
+function RoundExInteger(x: double): Integer;
 begin
   Result := Ceil(x * 10);
 end;
