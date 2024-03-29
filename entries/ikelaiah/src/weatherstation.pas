@@ -9,7 +9,7 @@ uses
   Generics.Collections,
   Math,
   streamex,
-  bufstream, lgHashMap
+  lgHashMap
   {$IFDEF DEBUG}
   , Stopwatch
   {$ENDIF}
@@ -38,74 +38,30 @@ type
 
 type
   // Create a dictionary
-  TWeatherDictionary = specialize TDictionary<string, TStat>;
   TWeatherDictionaryLG = specialize TGHashMapQP<string, TStat>;
 
-// The main algorithm to process the temp measurements from various weather station
-procedure ProcessTempMeasurementsV4a(const filename: string);
+type
+  // Create a class to encapsulate the temperature observations of each weather station.
+  TWeatherStation = class
+  private
+    fname: string;
+    weatherDictionary: TWeatherDictionaryLG;
+    weatherStationList: TStringList;
+    procedure ReadMeasurementsInChunk;
+    procedure ProcessChunk(const chunkData: pansichar; const dataSize: integer; const chunkIndex: integer);
+    procedure ParseStationAndTempFromLine(line: string);
+    procedure AddCityTemperatureLG(const cityName: string; const newTemp: int64);
+    procedure SortWeatherStationAndStats;
+    procedure PrintSortedWeatherStationAndStats;
+  public
+    constructor Create(filename: string);
+    destructor Destroy; override;
+    // The main algorithm to process the temp measurements from various weather stations
+    procedure ProcessMeasurements;
+  end;
+
 
 implementation
-
-function RoundEx(x: Double): Double; inline;
-begin
-  Result := Ceil(x * 10) / 10;
-end;
-
-function RoundExInteger(x: Double): Integer; inline;
-begin
-  Result := Ceil(x * 10);
-end;
-
-function RoundExString(x: Double): String; inline;
-var
-  V, Q, R: Integer;
-begin
-  V := RoundExInteger(x);
-  if V < 0 then
-  begin
-    Result := '-';
-    V := -V;
-  end
-  else
-    Result := '';
-  Q := V div 10;
-  R := V - (Q * 10);
-  Result := IntToStr(Q) + '.' + IntToStr(R);
-end;
-
-constructor TStat.Create(const newMin: int64; const newMax: int64;
-  const newSum: int64; const newCount: int64);
-begin
-  self.min := newMin;
-  self.max := newMax;
-  self.sum := newSum;
-  self.cnt := newCount;
-end;
-
-function TStat.ToString: string;
-var
-  minR, meanR, maxR: double; // Store the rounded values prior saving to TStringList.
-begin
-  minR := RoundEx(self.min / 10);
-  maxR := RoundEx(self.max / 10);
-  meanR := RoundEx(self.sum / self.cnt / 10);
-  Result := FormatFloat('0.0', minR) + '/' + FormatFloat('0.0', meanR) +
-    '/' + FormatFloat('0.0', maxR);
-end;
-
-// Remove dots from a string
-function RemoveDots(const line: string): string;
-var
-  index: integer;
-begin
-  Result := line;
-  for index := Length(Result) downto 1 do
-  begin
-    if Result[index] = '.' then
-      Delete(Result, index, 1);
-  end;
-end;
-
 
 {
   A custom comparer for TStringList.
@@ -132,16 +88,128 @@ begin
   end;
 end;
 
-procedure AddCityTemperatureLG(const cityName: string; const newTemp: int64;
-  var weatherDictionary: TWeatherDictionaryLG);
+// Remove dots from a string
+function RemoveDots(const line: string): string;
+var
+  index: integer;
+begin
+  Result := line;
+  for index := Length(Result) downto 1 do
+  begin
+    if Result[index] = '.' then
+      Delete(Result, index, 1);
+  end;
+end;
+
+function RoundEx(x: Currency): Double; inline;
+begin
+  Result := Ceil(x * 10) / 10;
+end;
+
+function RoundExInteger(x: Currency): Integer; inline;
+begin
+  Result := Ceil(x * 10);
+end;
+
+{ Neater version by @bytebites from Lazarus forum }
+function RoundExString(x: Currency): String; inline;
+var
+  V, Q, R: Integer;
+begin
+  V := RoundExInteger(x);
+  divmod(V, 10, Q, R);
+  Result := IntToStr(Q) + '.' + chr(48 + Abs(R))
+end;
+
+constructor TStat.Create(const newMin: int64; const newMax: int64;
+  const newSum: int64; const newCount: int64);
+begin
+  self.min := newMin;
+  self.max := newMax;
+  self.sum := newSum;
+  self.cnt := newCount;
+end;
+
+function TStat.ToString: string;
+var
+  minR, meanR, maxR: double; // Store the rounded values prior saving to TStringList.
+begin
+  minR := RoundEx(self.min / 10);
+  maxR := RoundEx(self.max / 10);
+  meanR := RoundEx(self.sum / self.cnt / 10);
+  Result := FormatFloat('0.0', minR) + '/' + FormatFloat('0.0', meanR) +
+    '/' + FormatFloat('0.0', maxR);
+end;
+
+constructor TWeatherStation.Create(filename: string);
+begin
+  // Assign filename
+  fname := filename;
+  // Create a dictionary
+  weatherDictionary := TWeatherDictionaryLG.Create;
+  // Create a TStringList for sorting
+  weatherStationList := TStringList.Create;
+end;
+
+destructor TWeatherStation.Destroy;
+begin
+  // Free TStringLIst dictionary
+  weatherStationList.Free;
+  // Free the dictionary
+  weatherDictionary.Free;
+end;
+
+procedure TWeatherStation.PrintSortedWeatherStationAndStats;
+var
+  outputList: string;
+  index: int64;
+begin
+
+  if self.weatherStationList.Count = 0 then
+  begin
+    WriteLn('Nothing to print. The list is empty.');
+    Exit;
+  end;
+
+  outputList := '';
+  // Print the weather station and the temp stat
+  for index := 0 to self.weatherStationList.Count - 1 do
+    outputList := outputList + self.weatherStationList[index];
+
+  // Remove last comma and space; ', ', a neat trick from Gus.
+  SetLength(outputList, Length(outputList) - 2);
+  WriteLn('{', outputList, '}');
+end;
+
+procedure TWeatherStation.SortWeatherStationAndStats;
+var
+  wsKey: string;
+begin
+  wsKey := '';
+
+  if self.weatherDictionary.Count = 0 then
+  begin
+    WriteLn('Nothing to Sort.');
+    Exit;
+  end;
+  for wsKey in weatherDictionary.Keys do
+  begin
+    self.weatherStationList.Add(wsKey + '=' + weatherDictionary[wsKey].ToString + ', ');
+  end;
+
+  self.weatherStationList.CustomSort(@CustomTStringListComparer);
+end;
+
+procedure TWeatherStation.AddCityTemperatureLG(const cityName: string;
+  const newTemp: int64);
 var
   stat: TStat;
 begin
   // If city name esxists, modify temp as needed
-  if weatherDictionary.Contains(cityName) then
+  if self.weatherDictionary.Contains(cityName) then
   begin
     // Get the temp record
-    stat := weatherDictionary[cityName];
+    stat := self.weatherDictionary[cityName];
 
     // If the temp lower then min, set the new min.
     if newTemp < stat.min then stat.min := newTemp;
@@ -156,7 +224,7 @@ begin
     stat.cnt := stat.cnt + 1;
 
     // Update the stat of this city
-    weatherDictionary.AddOrSetValue(cityName, stat);
+    self.weatherDictionary.AddOrSetValue(cityName, stat);
     {$IFDEF DEBUG}
     // Display the line.
     // WriteLn('Updated: ', cityName);
@@ -164,9 +232,9 @@ begin
   end;
 
   // If city name doesn't exist add a new entry
-  if not weatherDictionary.Contains(cityName) then
+  if not self.weatherDictionary.Contains(cityName) then
   begin
-    weatherDictionary.Add(cityName, TStat.Create(newTemp, newTemp, newTemp, 1));
+    self.weatherDictionary.Add(cityName, TStat.Create(newTemp, newTemp, newTemp, 1));
     {$IFDEF DEBUG}
     // Display the line.
     // WriteLn('Added: ', cityName);
@@ -174,111 +242,152 @@ begin
   end;
 end;
 
-
-procedure ProcessTempMeasurementsV4a(const filename: string);
+procedure TWeatherStation.ParseStationAndTempFromLine(line: string);
 var
-  fReader: TStreamReader;
-  fStream: TBufferedFileStream;
-  line, parsedStation, strTemp, wsKey, outputList: string;
-  parsedTemp: int64;
-  delimiterPos, valCode, index: integer;
-  wd: TWeatherDictionaryLG;
-  weatherStationList: TStringList;
+  delimiterPos: integer;
+  parsedStation, strTemp: string;
+  parsedTemp, valCode: int64;
 begin
+  // Get position of the delimiter
+  delimiterPos := Pos(';', line);
+  if delimiterPos > 0 then
+  begin
+    // Get the weather station name
+    // Using Copy and POS - as suggested by Gemini AI.
+    // This part saves 3 mins faster when processing 1 billion rows.
+    parsedStation := Copy(line, 1, delimiterPos - 1);
 
-  // Create a city - weather dictionary
-  wd := TWeatherDictionaryLG.Create;
-  // Create a city - weather TStringList for sorting
-  weatherStationList := TStringList.Create;
+    // Get the temperature recorded, as string, remove '.' from string float
+    // because we want to save it as int64.
+    strTemp := Copy(line, delimiterPos + 1, Length(line));
+    // strTemp := StringReplace(strTemp, '.', '', [rfReplaceAll]);
+    // The above operation is a bit expensive.
+    // Rewrote a simple function which prevents creation of new string
+    // in each iteration. Saved approx 20-30 seconds for 1 billion row.
+    // Remove dots turns a float into an int.
+    strTemp := RemoveDots(strTemp);
 
-  // Create a file stream and use TReadBufStream to buffer data
-  fStream := TBufferedFileStream.Create(filename, fmOpenRead or fmShareDenyWrite);
-  try
-    fReader := TStreamReader.Create(fStream);
-    try
-      while not fReader.EOF do // Start read file ----------------------------
-      begin
-        line := fReader.ReadLine;
-        // Get position of the delimiter -------------------------------------
-        delimiterPos := Pos(';', line);
-        if delimiterPos > 0 then
-        begin
-          // Get the weather station name
-          // Using Copy and POS - as suggested by Gemini AI.
-          // This part saves 3 mins faster when processing 1 billion rows.
-          parsedStation := Copy(line, 1, delimiterPos - 1);
+    // Add the weather station and the recorded temp (as int64) in the TDictionary
+    Val(strTemp, parsedTemp, valCode);
+    if valCode <> 0 then Exit;
 
-          // Get the temperature recorded, as string, remove '.' from string float
-          // because we want to save it as int64.
-          strTemp := Copy(line, delimiterPos + 1, Length(line));
-          // strTemp := StringReplace(strTemp, '.', '', [rfReplaceAll]);
-          // The above operation is a bit expensive.
-          // Rewrote a simple function which prevents creation of new string
-          // in each iteration. Saved approx 20-30 seconds for 1 billion row.
-          // Remove dots turns a float into an int.
-          strTemp := RemoveDots(strTemp);
-
-          // Add the weather station and the recorded temp (as int64) in the TDictionary
-          Val(strTemp, parsedTemp, valCode);
-          if valCode <> 0 then
-            Continue;
-
-          // Add a record in TWeatherDictionary
-          AddCityTemperatureLG(parsedStation, parsedTemp, wd);
-
-        end; // end of checking delimiter in a line --------------------------
-      end; // end of reading file --------------------------------------------
-
-      {$IFDEF DEBUG}
-            Stopwatch.StopTimer;
-            WriteLn('Finished reading and parsing input file');
-            Stopwatch.DisplayTimer;
-      {$ENDIF}
-
-      // Format and sort weather station by name and temp stat ---------------
-      {$IFDEF DEBUG}
-            Stopwatch.StartTimer;
-      {$ENDIF}
-      wsKey := '';
-      for wsKey in wd.Keys do
-      begin
-        weatherStationList.Add(wsKey + '=' + wd[wsKey].ToString + ', ');
-      end;
-      weatherStationList.CustomSort(@CustomTStringListComparer);
-
-      {$IFDEF DEBUG}
-            Stopwatch.StopTimer;
-            WriteLn('Finished creating TStringList and sorted it');
-            Stopwatch.DisplayTimer;
-      {$ENDIF}
-
-      // Print TStringList - sorted by weather station and temp stat ---------
-      {$IFDEF DEBUG}
-            Stopwatch.StartTimer;
-      {$ENDIF}
-      outputList := '';
-      // Print the weather station and the temp stat
-      for index := 0 to weatherStationList.Count - 1 do
-        outputList := outputList + weatherStationList[index];
-      // Remove last comma and space; ', ', a neat trick from Gus.
-      SetLength(outputList, Length(outputList) - 2);
-      WriteLn('{', outputList, '}');
-
-      {$IFDEF DEBUG}
-            Stopwatch.StopTimer;
-            WriteLn('Finished printing the sorted weather station and temperatures');
-            Stopwatch.DisplayTimer;
-      {$ENDIF}
-    finally
-      fReader.Free
-    end; // StreamReader deallocates /////////////////////////////////////////
-
-  finally
-    fStream.Free;
-    weatherStationList.Free;
-    wd.Free;
+    // Add a record in TWeatherDictionary
+    self.AddCityTemperatureLG(parsedStation, parsedTemp);
   end;
 end;
 
+procedure TWeatherStation.ProcessChunk(const chunkData: pansichar;
+  const dataSize: integer; const chunkIndex: integer);
+var
+  bufferStream: TMemoryStream;
+  streamReader: TStreamReader;
+  line: string;
+begin
+
+  {$IFDEF DEBUG}
+  WriteLn('Processing chunk: ', inttostr(chunkIndex), '.');
+  {$ENDIF DEBUG}
+
+  // Create a memory stream from the buffer
+  bufferStream := TMemoryStream.Create;
+  try
+    { Write buffer to a stream, only up to specified data size!
+      This ensures we parse the data until we reach to last `\n` character in
+      the chunk/buffer.}
+    bufferStream.Write(chunkData^, dataSize);
+    bufferStream.Position := 0;
+
+    // Create a TStreamReader to read lines from the buffer
+    streamReader := TStreamReader.Create(bufferStream);
+    try
+      // Read lines until end of this buffer
+      while not streamReader.EOF do
+      begin
+        line := streamReader.ReadLine;
+        // Now, parse this line.
+        self.ParseStationAndTempFromLine(line);
+      end;
+    finally
+      streamReader.Free;
+    end;
+  finally
+    bufferStream.Free;
+  end;
+end;
+
+procedure TWeatherStation.ReadMeasurementsInChunk;
+var
+  fileStream: TFileStream;
+  buffer: pansichar;
+  bytesRead, TotalBytesRead: int64;
+  lineBreakPos: int64;
+  chunkIndex: int64;
+  chunkSize: int64 = 1073741824; // 1 GB in bytes
+begin
+
+  // Set buffer size here, not too big.
+  chunkSize:=chunkSize * 1;
+
+  // Open the file for reading
+  fileStream := TFileStream.Create(self.fname, fmOpenRead);
+  try
+    // Allocate memory buffer for reading chunks
+    GetMem(buffer, chunkSize);
+    try
+      totalBytesRead := 0;
+      chunkIndex := 0;
+
+      // Read and parse chunks of data until EOF -------------------------------
+      while totalBytesRead < fileStream.Size do
+      begin
+        bytesRead := fileStream.Read(buffer^, chunkSize);
+        Inc(TotalBytesRead, BytesRead);
+
+        // Find the position of the last newline character in the chunk
+        LineBreakPos := BytesRead;
+        while (LineBreakPos > 0) and (Buffer[LineBreakPos - 1] <> #10) do
+          Dec(LineBreakPos);
+
+        { Now, must ensure that if the last byte read in the current chunk
+          is not a newline character, the file pointer is moved back to include
+          that byte and any preceding bytes of the partial line in the next
+          chunk's read operation.
+
+          Also, no need to update the BytesRead variable in this context because
+          it represents the actual number of bytes read from the file, including
+          any partial line that may have been included due to moving the file
+          pointer back.
+          Ref: https://www.freepascal.org/docs-html/rtl/classes/tstream.seek.html}
+        if lineBreakPos < bytesRead then
+          fileStream.Seek(-(bytesRead - lineBreakPos), soCurrent);
+
+        // Write the chunk data to a file using the separate procedure
+        ProcessChunk(buffer, lineBreakPos, chunkIndex);
+
+        {$IFDEF DEBUG}
+        // Display user feedback
+        WriteLn('Chunk ', ChunkIndex, ', Total bytes read:', IntToStr(totalBytesRead));
+        {$ENDIF DEBUG}
+
+        // Increase chunk index - a counter
+        Inc(chunkIndex);
+      end;// End of read and parse chunks of data ------------------------------
+    finally
+      // Free the memory buffer
+      FreeMem(buffer);
+    end;
+  finally
+    // Close the file
+    FileStream.Free;
+  end;
+end;
+
+// The main algorithm
+procedure TWeatherStation.ProcessMeasurements;
+begin
+  self.ReadMeasurementsInChunk;
+  self.SortWeatherStationAndStats;
+  self.PrintSortedWeatherStationAndStats;
+end;
 
 end.
