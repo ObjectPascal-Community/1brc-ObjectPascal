@@ -1,12 +1,12 @@
 unit WeatherStation;
 
 {$mode objfpc}{$H+}{$J-}{$modeSwitch advancedRecords}
+
 interface
 
 uses
   Classes,
   SysUtils,
-  Generics.Collections,
   Math,
   streamex,
   lgHashMap
@@ -26,7 +26,7 @@ type
   TStat = record
   var
     min: int64; // Borrowed the concept from go's approach to improve
-                // performance, save floats as int64.
+    // performance, save floats as int64.
     max: int64; // This saved ~2 mins processing time.
     sum: int64;
     cnt: int64;
@@ -48,8 +48,9 @@ type
     weatherDictionary: TWeatherDictionaryLG;
     weatherStationList: TStringList;
     procedure ReadMeasurementsInChunk;
-    procedure ProcessChunk(const chunkData: pansichar; const dataSize: integer; const chunkIndex: integer);
-    procedure ParseStationAndTempFromLine(line: string);
+    procedure ProcessChunk(const chunkData: pansichar; const dataSize: int64;
+      const chunkIndex: int64);
+    procedure ParseStationAndTempFromLine(const line: string);
     procedure AddCityTemperatureLG(const cityName: string; const newTemp: int64);
     procedure SortWeatherStationAndStats;
     procedure PrintSortedWeatherStationAndStats;
@@ -101,24 +102,24 @@ begin
   end;
 end;
 
-function RoundEx(x: Currency): Double; inline;
+function RoundEx(x: currency): double; inline;
 begin
   Result := Ceil(x * 10) / 10;
 end;
 
-function RoundExInteger(x: Currency): Integer; inline;
+function RoundExInteger(x: currency): integer; inline;
 begin
   Result := Ceil(x * 10);
 end;
 
 { Neater version by @bytebites from Lazarus forum }
-function RoundExString(x: Currency): String; inline;
+function RoundExString(x: currency): string; inline;
 var
-  V, Q, R: Integer;
+  V, Q, R: integer;
 begin
   V := RoundExInteger(x);
   divmod(V, 10, Q, R);
-  Result := IntToStr(Q) + '.' + chr(48 + Abs(R))
+  Result := IntToStr(Q) + '.' + chr(48 + Abs(R));
 end;
 
 constructor TStat.Create(const newMin: int64; const newMax: int64;
@@ -187,7 +188,7 @@ var
 begin
   wsKey := '';
 
-  if self.weatherDictionary.Count = 0 then
+  if self.weatherDictionary.GetCapacity = 0 then
   begin
     WriteLn('Nothing to Sort.');
     Exit;
@@ -242,12 +243,13 @@ begin
   end;
 end;
 
-procedure TWeatherStation.ParseStationAndTempFromLine(line: string);
+procedure TWeatherStation.ParseStationAndTempFromLine(const line: string);
 var
   delimiterPos: integer;
   parsedStation, strTemp: string;
   parsedTemp, valCode: int64;
 begin
+
   // Get position of the delimiter
   delimiterPos := Pos(';', line);
   if delimiterPos > 0 then
@@ -266,6 +268,7 @@ begin
     // in each iteration. Saved approx 20-30 seconds for 1 billion row.
     // Remove dots turns a float into an int.
     strTemp := RemoveDots(strTemp);
+    strTemp := StringReplace(strTemp, '\n', '', [rfReplaceAll]);
 
     // Add the weather station and the recorded temp (as int64) in the TDictionary
     Val(strTemp, parsedTemp, valCode);
@@ -276,8 +279,7 @@ begin
   end;
 end;
 
-procedure TWeatherStation.ProcessChunk(const chunkData: pansichar;
-  const dataSize: integer; const chunkIndex: integer);
+procedure TWeatherStation.ProcessChunk(const chunkData: pansichar;const dataSize: int64; const chunkIndex: int64);
 var
   bufferStream: TMemoryStream;
   streamReader: TStreamReader;
@@ -326,7 +328,7 @@ var
 begin
 
   // Set buffer size here, not too big.
-  chunkSize:=chunkSize * 1;
+  chunkSize := chunkSize * 1;
 
   // Open the file for reading
   fileStream := TFileStream.Create(self.fname, fmOpenRead);
