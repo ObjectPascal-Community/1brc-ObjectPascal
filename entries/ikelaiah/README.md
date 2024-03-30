@@ -55,7 +55,7 @@ Run `sha256sum` on your output.
 
 ```bash
 $ sha256sum.exe ikelaiah-output.txt
-683bb3d247f53bab96e98983771d66bc9d7dbfb38aa3fecac4c04b8ab29e3032 *ikelaiah-output.txt
+4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910 *ikelaiah-output.txt
 ```
 
 ## Help

@@ -160,7 +160,7 @@ Expected `SHA256` hash:
 >
 > We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
 >
-> Until then, this is the current one: `683bb3d247f53bab96e98983771d66bc9d7dbfb38aa3fecac4c04b8ab29e3032`
+> Until then, this is the current one: `4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910`
 > There's also an archived version of the [baseline output](./data/baseline.output.gz)
 
 ## Differences From Original
