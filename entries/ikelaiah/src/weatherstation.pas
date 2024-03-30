@@ -13,6 +13,7 @@ uses
   {$IFDEF DEBUG}
   , Stopwatch
   {$ENDIF}
+  , Baseline.Common
   ;
 
 type
@@ -46,33 +47,6 @@ procedure ProcessTempMeasurementsV4a(const filename: string);
 
 implementation
 
-function RoundEx(x: Double): Double; inline;
-begin
-  Result := Ceil(x * 10) / 10;
-end;
-
-function RoundExInteger(x: Double): Integer; inline;
-begin
-  Result := Ceil(x * 10);
-end;
-
-function RoundExString(x: Double): String; inline;
-var
-  V, Q, R: Integer;
-begin
-  V := RoundExInteger(x);
-  if V < 0 then
-  begin
-    Result := '-';
-    V := -V;
-  end
-  else
-    Result := '';
-  Q := V div 10;
-  R := V - (Q * 10);
-  Result := IntToStr(Q) + '.' + IntToStr(R);
-end;
-
 constructor TStat.Create(const newMin: int64; const newMax: int64;
   const newSum: int64; const newCount: int64);
 begin
@@ -86,9 +60,9 @@ function TStat.ToString: string;
 var
   minR, meanR, maxR: double; // Store the rounded values prior saving to TStringList.
 begin
-  minR := RoundEx(self.min / 10);
-  maxR := RoundEx(self.max / 10);
-  meanR := RoundEx(self.sum / self.cnt / 10);
+  minR := RoundExDouble(self.min / 10);
+  maxR := RoundExDouble(self.max / 10);
+  meanR := RoundExDouble(self.sum / self.cnt / 10);
   Result := FormatFloat('0.0', minR) + '/' + FormatFloat('0.0', meanR) +
     '/' + FormatFloat('0.0', maxR);
 end;

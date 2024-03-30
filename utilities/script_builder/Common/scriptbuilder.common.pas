@@ -77,11 +77,8 @@ const
   cReplaceEntryThreads = '[[threads]]';
 
   cBaselineBinary      = 'baseline';
-  {$IFDEF UNIX}
   cCompilerFPC         = 'fpc';
-  {$ELSE}
   cCompilerDelphi      = 'delphi';
-  {$ENDIF}
   cSSD                 = 'SSD';
 
 resourcestring
@@ -239,6 +236,10 @@ var
 begin
   Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
   Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name) +' ======"' + LineEnding;
+  if AEntry.Compiler = cCompilerDelphi then
+  begin
+   Result:= Result + '  chmod +x ${BIN}/' + AEntry.EntryBinary + LineEnding;
+  end;
   tmpStr:= Format('%s/%s %s', [
     '${BIN}',
     AEntry.EntryBinary,
@@ -284,6 +285,10 @@ var
 begin
   Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
   Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name)  +' ======"' + LineEnding;
+  if AEntry.Compiler = cCompilerDelphi then
+  begin
+   Result:= Result + '  chmod -v +x ${BIN}/' + AEntry.EntryBinary + LineEnding;
+  end;
   // Run for SSD
   tmpStr:= StringsReplace(
     FConfig.Hyperfine,
