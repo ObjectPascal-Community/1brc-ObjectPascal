@@ -31,48 +31,74 @@ type
 { TConfig }
   TConfig = class(TObject)
   private
-    FRootFolder: TJSONStringType;
-    FEntriesFolder: TJSONStringType;
+    FRootLinux: TJSONStringType;
+    FRootWindows: TJSONStringType;
+
+    FEntriesLinux: TJSONStringType;
+    FEntriesWindows: TJSONStringType;
+
     FResultsFolder: TJSONStringType;
-    FBinFolder: TJSONStringType;
+
+    FBinLinux: TJSONStringType;
+    FBinWindows: TJSONStringType;
+
     FInput: TJSONStringType;
     FHyperfine: TJSONStringType;
+
     FLazbuild: TJSONStringType;
+    FDelphiCompiler: TJSONStringType;
+
     FOutputHash: TJSONStringType;
     FEntries: TEntries;
 
-    //procedure setFromJSON(const AJSON: TJSONStringType);
     procedure setFromJSONData(const AJSONData: TJSONData);
     procedure setFromJSONObject(const AJSONObject: TJSONObject);
   protected
   public
     constructor Create;
-    //constructor Create(const AJSON: TJSONStringType);
     constructor Create(const AJSONData: TJSONData);
 
     destructor Destroy; override;
 
-    property RootFolder: TJSONStringType
-      read FRootFolder
-      write FRootFolder;
-    property EntriesFolder: TJSONStringType
-      read FEntriesFolder
-      write FEntriesFolder;
+    property RootLinux: TJSONStringType
+      read FRootLinux
+      write FRootLinux;
+    property RootWindows: TJSONStringType
+      read FRootWindows
+      write FRootWindows;
+
+    property EntriesLinux: TJSONStringType
+      read FEntriesLinux
+      write FEntriesLinux;
+    property EntriesWindows: TJSONStringType
+      read FEntriesWindows
+      write FEntriesWindows;
+
     property ResultsFolder: TJSONStringType
       read FResultsFolder
       write FResultsFolder;
-    property BinFolder: TJSONStringType
-      read FBinFolder
-      write FBinFolder;
+
+    property BinLinux: TJSONStringType
+      read FBinLinux
+      write FBinLinux;
+    property BinWindows: TJSONStringType
+      read FBinWindows
+      write FBinWindows;
+
     property Input: TJSONStringType
       read FInput
       write FInput;
     property Hyperfine: TJSONStringType
       read FHyperfine
       write FHyperfine;
+
     property Lazbuild: TJSONStringType
       read FLazbuild
       write FLazbuild;
+    property DelphiCompiler: TJSONStringType
+      read FDelphiCompiler
+      write FDelphiCompiler;
+
     property OutputHash: TJSONStringType
       read FOutputHash
       write FOutputHash;
@@ -84,15 +110,19 @@ type
 implementation
 
 const
-  cJSONRootFolder    = 'root-folder';
-  cJSONEntriesFolder = 'entries-folder';
-  cJSONResultsFolder = 'results-folder';
-  cJSONBinFolder     = 'bin-folder';
-  cJSONInput         = 'input';
-  cJSONHyperfine     = 'hyperfine';
-  cJSONLazbuild      = 'lazbuild';
-  cJSONOutpuHash     = 'output-hash';
-  cJSONEntries       = 'entries';
+  cJSONRootLinux      = 'root-linux';
+  cJSONRootWIndows    = 'root-windows';
+  cJSONEntriesLinux   = 'entries-linux';
+  cJSONEntriesWindows = 'entries-windows';
+  cJSONResultsFolder  = 'results-folder';
+  cJSONBinLinux       = 'bin-linux';
+  cJSONBinWindows     = 'bin-windows';
+  cJSONInput          = 'input';
+  cJSONHyperfine      = 'hyperfine';
+  cJSONLazbuild       = 'lazbuild';
+  cJSONDelphiCompiler = 'delphi-compiler';
+  cJSONOutpuHash      = 'output-hash';
+  cJSONEntries        = 'entries';
 
 resourcestring
   rsExceptionNotAJSONObject = 'JSON Data is not an object';
@@ -104,22 +134,19 @@ resourcestring
 
 constructor TConfig.Create;
 begin
-  FRootFolder:= '';
-  FEntriesFolder:= '';
+  FRootLinux:= '';
+  FRootWindows:= '';
+  FEntriesLinux:= '';
+  FEntriesWindows:= '';
   FResultsFolder:= '';
-  FBinFolder:= '';
+  FBinLinux:= '';
+  FBinWindows:= '';
   FInput:= '';
   FHyperfine:= '';
   FLazbuild:= '';
+  FDelphiCompiler:= '';
   FOutputHash:= '';
-  //FEntries:= TEntries.Create;
 end;
-
-{constructor TConfig.Create(const AJSON: TJSONStringType);
-begin
-  Create;
-  setFromJSON(AJSON);
-end;}
 
 constructor TConfig.Create(const AJSONData: TJSONData);
 begin
@@ -133,28 +160,6 @@ begin
   inherited Destroy;
 end;
 
-{procedure TConfig.setFromJSON(const AJSON: TJSONStringType);
-var
-  jData: TJSONData;
-begin
-  if trim(AJSON) = EmptyStr then
-  begin
-    raise ENodeStatusEmptyString.Create(rsExceptionEmptyString);
-  end;
-  try
-    jData:= GetJSON(AJSON);
-  except
-    on E: Exception do
-    begin
-      raise ENodeStatusCannotParse.Create(Format(rsExceptionCannotParse, [E.Message]));
-    end;
-  end;
-  try
-    setFromJSONData(jData);
-  finally
-    jData.Free;
-  end;
-end;}
 
 procedure TConfig.setFromJSONData(const AJSONData: TJSONData);
 begin
@@ -167,13 +172,23 @@ end;
 
 procedure TConfig.setFromJSONObject(const AJSONObject: TJSONObject);
 begin
-  FRootFolder:= AJSONObject.Get(cJSONRootFolder, FRootFolder);
-  FEntriesFolder:= AJSONObject.Get(cJSONEntriesFolder, FEntriesFolder);
+  FRootLinux:= AJSONObject.Get(cJSONRootLinux, FRootLinux);
+  FRootWindows:= AJSONObject.Get(cJSONRootWIndows, FRootWindows);
+
+  FEntriesLinux:= AJSONObject.Get(cJSONEntriesLinux, FEntriesLinux);
+  FEntriesWindows:= AJSONObject.Get(cJSONEntriesWindows, FEntriesWindows);
+
   FResultsFolder:= AJSONObject.Get(cJSONResultsFolder, FResultsFolder);
-  FBinFolder:= AJSONObject.Get(cJSONBinFolder, FBinFolder);
+
+  FBinLinux:= AJSONObject.Get(cJSONBinLinux, FBinLinux);
+  FBinWindows:= AJSONObject.Get(cJSONBinWindows, FBinWindows);
+
   FInput:= AJSONObject.Get(cJSONInput, FInput);
   FHyperfine:= AJSONObject.Get(cJSONHyperfine, FHyperfine);
+
   FLazbuild:= AJSONObject.Get(cJSONLazbuild, FLazbuild);
+  FDelphiCompiler:= AJSONObject.Get(cJSONDelphiCompiler, FDelphiCompiler);
+
   FOutputHash:= AJSONObject.Get(cJSONOutpuHash, FOutputHash);
   FEntries:= TEntries.Create(AJSONObject.Find(cJSONEntries));
 end;

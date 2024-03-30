@@ -163,6 +163,10 @@ begin
           begin
             FList[index2].Compiler:= 'lazarus-3.0, fpc-3.2.2';
           end;
+          if FConfig.Entries[index].Compiler = 'delphi' then
+          begin
+            FList[index2].Compiler:= 'delphi 12.1';
+          end;
 
           FList[index2].Name:= UTF8Encode(FConfig.Entries[index].Name);
           FList[index2].Notes:= UTF8Encode(FConfig.Entries[index].Notes);

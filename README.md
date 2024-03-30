@@ -1,7 +1,9 @@
 # 1️⃣🐝🏎️ The One Billion Row Challenge in Object Pascal
 <p>
-    <a href="https://discord.gg/c382VBk"><img src="https://img.shields.io/discord/623794270255579146?label=Delphi Community Discord" alt="Delphi Community" /></a>
-    <a href="https://discord.gg/3VdxbSFyJP"><img src="https://img.shields.io/discord/570025060312547359?label=Unofficial Free Pacal Discord" alt="Unofficial Free Pacal" /></a>
+    <a href="https://discord.gg/c382VBk"><img src="https://img.shields.io/discord/623794270255579146?label=Delphi Community&logo=discord" alt="Delphi Community" /></a>
+    <a href="https://discord.gg/3VdxbSFyJP"><img src="https://img.shields.io/discord/570025060312547359?label=Unofficial Free Pascal&logo=discord" alt="Unofficial Free Pacal" /></a>
+    <a href="https://t.me/delphidevelopers"><img src="https://img.shields.io/badge/Telegram-Delphi_Developers-blue?logo=telegram" /></a>
+    <a href="https://t.me/freepascal_en"><img src="https://img.shields.io/badge/Telegram-Free_Pascal_&_Lazarus-blue?logo=telegram" /></a>
     <a href="https://forum.lazarus.freepascal.org/index.php/topic,66571.0.html"><img src="https://img.shields.io/badge/Lazarus_Forum-1BRC_Thread-blue" /></a>
     <a href="https://en.delphipraxis.net/topic/11209-offical-launch-of-the-1-billion-row-challenge-in-object-pascal/"><img src="https://img.shields.io/badge/Delphi_Praxis_Forum-1BRC_Thread-blue" /></a>
 </p>
@@ -31,7 +33,7 @@ Conakry;31.2
 Istanbul;23.0
 ```
 
-The task is to write an Object Pascal program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on `STDOUT` like this (i.e., sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit towards positive infinity with both `17.01` and `17.05` being rounded to `17.1`, with the decimal separator being a period `.`):
+The task is to write an Object Pascal program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on `STDOUT` like this (i.e., sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit, with the decimal separator being a period `.`, and for that you can chose one of the options presented in the [Rounding Section](#rounding) or implement your own that is consistent with the options provided.):
 
 ```
 {Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
@@ -72,31 +74,24 @@ In a discussion with [Mr. Packman](https://pack.ac/) themselves, we came up with
 
 This will be the official way to round the output values, so pick your poison:
 ```pas
-function RoundEx(x: Double): Double; inline;
+function RoundEx(x: Currency): Double; inline;
 begin
   Result := Ceil(x * 10) / 10;
 end;
 
-function RoundExInteger(x: Double): Integer; inline;
+function RoundExInteger(x: Currency): Integer; inline;
 begin
   Result := Ceil(x * 10);
 end;
 
-function RoundExString(x: Double): String; inline;
+{ Neater version by @bytebites from Lazarus forum }
+function RoundExString(x: Currency): String; inline;
 var
   V, Q, R: Integer;
 begin
   V := RoundExInteger(x);
-  if V < 0 then
-  begin
-    Result := '-';
-    V := -V;
-  end
-  else
-    Result := '';
-  Q := V div 10;
-  R := V - (Q * 10);
-  Result := Result + IntToStr(Q) + '.' + IntToStr(R);
+  divmod(V, 10, Q, R);
+  Result := IntToStr(Q) + '.' + chr(48 + Abs(R))
 end;
 
 procedure Test;
@@ -165,7 +160,7 @@ Expected `SHA256` hash:
 >
 > We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
 >
-> Until then, this is the current one: `4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910`
+> Until then, this is the current one: `683bb3d247f53bab96e98983771d66bc9d7dbfb38aa3fecac4c04b8ab29e3032`
 > There's also an archived version of the [baseline output](./data/baseline.output.gz)
 
 ## Differences From Original
@@ -229,7 +224,8 @@ I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time t
 I'd like to thank [@dtpfl](https://github.com/dtpfl) for his invaluable work on maintaining the `README.md` file up to date with everything.\
 I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.\
 I'd like to thank [@corneliusdavid](https://github.com/corneliusdavid) for giving some of the information files a once over and making things more legible and clear.\
-I'd like to thank Mr. **Pack**man, aka O, for clearing the fog around the rounding issues.
+I'd like to thank Mr. **Pack**man, aka O, for clearing the fog around the rounding issues.\
+I'd like to thank [Georges](https://github.com/georges-hatem) for providing us with the Delphi version of baseline.
 
 ## Links
 The original repository: https://github.com/gunnarmorling/1brc \

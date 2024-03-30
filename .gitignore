@@ -4,7 +4,7 @@
 /profiling
 /results
 /entries/entries.json
-*_all.*
+*.sh
 
 # Compiled l10n files: .mo should be ignored
 *.mo

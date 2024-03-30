@@ -8,7 +8,6 @@ uses
   Classes, SysUtils, Math;
 
 procedure DumpExceptionCallStack(E: Exception);
-function RoundEx(x: double): double;
 function Compare(AList: TStringList; AIndex1, AIndex2: integer): integer;
 
 implementation

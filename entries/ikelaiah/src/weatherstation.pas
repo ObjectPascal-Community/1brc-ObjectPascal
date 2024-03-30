@@ -13,6 +13,7 @@ uses
   {$IFDEF DEBUG}
   , Stopwatch
   {$ENDIF}
+  , Baseline.Common
   ;
 
 type
@@ -100,26 +101,6 @@ begin
   end;
 end;
 
-function RoundEx(const x: currency): double; inline;
-begin
-  Result := Ceil(x * 10) / 10;
-end;
-
-function RoundExInteger(const x: currency): integer; inline;
-begin
-  Result := Ceil(x * 10);
-end;
-
-{ Neater version by @bytebites from Lazarus forum }
-function RoundExString(const x: currency): string; inline;
-var
-  V, Q, R: integer;
-begin
-  V := RoundExInteger(x);
-  divmod(V, 10, Q, R);
-  Result := IntToStr(Q) + '.' + chr(48 + Abs(R));
-end;
-
 constructor TStat.Create(const newMin: int64; const newMax: int64;
   const newSum: int64; const newCount: int64);
 begin
@@ -133,10 +114,11 @@ function TStat.ToString: string;
 var
   minR, meanR, maxR: double; // Store the rounded values prior saving to TStringList.
 begin
-  minR := RoundEx(self.min / 10);
-  maxR := RoundEx(self.max / 10);
-  meanR := RoundEx(self.sum / self.cnt / 10);
-  Result := FormatFloat('0.0', minR) + '/' + FormatFloat('0.0', meanR) + '/' + FormatFloat('0.0', maxR);
+  minR := RoundExDouble(self.min / 10);
+  maxR := RoundExDouble(self.max / 10);
+  meanR := RoundExDouble(self.sum / self.cnt / 10);
+  Result := FormatFloat('0.0', minR) + '/' + FormatFloat('0.0', meanR) +
+    '/' + FormatFloat('0.0', maxR);
 end;
 
 constructor TWeatherStation.Create(const filename: string);
