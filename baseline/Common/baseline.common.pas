@@ -7,7 +7,11 @@ unit Baseline.Common;
 interface
 
 uses
+ {$IFDEF FPC}
+ SysUtils
+ {$ELSE}
  System.SysUtils
+ {$ENDIF}
 ;
 
 function RoundExDouble(const ATemp: Double): Double;
