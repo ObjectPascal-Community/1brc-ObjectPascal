@@ -156,12 +156,12 @@ Expected `SHA256` hash:
 `ebad17b266ee9f5cb3d118531f197e6f68c9ab988abc5cb9506e6257e1a52ce6`
 
 ## Verify Output File
-> **NOTE**
->
-> We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
->
-> Until then, this is the current one: `4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910`
-> There's also an archived version of the [baseline output](./data/baseline.output.gz)
+
+There is now a Delphi version of the baseline. This means that we now have an official way of generating a valid output on both sides of the fence.
+
+With this, we now have the official hash: `4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910`
+
+There's also an archived version of the [baseline output](./data/baseline.output.gz)
 
 ## Differences From Original
 I've decided that I would want this challenge to be turned way up to 11!
