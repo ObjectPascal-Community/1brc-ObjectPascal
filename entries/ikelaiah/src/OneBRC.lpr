@@ -36,7 +36,7 @@ uses
   WeatherStation;
 
 const
-  version = '1.4';
+  version = '1.5';
 
 type
 
@@ -57,6 +57,7 @@ type
   var
     ErrorMsg: string;
     filename: string = '';
+    weatherStation: TWeatherStation;
   begin
     // quick check parameters
     ErrorMsg := CheckOptions('hvi:', ['help', 'version', 'input:']);
@@ -92,7 +93,7 @@ type
       filename := GetOptionValue('i', 'input');
     end;
 
-    if (length(filename) < 4) then
+    if not FileExists(fileName) then
     begin
       WriteLn('Input file seems invalid.');
       WriteHelp;
@@ -102,12 +103,16 @@ type
 
     // Start the main algorithm ////////////////////////////////////////////////
     try
-      WeatherStation.ProcessTempMeasurementsV4a(filename);
+      weatherStation := TWeatherStation.Create(filename);
+      try
+        weatherStation.ProcessMeasurements;
+      finally
+        weatherStation.Free;
+      end;
     except
       on E: Exception do
         WriteLn('Error: ' + E.Message);
     end;
-
 
     // Stop program loop ///////////////////////////////////////////////////////
     Terminate;
