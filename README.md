@@ -224,7 +224,8 @@ I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time t
 I'd like to thank [@dtpfl](https://github.com/dtpfl) for his invaluable work on maintaining the `README.md` file up to date with everything.\
 I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.\
 I'd like to thank [@corneliusdavid](https://github.com/corneliusdavid) for giving some of the information files a once over and making things more legible and clear.\
-I'd like to thank Mr. **Pack**man, aka O, for clearing the fog around the rounding issues.
+I'd like to thank Mr. **Pack**man, aka O, for clearing the fog around the rounding issues.\
+I'd like to thank [Georges](https://github.com/georges-hatem) for providing us with the Delphi version of baseline.
 
 ## Links
 The original repository: https://github.com/gunnarmorling/1brc \
