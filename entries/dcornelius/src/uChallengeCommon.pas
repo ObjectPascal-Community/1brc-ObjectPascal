@@ -33,7 +33,6 @@ type
   public
     constructor Create(const NewInputFilename: string);
     procedure ReadAndParseAllData(WeatherCityProcessor: TWeatherCityProc);
-    function PascalRound(x: Double): Double;
     function SplitCityTemp(const StationLine: string; var CityName: string; var CityTemp: Integer): Boolean;
     property InputFilename: string read FInputFilename write FInputFilename;
   end;
@@ -48,7 +47,8 @@ uses
   {$IFDEF DEBUG}
   System.Diagnostics,
   {$ENDIF }
-  System.Math;
+  System.Math,
+  Baseline.Common;
 
 { TChallengeCommon }
 
@@ -60,20 +60,6 @@ begin
     FInputFilename := NewInputFilename
   else
     raise EFileNotFoundException.Create(NewInputFilename + ' not found.');
-end;
-
-function TChallengeCommon.PascalRound(x: Double): Double;
-var
-  t: Double;
-begin
-  // round towards positive infinity
-  t := Trunc(x);
-  if (x < 0.0) and (t - x = 0.5) then
-    Result := t
-  else if Abs(x - t) >= 0.5 then
-    Result := t + Sign(x)
-  else
-    Result := x;
 end;
 
 procedure TChallengeCommon.ReadAndParseAllData(WeatherCityProcessor: TWeatherCityProc);
@@ -166,7 +152,7 @@ end;
 
 function TWeatherCity.Mean: Double;
 begin
-  Result := ChallengeCommon.PascalRound(TotalTemp / DataCount);
+  Result := RoundExDouble(TotalTemp / DataCount);
 end;
 
 function TWeatherCity.OutputSumLine: string;

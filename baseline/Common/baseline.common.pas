@@ -7,8 +7,7 @@ unit Baseline.Common;
 interface
 
 uses
-  Classes
-, SysUtils
+ System.SysUtils
 ;
 
 function RoundExDouble(const ATemp: Double): Double;
