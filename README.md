@@ -70,45 +70,11 @@ Submit your implementation and become part of the leader board!
 
 ## Rounding
 
-In a discussion with [Mr. Packman](https://pack.ac/) themselves, we came up with a simpler solution. They even added some _Unit Testing_ :D.
+With the help of this magnificent community, we were able to finally get to a rounding solution that works.
 
-This will be the official way to round the output values, so pick your poison:
-```pas
-function RoundEx(x: Currency): Double; inline;
-begin
-  Result := Ceil(x * 10) / 10;
-end;
-
-function RoundExInteger(x: Currency): Integer; inline;
-begin
-  Result := Ceil(x * 10);
-end;
-
-{ Neater version by @bytebites from Lazarus forum }
-function RoundExString(x: Currency): String; inline;
-var
-  V, Q, R: Integer;
-begin
-  V := RoundExInteger(x);
-  divmod(V, 10, Q, R);
-  Result := IntToStr(Q) + '.' + chr(48 + Abs(R))
-end;
-
-procedure Test;
-var
-  F: Double;
-begin
-  for F in [10.01, 10.04, -10.01, -10.0, 0, -0, -0.01] do
-    WriteLn(RoundExInteger(F), ' ', RoundExString(F), ' ', RoundEx(F));
-  //101 10.1  1.0100000000000000E+001
-  //101 10.1  1.0100000000000000E+001
-  //-100 -10.0 -1.0000000000000000E+001
-  //-100 -10.0 -1.0000000000000000E+001
-  //0 0.0  0.0000000000000000E+000
-  //0 0.0  0.0000000000000000E+000
-  //0 0.0  0.0000000000000000E+000
-end;
-```
+This means that I'm encouraging everyone to use the code that is now in the [Baseline.Commom](baseline/Common) unit.\
+I do have to make crystal clear that using that code is an **option**, one that you can always opt out of.\
+But if you do opt in, just include that unit in your entry and job's a done.
 
 ## Generating the measurements.txt
 > **NOTE**  
