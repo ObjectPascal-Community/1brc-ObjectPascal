@@ -65,8 +65,10 @@ const
   cTestBash            = 'test_all.sh';
   cRunBash             = 'run_all.sh';
 
+  {$IFDEF UNIX}
   cLazbuildDefault     = '%s \'#10'    -B \'#10'    "%s"';
   cLazbuildRelease     = '%s \'#10'    -B \'#10'    --bm="Release" \'#10'    "%s"';
+  {$ENDIF}
 
   cReplaceName         = '[[name]]';
   cReplaceJSONResults  = '[[results-json]]';
@@ -75,8 +77,9 @@ const
   cReplaceEntryThreads = '[[threads]]';
 
   cBaselineBinary      = 'baseline';
+  {$IFDEF UNIX}
   cCompilerFPC         = 'fpc';
-  {$IFNDEF FPC}
+  {$ELSE}
   cCompilerDelphi      = 'delphi';
   {$ENDIF}
   cSSD                 = 'SSD';
@@ -150,17 +153,25 @@ end;
 
 function TBuilder.GetVariables: String;
 begin
+  Result:= '';
   {$IFDEF UNIX}
-  Result:= 'ROOT="' + FConfig.RootLinux + '"' + LineEnding;
   Result:= Result + 'BIN="' + FConfig.BinLinux + '"' + LineEnding;
   Result:= Result + 'ENTRIES="' + FConfig.EntriesLinux + '"' + LineEnding;
-  {$ELSE}
-  Result:= 'ROOT="' + FConfig.RootWindows + '"' + LineEnding;
-  Result:= Result + 'BIN="' + FConfig.BinWindows + '"' + LineEnding;
-  Result:= Result + 'ENTRIES="' + FConfig.EntriesWindows + '"' + LineEnding;
-  {$ENDIF}
   Result:= Result + 'RESULTS="' + FConfig.ResultsFolder + '"' + LineEnding;
   Result:= Result + 'INPUT="' + FConfig.Input + '"' + LineEnding;
+  {$ELSE}
+  Result:= Result + 'BIN="' + FConfig.BinWindows + '"' + LineEnding;
+  Result:= Result + 'ENTRIES="' + FConfig.EntriesWindows + '"' + LineEnding;
+  Result:= Result + 'DELPHICC="' + FConfig.DelphiCompiler + '"' + LineEnding;
+  Result:= Result + 'INCLUDE="c:\program files (x86)\embarcadero\studio\23.0\lib\Linux64\release;C:\Users\gcarr\Documents\Embarcadero\Studio\23.0\Imports;c:\program files (x86)\embarcadero\studio\23.0\Imports;C:\Users\Public\Documents\Embarcadero\Studio\23.0\Dcp\Linux64;c:\program files (x86)\embarcadero\studio\23.0\include;c:\program files (x86)\embarcadero\studio\23.0\redist\Linux64;C:\Users\Public\Documents\Embarcadero\Studio\23.0\Bpl\Linux64;C:\Users\gcarr\Documents\Embarcadero\Studio\23.0\CatalogRepository\ChatGPTWizard-2.2.0.9"' + LineEnding;
+  Result:= Result + 'SDK="C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk"' + LineEnding;
+  Result:= Result + 'LIBPATH="C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk\usr\lib\gcc\x86_64-linux-gnu\13;C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk\usr\lib\x86_64-linux-gnu;C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk\lib\x86_64-linux-gnu;C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk\lib64"' + LineEnding;
+  Result:= Result + 'BPL="\Users\Public\Documents\Embarcadero\Studio\23.0\Bpl\Linux64"' + LineEnding;
+  Result:= Result + 'DCP="\Users\Public\Documents\Embarcadero\Studio\23.0\Dcp\Linux64"' + LineEnding;
+  Result:= Result + 'GENERICS="Generics.Collections=System.Generics.Collections;Generics.Defaults=System.Generics.Defaults"' + LineEnding;
+  Result:= Result + 'HEADERS="\Users\Public\Documents\Embarcadero\Studio\23.0\hpp\Linux64"' + LineEnding;
+  Result:= Result + 'DEFINES="RELEASE;LINUX"' + LineEnding;
+  {$ENDIF}
   Result:= Result + LineEnding;
 end;
 
@@ -188,7 +199,35 @@ begin
     LineEnding;
   end;
   {$ELSE}
-  Result:= line + '  # Needs the Delphi command line stuff' + LineEnding;
+  Result:= Result + Format(
+    '  "${DELPHICC}" '+
+    '-\$D0 '+
+    '-\$L- '+
+    '-\$Y- '+
+    '--no-config '+
+    '-B '+
+    '-Q '+
+    '"-A${GENERICS}" '+
+    '"-D${DEFINES}" '+
+    '"-E${BIN}" '+
+    '"-I${INCLUDE}" '+
+    '"-LEC:${BPL}" '+
+    '"-LNC:${DCP}" '+
+    '-NS '+
+    '"-O${INCLUDE}" '+
+    '"-R${INCLUDE}" '+
+    '"-U${INCLUDE}" '+
+    '"--syslibroot:${SDK}" '+
+    '"--libpath:${LIBPATH}" '+
+    '"-NHC:${HEADERS}" '+
+    '"${ENTRIES}/%s/%s" && \' + LineEnding +
+    '  scp ${BIN}/' + AEntry.EntryBinary + ' ' +
+    'gcarreno@10.42.0.1:/home/gcarreno/Programming/1brc-ObjectPascal/bin'
+    ,
+  [
+    AEntry.EntryFolder,
+    AEntry.DPR
+  ]) + LineEnding;
   {$ENDIF}
   Result:= Result + '  echo "==========="' + LineEnding;
   Result:= Result + '  echo' + LineEnding + '}' + LineEnding + LineEnding;
@@ -201,7 +240,7 @@ begin
   Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
   Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name) +' ======"' + LineEnding;
   tmpStr:= Format('%s/%s %s', [
-    '${BIN}',//IncludeTrailingPathDelimiter(FConfig.BinLinux),
+    '${BIN}',
     AEntry.EntryBinary,
     AEntry.RunParams
   ]);
@@ -219,12 +258,12 @@ begin
   );
   tmpStr:= Format('  %s > %s/%s.output', [
     tmpStr,
-    '${RESULTS}', //IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
+    '${RESULTS}',
     AEntry.EntryBinary
   ]);
   Result:= Result + tmpStr + LineEnding;
   tmpStr:= Format('  sha256sum %s/%s.output',[
-    '${RESULTS}', //IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
+    '${RESULTS}',
     AEntry.EntryBinary
   ]);
   Result:= Result + tmpStr + LineEnding;
@@ -232,7 +271,7 @@ begin
     FConfig.OutputHash
   ]) + LineEnding;
   Result:= Result + Format('  rm %s/%s.output',[
-    '${RESULTS}', //IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
+    '${RESULTS}',
     AEntry.EntryBinary
   ]) + LineEnding;
   Result:= Result + '  echo "==========="' + LineEnding;
@@ -308,7 +347,6 @@ begin
       {$ELSE}
       if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
       {$ENDIF}
-      //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + GetFunctionCompile(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
@@ -364,7 +402,6 @@ begin
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
-      //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
       line:= line + GetFunctionTest(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;

@@ -5,8 +5,8 @@ interface
 uses
   System.SysUtils,
   System.StrUtils,
-  Classes,
-  Math;
+  System.Classes,
+  System.Math;
 
 type
   TStationDataClass = class(TObject)

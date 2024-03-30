@@ -174,15 +174,21 @@ procedure TConfig.setFromJSONObject(const AJSONObject: TJSONObject);
 begin
   FRootLinux:= AJSONObject.Get(cJSONRootLinux, FRootLinux);
   FRootWindows:= AJSONObject.Get(cJSONRootWIndows, FRootWindows);
+
   FEntriesLinux:= AJSONObject.Get(cJSONEntriesLinux, FEntriesLinux);
   FEntriesWindows:= AJSONObject.Get(cJSONEntriesWindows, FEntriesWindows);
+
   FResultsFolder:= AJSONObject.Get(cJSONResultsFolder, FResultsFolder);
+
   FBinLinux:= AJSONObject.Get(cJSONBinLinux, FBinLinux);
   FBinWindows:= AJSONObject.Get(cJSONBinWindows, FBinWindows);
+
   FInput:= AJSONObject.Get(cJSONInput, FInput);
   FHyperfine:= AJSONObject.Get(cJSONHyperfine, FHyperfine);
+
   FLazbuild:= AJSONObject.Get(cJSONLazbuild, FLazbuild);
   FDelphiCompiler:= AJSONObject.Get(cJSONDelphiCompiler, FDelphiCompiler);
+
   FOutputHash:= AJSONObject.Get(cJSONOutpuHash, FOutputHash);
   FEntries:= TEntries.Create(AJSONObject.Find(cJSONEntries));
 end;
