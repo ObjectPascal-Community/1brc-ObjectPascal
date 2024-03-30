@@ -72,7 +72,7 @@ Submit your implementation and become part of the leader board!
 
 With the help of this magnificent community, we were able to finally get to a rounding solution that works.
 
-This means that I'm encouraging everyone to use the code that is now in the [Baseline.Commom](baseline/Common) unit.\
+This means that I'm encouraging everyone to use the code that is now in the [Baseline.Common](baseline/Common) unit.\
 I do have to make crystal clear that using that code is an **option**, one that you can always opt out of.\
 But if you do opt in, just include that unit in your entry and job's a done.
 
