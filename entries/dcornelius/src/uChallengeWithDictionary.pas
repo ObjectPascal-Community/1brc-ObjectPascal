@@ -22,6 +22,11 @@ uses
 type
   TWeatherCityList = TDictionary<string, TWeatherCity>;
 
+  TUTF8CustomComparer = class(TInterfacedObject, IComparer<string>)
+  public
+    function Compare(const Left, Right: string): Integer;
+  end;
+
 var
   WeatherCityList: TWeatherCityList;
 
@@ -43,7 +48,7 @@ begin
 
       // create the output list
       CityArray := WeatherCityList.Keys.ToArray;
-      TArray.Sort<string>(CityArray, TStringComparer.Ordinal);
+      TArray.Sort<string>(CityArray, TUTF8CustomComparer.Create);
       FirstOutput := True;
       Write('{');
       for var City in CityArray do
@@ -58,6 +63,14 @@ begin
     finally
       WeatherCityList.Free;
     end;
+end;
+
+{ TUTF8CustomComparer }
+
+function TUTF8CustomComparer.Compare(const Left, Right: string): Integer;
+begin
+  // Convert UTF-8 strings to UnicodeString for comparison
+  Result := CompareStr(UTF8ToWideString(Left), UTF8ToWideString(Right));
 end;
 
 end.
