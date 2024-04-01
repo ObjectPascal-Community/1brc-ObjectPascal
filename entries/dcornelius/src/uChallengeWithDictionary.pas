@@ -69,8 +69,7 @@ end;
 
 function TUTF8CustomComparer.Compare(const Left, Right: string): Integer;
 begin
-  // Convert UTF-8 strings to UnicodeString for comparison
-  Result := CompareStr(UTF8ToWideString(Left), UTF8ToWideString(Right));
+  Result := CompareStr(Left, Right);
 end;
 
 end.
