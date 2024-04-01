@@ -1,5 +1,5 @@
-program dcornelius;
-(* as: DCornelius.dpr
+program obrc_dcornelius;
+(* as: OBRC_DCornelius.dpr
  * by: David Cornelius
  * on: March, 2024
  * in: Delphi 12 Athens
@@ -13,7 +13,7 @@ program dcornelius;
 
 {$APPTYPE CONSOLE}
 
-{.$R *.res}
+{$R *.res}
 
 uses
   System.SysUtils, System.Classes,
@@ -30,15 +30,10 @@ begin
   Writeln('SYNTAX: ' + ExtractFileName(ParamStr(0)) + ' <filename> <method>');
   Writeln('  where <filename> is a text file with weather station data');
   Writeln('    and <method> is the algorytm for summarizing the data:');
-  Writeln('        TSL = read in all data to a TStringList');
+  Writeln('        TSL = read in all data to a TStringList (lots of memory needed)');
   Writeln('        DIC = build a Dictionary, then sort after built');
-  Writeln('        TBL = load a FireDAC in-memory table - warning: takes several hours!');
+  Writeln('        TBL = load a FireDAC in-memory table');
   Writeln;
-  {$IFDEF DEBUG}
-  Writeln('Running in Debug mode.');
-  {$ELSE}
-  Writeln('Running in Release mode.');
-  {$ENDIF}
   Writeln('Press ENTER...');
   Readln;
 end;
@@ -67,8 +62,7 @@ begin
       end;
       {$IFDEF DEBUG}
       StopWatch.Stop;
-      var ms := StopWatch.ElapsedMilliseconds;
-      Writeln(Format('Elapsed Time milliseconds: %d, minutes: ~%d:%d', [ms, ms div 1000 div 60, (ms div 1000) mod 60]));
+      Writeln('Elapsed Time (seconds/milliseconds): ', StopWatch.Elapsed.Seconds, ' / ', StopWatch.ElapsedMilliseconds);
       Readln;
       {$ENDIF}
     end;
