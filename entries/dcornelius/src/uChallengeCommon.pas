@@ -157,7 +157,7 @@ end;
 
 function TWeatherCity.Mean: Double;
 begin
-  Result := ChallengeCommon.PascalRound(TotalTemp / DataCount);
+  Result := Ceil(TotalTemp / DataCount) / 10.0;
 end;
 
 function TWeatherCity.OutputSumLine(const FirstOutput: Boolean): string;
