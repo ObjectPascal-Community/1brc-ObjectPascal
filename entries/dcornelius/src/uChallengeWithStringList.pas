@@ -58,7 +58,7 @@ begin
                          StopWatch.ElapsedMilliseconds]));
     {$ENDIF}
 
-    SortedList := TStringList.Create(TDuplicates.dupAccept, False, True);
+    SortedList := TStringList.Create(TDuplicates.dupIgnore, False, True);
     try
       // process all rows
       for CurrLine := 0 to WeatherLines.Count - 1 do begin
@@ -71,6 +71,7 @@ begin
             TWeatherCity(SortedList.Objects[ListCity]).AddNewTemp(CityTemp);
         end;
       end;
+      SortedList.UseLocale := False;
       SortedList.Sort;
 
       Write('{');
