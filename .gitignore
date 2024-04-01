@@ -5,6 +5,7 @@
 /results
 /entries/entries.json
 *.sh
+*.cmd
 
 # Compiled l10n files: .mo should be ignored
 *.mo
