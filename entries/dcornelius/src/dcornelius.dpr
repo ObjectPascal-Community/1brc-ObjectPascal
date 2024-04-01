@@ -30,7 +30,7 @@ begin
   Writeln('SYNTAX: ' + ExtractFileName(ParamStr(0)) + ' <filename> <method>');
   Writeln('  where <filename> is a text file with weather station data');
   Writeln('    and <method> is the algorytm for summarizing the data:');
-  Writeln('        TSL = read in all data to a TStringList (lots of memory needed)');
+  Writeln('        TSL = read in all data to a TStringList');
   Writeln('        DIC = build a Dictionary, then sort after built');
   Writeln('        TBL = load a FireDAC in-memory table - warning: takes several hours!');
   Writeln;
