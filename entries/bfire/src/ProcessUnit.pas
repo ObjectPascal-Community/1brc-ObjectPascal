@@ -5,8 +5,8 @@ interface
 uses
   System.SysUtils,
   System.StrUtils,
-  Classes,
-  Math;
+  System.Classes,
+  System.Math;
 
 type
   TStationDataClass = class(TObject)
@@ -40,34 +40,7 @@ begin
   Stations.OwnsObjects := True; // so, Stations object destroys its data objects
 end;
 
-function RoundTowardPositiveInfinity(test: Extended): String;
-var
-  temp: Extended;
-  thing: String;
-
-begin
-  case Sign(test) of
-    1:
-      begin
-        temp := SimpleRoundTo(test, -1);
-        thing := FloatToStrF(temp, ffFixed, 10, 1);
-      end;
-    0:
-      begin
-        thing := '0.0';
-      end;
-    -1:
-      begin
-        temp := SimpleRoundTo(-1.0 * test, -1);
-        thing := '-' + FloatToStrF(temp, ffFixed, 10, 1);
-        if thing = '-0.0' then
-          thing := '0.0';
-      end;
-  end;
-  RoundTowardPositiveInfinity := thing;
-end;
-
-function IntegerFixup(something: Integer): String;
+function IntegerFixup(something: Integer): String; inline;
 // fixup to adjust for storing tenths of degrees as integer
 // e.g. convert integer 234 to string 23.4 and -167 to -16.7
 var
@@ -81,15 +54,61 @@ begin
   IntegerFixup := thing.Replace('-.', '-0.');
 end;
 
-function MeanFixup(total: Integer; count: Integer): String;
+function MeanFixup(total: Integer; count: Integer): String; inline;
 // fixup to adjust for storing tenths of degrees as integer
-// calculate mean to one decimal place, rounded toward positive infinity
-var
-  Mean: Double;
+// calculate mean to one decimal place, rounded up/down depending on sign
 
+var
+  temp: string;
+  ratio: Integer;
+  remainder: Integer;
+  neg: Boolean;
 begin
-  Mean := Double(total) / Double(count) / 10.0;
-  MeanFixup := RoundTowardPositiveInfinity(Mean);
+  if total < 0 then
+  begin
+    neg := True;
+    total := -total;
+  end
+  else
+  begin
+    neg := False;
+  end;
+  ratio := total div count;
+  if (neg) then // no rounding needed
+  begin
+    temp := IntToStr(ratio);
+    if (ratio > 9) then
+    begin
+      // string modification equivalent to dividing by ten
+      temp := '-' + LeftStr(temp, Length(temp) - 1) + '.' + temp[Length(temp)];
+    end
+    else
+    begin
+      if temp[1] = '0' then
+      begin
+        temp := '0.' + temp;
+      end
+      else
+      begin
+        temp := '-0.' + temp;
+      end;
+    end;
+  end
+  else // round up
+  begin
+    temp := IntToStr(ratio + 1);
+    if (ratio > 8) then // 8, rather than 9, since one was added
+    begin
+      // string modification equivalent to dividing by ten
+      temp := LeftStr(temp, Length(temp) - 1) + '.' + temp[Length(temp)];
+    end
+    else
+    begin
+      temp := '0.' + temp;
+    end;
+  end;
+
+  MeanFixup := temp; // was temp;
 end;
 
 procedure DumpFile(outFile: String; UseStdOut: Boolean);

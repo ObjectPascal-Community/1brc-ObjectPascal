@@ -4,7 +4,7 @@ interface
 
 uses
   System.SysUtils,
-  Classes;
+  System.Classes;
 
 {$I 'version.inc'}
 

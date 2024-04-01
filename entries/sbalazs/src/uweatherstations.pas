@@ -7,7 +7,7 @@ unit uWeatherStations;
 interface
 
 uses
-  {$IFDEF MSWINDOWS}Windows, {$ENDIF}Classes, SysUtils, Math, syncobjs;
+  {$IFDEF MSWINDOWS}Windows, {$ENDIF}Classes, SysUtils, Math, syncobjs, Baseline.Common;
 
 const
   HashBuckets = 1 shl 17;
@@ -84,8 +84,6 @@ type
 
   TWSThreadsWatcher = class(TWSThreadBase)
   private
-    function RoundEx(x: Double): Double;
-    function PascalRound(x: Double): Double;
     procedure CreateFinalList;
   protected
     procedure Execute; override;
@@ -472,32 +470,6 @@ begin
   end;
 end;
 
-function TWSThreadsWatcher.RoundEx(x: Double): Double;
-begin
-  Result := PascalRound(x*10.0)/10.0;
-end;
-
-function TWSThreadsWatcher.PascalRound(x: Double): Double;
-var
-  t: Double;
-begin
-  //round towards positive infinity
-  t := Trunc(x);
-  if (x < 0.0) and (t - x = 0.5) then
-  begin
-    // Do nothing
-  end
-  else if Abs(x - t) >= 0.5 then
-  begin
-    t := t + Math.Sign(x);
-  end;
-
-  if t = 0.0 then
-    Result := 0.0
-  else
-    Result := t;
-end;
-
 procedure TWSThreadsWatcher.CreateFinalList;
 var
   I: Integer;
@@ -523,7 +495,7 @@ begin
       SetCodePage(Name, CP_UTF8, True);
       Min := WS.FData.FMin/10;
       Max := WS.FData.FMax/10;
-      Mean := RoundEx(WS.FData.FTot/WS.FData.FCnt/10);
+      Mean := RoundExDouble(WS.FData.FTot/WS.FData.FCnt/10);
       Str := Name + '=' + FormatFloat('0.0', Min) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', Max) + ',';
       SL.Add(Str);
     end;

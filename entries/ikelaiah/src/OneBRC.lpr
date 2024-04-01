@@ -1,21 +1,25 @@
 program OneBRC;
 
 {
- ==Credits==
+ ==Acknowledgments==
+
+Inspiration, code snippets, libraries, etc.
 
  1. The FPC team, Lazarus team, fpcupdeluxe team, and other contributors.
       - For providing a usable programming language and a usable ecosystem.
  2. Gustavo 'Gus' Carreno.
-      - For making this happen.
+      - For making this happen - 1BRC for Object Pascal.
       - Borrowed Gus' approach to use `TCustomApplication` and using `unit`s properly
         to make main code more readable.
       - Borrowed and modified Gus' `WriteHelp` from the `baseline.lpr`.
- 3. Székely Balázs.
+ 3. A.Koverdyaev(avk)
+      - For the amazing (LGenerics)[https://github.com/avk959/LGenerics] library.
+ 4. Székely Balázs.
       - Now I know what `Single` data type is!
       - I borrowed the custom `TStringList` comparer from the `baseline` program.
- 4. Shraddha Agrawal - https://www.bytesizego.com/blog/one-billion-row-challenge-go.
+ 5. Shraddha Agrawal - https://www.bytesizego.com/blog/one-billion-row-challenge-go.
       - The advice for not storing measurements for each station in a data structure.
- 5. Arman Hajisafi - https://arman-hs.github.io
+ 6. Arman Hajisafi - https://arman-hs.github.io
       - Encouragements and inspirations.
  }
 
@@ -32,7 +36,7 @@ uses
   WeatherStation;
 
 const
-  version = '1.3';
+  version = '1.5';
 
 type
 
@@ -53,6 +57,7 @@ type
   var
     ErrorMsg: string;
     filename: string = '';
+    weatherStation: TWeatherStation;
   begin
     // quick check parameters
     ErrorMsg := CheckOptions('hvi:', ['help', 'version', 'input:']);
@@ -88,7 +93,7 @@ type
       filename := GetOptionValue('i', 'input');
     end;
 
-    if (length(filename) < 4) then
+    if not FileExists(fileName) then
     begin
       WriteLn('Input file seems invalid.');
       WriteHelp;
@@ -98,12 +103,16 @@ type
 
     // Start the main algorithm ////////////////////////////////////////////////
     try
-      WeatherStation.ProcessTempMeasurementsV3(filename);
+      weatherStation := TWeatherStation.Create(filename);
+      try
+        weatherStation.ProcessMeasurements;
+      finally
+        weatherStation.Free;
+      end;
     except
       on E: Exception do
         WriteLn('Error: ' + E.Message);
     end;
-
 
     // Stop program loop ///////////////////////////////////////////////////////
     Terminate;

@@ -13,7 +13,7 @@ program dcornelius;
 
 {$APPTYPE CONSOLE}
 
-{$R *.res}
+{.$R *.res}
 
 uses
   System.SysUtils, System.Classes,

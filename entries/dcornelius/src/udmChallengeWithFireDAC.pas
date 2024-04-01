@@ -18,7 +18,7 @@ uses
   FireDAC.DatS, FireDAC.Phys.Intf, FireDAC.DApt.Intf, Data.DB, FireDAC.Comp.DataSet, FireDAC.Comp.Client,
   FireDAC.Stan.ExprFuncs, FireDAC.Phys.SQLiteWrapper.Stat, FireDAC.Phys.SQLiteDef, FireDAC.UI.Intf, FireDAC.Stan.Def,
   FireDAC.Stan.Pool, FireDAC.Stan.Async, FireDAC.Phys, FireDAC.Phys.SQLite, FireDAC.ConsoleUI.Wait,
-  FireDAC.Phys.SQLiteVDataSet, FireDAC.DApt;
+  FireDAC.Phys.SQLiteVDataSet, FireDAC.DApt, Baseline.Common;
 
 type
   TdmChallengeWithFireDAC = class(TDataModule)
@@ -55,7 +55,7 @@ var
 
   function OutputLine: string;
   begin
-    var MeanTemp := ChallengeCommon.PascalRound(dmChallengeWithFireDAC.qryCityTempsSumTemp.AsFloat /
+    var MeanTemp := RoundExDouble(dmChallengeWithFireDAC.qryCityTempsSumTemp.AsFloat /
                                                 dmChallengeWithFireDAC.qryCityTempsTempCount.AsFloat);
     Result := Format('%s=%0.1f/%0.1f/%0.1f',
                        [dmChallengeWithFireDAC.qryCityTempsCityName.AsString,

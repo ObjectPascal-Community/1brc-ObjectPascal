@@ -55,7 +55,7 @@ Run `sha256sum` on your output.
 
 ```bash
 $ sha256sum.exe ikelaiah-output.txt
-db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524 *ikelaiah-output.txt
+4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910 *ikelaiah-output.txt
 ```
 
 ## Help
@@ -78,7 +78,7 @@ Use `-v` to check version.
 
 ```bash
 $ ./OneBRC.exe -v
-OneBRC version 1.3
+OneBRC version 1.5
 ```
 
 ## Authors
@@ -89,38 +89,57 @@ Iwan Kelaiah
 ## Version History
 
 * 1.0
-    * Initial Release - Sequential approach. 
+    * Initial Release - Sequential approach. Approx. 18-20 mins on my Inspiron 15 7510 laptop.
     * `AssignFile` -> `Reset` -> Parse weather station and the recorded temperature with `TStringHelper.Split` ->  `TDictionary` -> `TStringList` -> A `for` loop -> output.
 
 * 1.2
-    * Revision release - Sequential approach. 
+    * Revision release - Sequential approach. Approx. 15-18 mins on my Inspiron 15 7510 laptop.
     * Replaced `TStringHelper.Split` with `Pos()` and `Copy()`. 2-3 mins faster for 1 billion rows.
-    * Float now stored as Int64. 2-3 mins faster for 1 billion rows.
+    * Float now stored as Int64.
     * Applied baseline's rounding.
+    * 2-3 mins faster for 1 billion rows.
 
 * 1.3
-    * Revision release - Sequential approach.
-    * Replaced `AssignFile()` and `Reset()` with `TfileStream` and `TStreamReader`. 3-4 mins faster for 1 billion rows.
+    * Revision release - Sequential approach. 12-15 mins on my Inspiron 15 7510 laptop.
+    * Replaced `AssignFile()` and `Reset()` with `TFileStream` and `TStreamReader`. 
+    * About 2mins 22sec to read 1 billion row.
+    * 2-3 mins faster for 1 billion rows.
+
+* 1.4
+  * Revision release - Sequential approach. 6-8 mins on my Inspiron 15 7510 laptop.
+  * Replaced `TFileStream` with `TBufferedFileStream`. Now, ~1 min faster. Total time for 1BRC (Object Pascal) is now approx. 11 mins on my laptop.
+  * Replaced `TDictionary` with `TGHashMapQP`. Now ~4 mins faster. Total time for 1BRC (Object Pascal) is now approx. 7 mins on my laptop.
+  * Replaced `StringReplace` with a simpler function avoiding creating a new string for each replacement. This saves 15-30 seconds on my laptop. The run time now is approx. 6-8 minutes.
+  * Updated the rounding method as per the latest `README.md` in the 1BRC GitHub page.
+
+* 1.5 
+* Revision release - Sequential approach. 6-8 mins on my Inspiron 15 7510 laptop (No improvements on speed).
+* Encapsulate process in a class.
+* Updated the rounding method as per the latest `README.md` in the 1BRC GitHub page.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details
 
+The license of `LGenerics` is provided in the source code, in the `LGenerics` package.
+
 ## Acknowledgments
 
-Inspiration, code snippets, etc.
+Inspiration, code snippets, libraries, etc.
 
  1. The FPC team, Lazarus team, fpcupdeluxe team, and other contributors.
       - For providing a usable programming language and a usable ecosystem.
  2. Gustavo 'Gus' Carreno.
-      - For making this happen.
+      - For making this happen - 1BRC for Object Pascal.
       - Borrowed Gus' approach to use `TCustomApplication` and using `unit`s properly
         to make main code more readable.
       - Borrowed and modified Gus' `WriteHelp` from the `baseline.lpr`.
- 3. Székely Balázs.
+ 3. A.Koverdyaev (avk)
+      - For the amazing (LGenerics)[https://github.com/avk959/LGenerics] library.
+ 4. Székely Balázs.
       - Now I know what `Single` data type is!
       - I borrowed the custom `TStringList` comparer from the `baseline` program.
- 4. Shraddha Agrawal - https://www.bytesizego.com/blog/one-billion-row-challenge-go.
+ 5. Shraddha Agrawal - https://www.bytesizego.com/blog/one-billion-row-challenge-go.
       - The advice for not storing measurements for each station in a data structure.
- 5. Arman Hajisafi - https://arman-hs.github.io
+ 6. Arman Hajisafi - https://arman-hs.github.io
       - Encouragements and inspirations.

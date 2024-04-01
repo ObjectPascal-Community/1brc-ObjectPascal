@@ -10,7 +10,7 @@
         <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="Baseline"/>
+      <Title Value="roundex"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -20,12 +20,12 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/baseline"/>
+            <Filename Value="../../bin/roundex"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir);../../Common"/>
+            <IncludeFiles Value="$(ProjOutDir)"/>
             <OtherUnitFiles Value="../../Common"/>
-            <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
+            <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
             <SyntaxOptions>
@@ -55,12 +55,12 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/baseline"/>
+            <Filename Value="../../bin/roundex"/>
           </Target>
           <SearchPaths>
-            <IncludeFiles Value="$(ProjOutDir);../../Common"/>
+            <IncludeFiles Value="$(ProjOutDir)"/>
             <OtherUnitFiles Value="../../Common"/>
-            <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
+            <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
@@ -85,43 +85,29 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="4">
+    <Units Count="2">
       <Unit0>
-        <Filename Value="baseline.lpr"/>
+        <Filename Value="roundex.lpr"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="RoundEx"/>
       </Unit0>
       <Unit1>
-        <Filename Value="../../Common/baseline.console.pas"/>
+        <Filename Value="../../Common/roundex.common.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="Baseline.Console"/>
+        <UnitName Value="RoundEx.Common"/>
       </Unit1>
-      <Unit2>
-        <Filename Value="../../Common/baseline.common.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Baseline.Common"/>
-      </Unit2>
-      <Unit3>
-        <Filename Value="../../Common/baseline.lazarus.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="Baseline.Lazarus"/>
-      </Unit3>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../../bin/baseline"/>
+      <Filename Value="../../bin/roundex"/>
     </Target>
     <SearchPaths>
-      <IncludeFiles Value="$(ProjOutDir);../../Common"/>
+      <IncludeFiles Value="$(ProjOutDir)"/>
       <OtherUnitFiles Value="../../Common"/>
-      <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
+      <UnitOutputDirectory Value="../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
-    <Linking>
-      <Debugging>
-        <DebugInfoType Value="dsDwarf2Set"/>
-      </Debugging>
-    </Linking>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

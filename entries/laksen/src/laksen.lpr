@@ -7,7 +7,8 @@ uses
   SysUtils,
   Classes,
   Contnrs,
-  Math;
+  Math,
+  Baseline.Common;
 
 type
 
@@ -291,30 +292,9 @@ type
       Threads[i].Free;
   end;
 
-  function PascalRound(x: double): double;
-  var
-    t: double;
-  begin
-    //round towards positive infinity
-    t := Trunc(x);
-    if (x<0.0) and (t-x = 0.5) then
-    begin
-      // Do nothing
-    end
-    else if Abs(x-t)>=0.5 then
-    begin
-      t := t+Math.Sign(x);
-    end;
-
-    if t = 0.0 then
-      Result := 0.0
-    else
-      Result := t;
-  end;
-
   function AsNum(AValue, ACount: longint): string;
   begin
-    Result := formatfloat('0.0', PascalRound(AValue/ACount)/10);
+    Result := formatfloat('0.0', RoundExDouble(AValue/ACount)/10);
   end;
 
   procedure TParser.Dump;

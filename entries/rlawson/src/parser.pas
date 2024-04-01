@@ -5,7 +5,7 @@ unit parser;
 interface
 
 uses
-  Classes, SysUtils, bufstream, Contnrs, Math, util;
+  Classes, SysUtils, bufstream, Contnrs, Math, util, Baseline.Common;
 
 procedure ReadMeasurements(inputFile: string);
 
@@ -109,9 +109,9 @@ begin
   for i := 0 to results.Count - 1 do
   begin
     reading := results.Items[i];
-    min := RoundEx(reading^.min / 10);
-    max := RoundEx(reading^.max / 10);
-    mean := RoundEx(reading^.total / reading^.numReadings / 10);
+    min := RoundExDouble(reading^.min / 10);
+    max := RoundExDouble(reading^.max / 10);
+    mean := RoundExDouble(reading^.total / reading^.numReadings / 10);
     readingStr := reading^.city + '=' + FormatFloat('0.0', min) +
       '/' + FormatFloat('0.0', mean) + '/' + FormatFloat('0.0', max);
     weatherStationList.Add(readingStr);

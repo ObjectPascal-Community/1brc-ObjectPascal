@@ -47,13 +47,13 @@ type
     fEvent: TSynEvent;
     fRunning, fMax: integer;
     fCurrentChunk: PByteArray;
-    fCurrentRemain: PtrUInt;
+    fCurrentRemain, fChunkSize: PtrUInt;
     fList: TBrcList;
     fMem: TMemoryMap;
     procedure Aggregate(const another: TBrcList);
     function GetChunk(out start, stop: PByteArray): boolean;
   public
-    constructor Create(const fn: TFileName; threads, max: integer;
+    constructor Create(const fn: TFileName; threads, chunkmb, max: integer;
       affinity: boolean);
     destructor Destroy; override;
     procedure WaitFor;
@@ -125,6 +125,57 @@ begin
   inherited Create({suspended=}false);
 end;
 
+{$ifdef FPC_CPUX64_disabled_slower}
+function NameLen(p: PUtf8Char): PtrInt; assembler; nostackframe;
+asm
+         lea      rdx,  qword ptr [p + 2]
+         movaps   xmm0, oword ptr [rip + @chr]
+         movups   xmm1, oword ptr [rdx] // check first 16 bytes
+         pcmpeqb  xmm1, xmm0
+         pmovmskb eax,  xmm1
+         bsf      eax,  eax
+         jnz      @found
+@by16:   add      rdx,  16
+         movups   xmm1, oword ptr [rdx] // next 16 bytes
+         pcmpeqb  xmm1, xmm0
+         pmovmskb eax,  xmm1
+         bsf      eax,  eax
+         jz       @by16
+@found:  add      rax,  rdx  // point to exact match
+         sub      rax,  p    // return position
+         ret
+         align    16
+@chr:    dq $3b3b3b3b3b3b3b3b // xmm0 of ';'
+         dq $3b3b3b3b3b3b3b3b
+end;
+{$else}
+function NameLen(p: PUtf8Char): PtrInt; inline;
+begin
+  result := 2;
+  while true do
+    if p[result] <> ';' then
+      if p[result + 1] <> ';' then
+        if p[result + 2] <> ';' then
+          if p[result + 3] <> ';' then
+            if p[result + 4] <> ';' then
+              if p[result + 5] <> ';' then
+                inc(result, 6)
+              else
+                exit(result + 5)
+            else
+              exit(result + 4)
+          else
+            exit(result + 3)
+        else
+          exit(result + 2)
+      else
+        exit(result + 1)
+    else
+      exit;
+  // this small (unrolled) inlined loop is as fast as the SSE2 :)
+end;
+{$endif FPC_CPUX64}
+
 procedure TBrcThread.Execute;
 var
   p, start, stop: PByteArray;
@@ -138,10 +189,7 @@ begin
     p := start;
     repeat
       // parse the name;
-      l := 2;
-      start := p;
-      while p[l] <> ord(';') do
-        inc(l); // small local loop is faster than SSE2 ByteScanIndex()
+      l := NameLen(pointer(p));
       p := @p[l + 1]; // + 1 to ignore ;
       // parse the temperature (as -12.3 -3.4 5.6 78.9 patterns) into value * 10
       if p[0] = ord('-') then
@@ -174,6 +222,7 @@ begin
       if v > m then
         m := v;
       s^.Max := m;
+      start := p;
     until p >= stop;
   end;
   // aggregate this thread values into the main list
@@ -183,7 +232,7 @@ end;
 
 { TBrcMain }
 
-constructor TBrcMain.Create(const fn: TFileName; threads, max: integer;
+constructor TBrcMain.Create(const fn: TFileName; threads, chunkmb, max: integer;
   affinity: boolean);
 var
   i, cores, core: integer;
@@ -193,6 +242,7 @@ begin
   if not fMem.Map(fn) then
     raise ESynException.CreateUtf8('Impossible to find %', [fn]);
   fMax := max;
+  fChunkSize := chunkmb shl 20;
   fList.Init(fMax);
   fCurrentChunk := pointer(fMem.Buffer);
   fCurrentRemain := fMem.Size;
@@ -217,11 +267,6 @@ begin
   fEvent.Free;
 end;
 
-const
-  CHUNKSIZE = 64 shl 20; // fed each TBrcThread with 64MB chunks
-  // it is faster than naive parallel process of size / threads input because
-  // OS thread scheduling is never fair so some threads will finish sooner
-
 function TBrcMain.GetChunk(out start, stop: PByteArray): boolean;
 var
   chunk: PtrUInt;
@@ -232,9 +277,9 @@ begin
   if chunk <> 0 then
   begin
     start := fCurrentChunk;
-    if chunk > CHUNKSIZE then
+    if chunk > fChunkSize then
     begin
-      stop := pointer(GotoNextLine(pointer(@start[CHUNKSIZE])));
+      stop := pointer(GotoNextLine(pointer(@start[fChunkSize])));
       chunk := PAnsiChar(stop) - PAnsiChar(start);
     end
     else
@@ -248,13 +293,6 @@ begin
     result := true;
   end;
   fSafe.UnLock;
-end;
-
-function NameLen(p: PUtf8Char): PtrInt; inline;
-begin
-  result := 2;
-  while p[result] <> ';' do
-    inc(result);
 end;
 
 procedure TBrcMain.Aggregate(const another: TBrcList);
@@ -310,23 +348,6 @@ begin
   w.Add(AnsiChar(val - d10 * 10 + ord('0')));
 end;
 
-function Average(sum, count: PtrInt): PtrInt;
-// sum and result are temperature * 10 (one fixed decimal)
-var
-  x, t: PtrInt; // temperature * 100 (two fixed decimals)
-begin
-  x := (sum * 10) div count; // average
-  // this weird algo follows the "official" PascalRound() implementation
-  t := (x div 10) * 10; // truncate
-  if abs(x - t) >= 5 then
-    if x < 0 then
-      dec(t, 10)
-    else
-      inc(t, 10);
-  result := t div 10; // truncate back to one decimal (temperature * 10)
-  //ConsoleWrite([sum / (count * 10), ' ', result / 10]);
-end;
-
 function ByStationName(const A, B): integer; // = StrComp() but ending with ';'
 var
   pa, pb: PByte;
@@ -352,6 +373,11 @@ begin
     result := -1
   else
     result := 1;
+end;
+
+function ceil(x: double): PtrInt; // "official" rounding method
+begin
+  result := trunc(x) + ord(frac(x) > 0);  // using FPU is fast enough here
 end;
 
 function TBrcMain.SortedText: RawUtf8;
@@ -385,7 +411,7 @@ begin
           p := fList.StationName[n^];
           w.AddNoJsonEscape(p, NameLen(p));
           AddTemp(w, '=', s^.Min);
-          AddTemp(w, '/', Average(s^.Sum, s^.Count));
+          AddTemp(w, '/', ceil(s^.Sum / s^.Count)); // average
           AddTemp(w, '/', s^.Max);
           dec(c);
           if c = 0 then
@@ -409,7 +435,7 @@ end;
 
 var
   fn: TFileName;
-  threads: integer;
+  threads, chunkmb: integer;
   verbose, affinity, help: boolean;
   main: TBrcMain;
   res: RawUtf8;
@@ -427,6 +453,8 @@ begin
   Executable.Command.Get(
     ['t', 'threads'], threads, '#number of threads to run',
       SystemInfo.dwNumberOfProcessors);
+  Executable.Command.Get(
+    ['c', 'chunk'], chunkmb, 'size in #megabytes used for per-thread chunking', 16);
   help := Executable.Command.Option(['h', 'help'], 'display this help');
   if Executable.Command.ConsoleWriteUnknown then
     exit
@@ -438,11 +466,11 @@ begin
   end;
   // actual process
   if verbose then
-    ConsoleWrite(['Processing ', fn, ' with ', threads, ' threads',
-                  ' and affinity=', BOOL_STR[affinity]]);
+    ConsoleWrite(['Processing ', fn, ' with ', threads, ' threads, ',
+      chunkmb, 'MB chunks and affinity=', affinity]);
   QueryPerformanceMicroSeconds(start);
   try
-    main := TBrcMain.Create(fn, threads, {max=}45000, affinity);
+    main := TBrcMain.Create(fn, threads, chunkmb, {max=}45000, affinity);
     // note: current stations count = 41343 for 2.5MB of data per thread
     try
       main.WaitFor;

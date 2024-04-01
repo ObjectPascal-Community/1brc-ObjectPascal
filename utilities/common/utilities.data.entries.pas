@@ -40,7 +40,7 @@ type
     FEntryFolder: TJSONStringType;
     FEntryBinary: TJSONStringType;
     FLPI: TJSONStringType;
-    FDPROJ: TJSONStringType;
+    FDPR: TJSONStringType;
     FHasRelease: Boolean;
     FThreads: Integer;
     FRunParams: TJSONStringType;
@@ -77,9 +77,9 @@ type
     property LPI: TJSONStringType
       read FLPI
       write FLPI;
-    property DPROJ: TJSONStringType
-      read FDPROJ
-      write FDPROJ;
+    property DPR: TJSONStringType
+      read FDPR
+      write FDPR;
     property HasRelease: Boolean
       read FHasRelease
       write FHasRelease;
@@ -149,7 +149,7 @@ const
   cJSONEntryFolder = 'entry-folder';
   cJSONEntryBinary = 'entry-binary';
   cJSONLPI         = 'lpi';
-  cJSONDPROJ       = 'dproj';
+  cJSONDPR       = 'dpr';
   cJSONHasRelease  = 'has-release';
   cJSONThreads     = 'threads';
   cJSONRunParams   = 'run-params';
@@ -172,7 +172,7 @@ begin
   FEntryFolder:= '';
   FEntryBinary:= '';
   FLPI:= '';
-  FDPROJ:= '';
+  FDPR:= '';
   FHasRelease:= True;
   FThreads:= 1;
   FRunParams:= '';
@@ -207,7 +207,7 @@ begin
   FEntryFolder:= AJSONObject.Get(cJSONEntryFolder, FEntryFolder);
   FEntryBinary:= AJSONObject.Get(cJSONEntryBinary, FEntryBinary);
   FLPI:= AJSONObject.Get(cJSONLPI, FLPI);
-  FDPROJ:= AJSONObject.Get(cJSONDPROJ, FDPROJ);
+  FDPR:= AJSONObject.Get(cJSONDPR, FDPR);
   FHasRelease:= AJSONObject.Get(cJSONHasRelease, FHasRelease);
   FThreads:= AJSONObject.Get(cJSONThreads, FThreads);
   FRunParams:= AJSONObject.Get(cJSONRunParams, FRunParams);

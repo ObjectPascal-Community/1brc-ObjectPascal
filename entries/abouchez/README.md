@@ -14,7 +14,35 @@ It is better to fork the current state of the *mORMot 2* repository, or get the 
 
 This code is licenced by its sole author (A. Bouchez) as MIT terms, to be used for pedagogical reasons.
 
-I am very happy to share decades of server-side performance coding techniques using FPC on x86_64. ;)
+I am very happy to share some server-side performance coding techniques using FPC on x86_64. ;)
+
+## Do Not Guess, Measure
+
+As old/legacy/outdated/potbellied/coffee-addicted FPC or Delphi code writers, we are still very influenced by the [FastCode](https://en.wikipedia.org/wiki/FastCode) project style of coding, or even some Turbo Pascal tricks - I know some good Delphi programmers still believing that `if length(s)=0 then` is faster than `if s='' then`.
+
+Performance is not about ideology. Or magical tips and tricks to blindly apply. The main is idea is to measure, not guess. There is no "well-educated guess" in computer performance. Just a clock on the wall, and how many data you can process per second, in a sustainable way. Because modern CPUs are very complex beasts. Far away from the Z80 I started programming on, or even the 80386 our Delphi/FPC compilers are still emitting code for.
+
+There are plenty of material about high-performance computing, on the Internet. But we have to embrace the fact that modern hardware is complex, and some techniques from 1980s - e.g. [Hacker's Delight](https://github.com/hcs0/Hackers-Delight?tab=readme-ov-file) - do not apply any more with our modern out-of-order and pipelined CPUs with very powerful ALU. For instance, today an integer multiplication takes one cycle, or compilers are able to automatically apply (or un-apply!) some of those techniques, depending on the target CPU.
+
+Back to my blog and pascal still in the race of performance:
+- [Pascal in the race: the TFB challenge](https://blog.synopse.info/?post/2023/10/31/Pascal-in-the-race%3A-TFB-Challenge-Benchmarks)
+- [Modern Pascal in the race: CSV parsing](https://blog.synopse.info/?post/2022/11/26/Modern-Pascal-is-Still-in-the-Race)
+- [Three locks to rule them all](https://blog.synopse.info/?post/2022/01/22/Three-Locks-To-Rule-Them-All)
+- [mORMot on Ampere-aarch64 CPU](https://blog.synopse.info/?post/2021/08/17/mORMot-2-on-Ampere-AARM64-CPU)
+- [From Delphi to AVX2](https://blog.synopse.info/?post/2020/11/04/EKON-24-Presentation-Slides)
+- ... and eventually an upcoming article about *1brc-ObjectPascal* itself. :)
+
+Recently, I found some very educational material available at:
+- https://en.algorithmica.org/hpc/
+
+The reference tables of opcodes per Intel/AMD CPU generation can be downloaded from:
+- https://agner.org/optimize/
+
+Amazing videos about modern compilers:
+- https://www.youtube.com/watch?v=bSkpMdDe4g4
+- https://www.youtube.com/watch?v=kIoZDUd5DKw
+
+In the compiler landscape, FPC is not as advanced/magical as gcc/llvm are, but it generates good enough code (on paar or better than Delphi's), and works is still done to enhance its output - e.g. by [Kit](https://www.patreon.com/curiouskit). I was amazed how good "pure pascal" code runs even on aarch64, like Ampere (see my blog article above) or on Apple M1/M2.
 
 ## Presentation
 
@@ -22,35 +50,44 @@ Here are the main ideas behind this implementation proposal:
 
 - **mORMot** makes cross-platform and cross-compiler support simple - e.g. `TMemMap`, `TDynArray`,`TTextWriter`, `SetThreadCpuAffinity`, `crc32c`, `ConsoleWrite` or command-line parsing;
 - The entire 16GB file is `memmap`ed at once into memory - it won't work on 32-bit OS, but avoid any `read` syscall or memory copy;
-- Process file in parallel using several threads - configurable via the `-t=` switch, default being the total number of CPUs reported by the OS;
-- Input is fed into each thread as 64MB chunks: because thread scheduling is unbalanced, it is inefficient to pre-divide the size of the whole input file into the number of threads;
+- File is processed in parallel using several threads - configurable via the `-t=` switch, default being the total number of CPUs reported by the OS;
+- Input is fed into each thread as 4MB chunks (see also the `-c` command line switch): because thread scheduling is unbalanced, it is inefficient to pre-divide the size of the whole input file into the number of threads;
 - Each thread manages its own `Station[]` data, so there is no lock until the thread is finished and data is consolidated;
 - Each `Station[]` information is packed into a record of exactly 16 bytes, with no external pointer/string, to leverage the CPU L1 cache size (64 bytes) for efficiency;
-- Maintain a `StationHash[]` hash table for the name lookup, with crc32c perfect hash function - no name comparison nor storage is needed with a perfect hash (see below);
-- On Intel/AMD/AARCH64 CPUs, *mORMot* uses hardware SSE4.2 opcodes for this crc32c computation;
-- Store values as 16-bit or 32-bit integers, as temperature multiplied by 10;
-- Parse temperatures with a dedicated code (expects single decimal input values);
+- A O(1) hash table is maintained for the name lookup, with crc32c perfect hash function - no name comparison nor storage is needed with a perfect hash (see below);
+- On Intel/AMD/AARCH64 CPUs, *mORMot* offers hardware SSE4.2 opcodes for this crc32c computation;
+- The hash table does not directly store the `Station[]` data, but use a separated `StationHash[]` lookup array of 16-bit indexes (as our `TDynArray` does) to leverage the CPU caches;
+- Values are stored as 16-bit or 32-bit integers, as temperature multiplied by 10;
+- Temperatures are parsed with a dedicated code (expects single decimal input values);
 - The station names are stored as UTF-8 pointers to the memmap location where they appear first, in `StationName[]`, to be emitted eventually for the final output, not during temperature parsing;
 - No memory allocation (e.g. no transient `string` or `TBytes`) nor any syscall is done during the parsing process to reduce contention and ensure the process is only CPU-bound and RAM-bound (we checked this with `strace` on Linux);
 - Pascal code was tuned to generate the best possible asm output on FPC x86_64 (which is our target) - perhaps making it less readable, because we used pointer arithmetics when it matters (I like to think as such low-level pascal code as [portable assembly](https://sqlite.org/whyc.html#performance) similar to "unsafe" code in managed languages);
-- Can optionally output timing statistics and resultset hash value on the console to debug and refine settings (with the `-v` command line switch);
-- Can optionally set each thread affinity to a single core (with the `-a` command line switch).
+- It can optionally output timing statistics and resultset hash value on the console to debug and refine settings (with the `-v` command line switch);
+- It can optionally set each thread affinity to a single core (with the `-a` command line switch).
 
 If you are not convinced by the "perfect hash" trick, you can define the `NOPERFECTHASH` conditional, which forces full name comparison, but is noticeably slower. Our algorithm is safe with the official dataset, and gives the expected final result - which was the goal of this challenge: compute the right data reduction with as little time as possible, with all possible hacks and tricks. A "perfect hash" is a well known hacking pattern, when the dataset is validated in advance. And since our CPUs offers `crc32c` which is perfect for our dataset... let's use it! https://en.wikipedia.org/wiki/Perfect_hash_function ;)
 
 ## Why L1 Cache Matters
 
-Taking special care of the "64 bytes cache line" is quite unique among all implementations of the "1brc" I have seen in any language - and it does make a noticeable difference in performance.
+Taking special care of the "64 bytes cache line" does make a noticeable difference in performance. Even the fastest Java implementations of the 1brc challenge try to regroup the data in memory.
 
-The L1 cache is well known in the performance hacking litterature to be the main bottleneck for any efficient in-memory process. If you want things to go fast, you should flatter your CPU L1 cache.
+The L1 cache is well known in the performance hacking litterature to be the main bottleneck for any efficient in-memory process. If you want things to go fast, you should flatter your CPU L1 cache, e.g. with spatial and temporal locality, or avoiding concurrent multi-core access with triggers slow inter-cache synchronization.
 
-Min/max values will be reduced as 16-bit smallint - resulting in temperature range of -3276.7..+3276.8 which seems fair on our planet according to the IPCC. ;)
+Count and Sum values can fit in 32-bit `integer` fields (with a range of about 2 billions signed values), whereas min/max values have been reduced as 16-bit `smallint` - resulting in temperature range of -3276.7..+3276.8 celsius grads. It seems fair on our galaxy according to the IPCC. ;)
 
-As a result, each `Station[]` entry takes only 16 bytes, so we can fit exactly 4 entries in a single CPU L1 cache line. To be fair, if we put some more data into the record (e.g. use `Int64` instead of `smallint`/`integer`), the performance degrades only for a few percents. The main fact seems to be that the entry is likely to fit into a single cache line, even if filling two cache lines may be sometimes needed for misaligned data.
+As a result, each `Station[]` entry takes only 16 bytes, so we can fit exactly 4 entries in a single CPU L1 cache line. To be accurate, if we put some more data into the record (e.g. use `Int64` instead of `smallint`/`integer`), the performance degrades only for a few percents. The main fact seems to be that the entry is likely to fit into a single cache line, even if filling two cache lines may be sometimes needed for misaligned data.
 
-In our first attempt (see "Old Version" below), we stored the name into the `Station[]` array, so that each entry is 64 bytes long exactly. But since `crc32c` is a perfect hash function for our dataset, it is enough to just store the 32-bit hash instead, and not the actual name.
+In our first attempt (see "Old Version" below), we stored the name into the `Station[]` array, so that each entry is 64 bytes long exactly. But since `crc32c` is a perfect hash function for our dataset, it is enough to just store the 32-bit hash instead, and not the actual name. Less data would mean less cache size involved.
 
-Note that if we reduce the number of stations from 41343 to 400, the performance is much higher, also with a 16GB file as input. The reason is that since 400x16 = 6400, each dataset could fit entirely in each core L1 cache. No slower L2/L3 cache is involved, therefore performance is better. The cache memory seems to be the bottleneck of our code. Which is a good sign.
+We tried to remove the `StationHash[]` array of `word` lookup table. It made one data read less, but performed almost three times slower. Data locality and cache pollution prevails on absolute number of memory reads. It is faster to access twice the memory, if this memory could remain in the CPU caches. Only profiling and timing would show this. The shortest code is not the fastest with modern CPUs.
+
+Note that if we reduce the number of stations from 41343 to 400 (as other languages 1brc projects do), the performance is much higher, also with a 16GB file as input. My guess is that since 400x16 = 6400, each dataset could fit entirely in each core L1 cache. No slower L2/L3 cache is involved, therefore performance is better.
+
+Once again, some reference material is available at https://en.algorithmica.org/hpc/cpu-cache/
+including some mind-blowing experiment [about cache associativity](https://en.algorithmica.org/hpc/cpu-cache/associativity/). I told you CPUs were complex! :D
+Thanksfully, in our use case, data access is almost random, because... it was pseudo-randomly generated, so we should not suffer from cache associativity.
+
+Anyway, the cache memory seems to be the bottleneck of our code. Which is a good sign, even if it may be difficult to make it any faster. But who knows? Any feedback is welcome!
 
 ## Usage
 
@@ -70,8 +107,10 @@ Options:
   -h, --help          display this help
 
 Params:
-  -t, --threads <number> (default 16)
+  -t, --threads <number> (default 20)
                       number of threads to run
+  -c, --chunk <megabytes> (default 4)
+                      size in megabytes used for per-thread chunking
 ```
 We will use these command-line switches for local (dev PC), and benchmark (challenge HW) analysis.
 
@@ -110,14 +149,14 @@ This is the expected behavior, and will be fine with the benchmark challenge, wh
 
 On my Intel 13h gen processor with E-cores and P-cores, forcing thread to core affinity does not make any huge difference (we are within the error margin):
 ```
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -t=10 -v
-Processing measurements.txt with 20 threads and affinity=false
-result hash=8A6B746A,, result length=1139418, stations count=41343, valid utf8=1
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -v
+Processing measurements.txt with 20 threads, 4MB chunks and affinity=0
+result hash=85614446, result length=1139418, stations count=41343, valid utf8=1
 done in 2.36s 6.6 GB/s
 
-ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -t=10 -v -a
-Processing measurements.txt with 20 threads and affinity=true
-result hash=8A6B746A, result length=1139418, stations count=41343, valid utf8=1
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez measurements.txt -v -a
+Processing measurements.txt with 20 threads, 4MB chunks and affinity=1
+result hash=85614446, result length=1139418, stations count=41343, valid utf8=1
 done in 2.44s 6.4 GB/s
 ```
 Affinity may help on Ryzen 9, because its Zen 3 architecture is made of identical 16 cores with 32 threads, not this Intel E/P cores mess. But we will validate that on real hardware - no premature guess!
