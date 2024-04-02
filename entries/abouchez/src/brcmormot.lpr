@@ -172,7 +172,7 @@ begin
         exit(result + 1)
     else
       exit;
-  // this small (unrolled) inlined loop is as fast as the SSE2 :)
+  // this small (unrolled) inlined loop is faster than a SSE2 function :)
 end;
 {$endif FPC_CPUX64}
 
@@ -216,7 +216,7 @@ begin
       inc(s^.Count);
       m := s^.Min;
       if v < m then
-        m := v; // branchless cmovl
+        m := v; // branchless cmovg/cmovl
       s^.Min := m;
       m := s^.Max;
       if v > m then
@@ -243,7 +243,6 @@ begin
     raise ESynException.CreateUtf8('Impossible to find %', [fn]);
   fMax := max;
   fChunkSize := chunkmb shl 20;
-  fList.Init(fMax);
   fCurrentChunk := pointer(fMem.Buffer);
   fCurrentRemain := fMem.Size;
   core := 0;
