@@ -85,7 +85,7 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <Units Count="3">
+    <Units Count="4">
       <Unit0>
         <Filename Value="baseline.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -100,6 +100,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="Baseline.Common"/>
       </Unit2>
+      <Unit3>
+        <Filename Value="../../Common/baseline.lazarus.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Baseline.Lazarus"/>
+      </Unit3>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -20,7 +20,7 @@ type
     constructor Create(const NewCityName: string; const NewTemp: Integer);
     procedure AddNewTemp(const NewTemp: Integer);
     function Mean: Double;
-    function OutputSumLine: string;
+    function OutputSumLine(const FirstOutput: Boolean): string;
   end;
 
   // anonymous method type
@@ -33,7 +33,7 @@ type
   public
     constructor Create(const NewInputFilename: string);
     procedure ReadAndParseAllData(WeatherCityProcessor: TWeatherCityProc);
-    function PascalRound(x: Double): Double;
+    function PascalRound(const x: Double): Double;
     function SplitCityTemp(const StationLine: string; var CityName: string; var CityTemp: Integer): Boolean;
     property InputFilename: string read FInputFilename write FInputFilename;
   end;
@@ -62,18 +62,9 @@ begin
     raise EFileNotFoundException.Create(NewInputFilename + ' not found.');
 end;
 
-function TChallengeCommon.PascalRound(x: Double): Double;
-var
-  t: Double;
+function TChallengeCommon.PascalRound(const x: Double): Double;
 begin
-  // round towards positive infinity
-  t := Trunc(x);
-  if (x < 0.0) and (t - x = 0.5) then
-    Result := t
-  else if Abs(x - t) >= 0.5 then
-    Result := t + Sign(x)
-  else
-    Result := x;
+  Result := Ceil(x * 10) / 10;
 end;
 
 procedure TChallengeCommon.ReadAndParseAllData(WeatherCityProcessor: TWeatherCityProc);
@@ -166,16 +157,20 @@ end;
 
 function TWeatherCity.Mean: Double;
 begin
-  Result := ChallengeCommon.PascalRound(TotalTemp / DataCount);
+  Result := Ceil(TotalTemp / DataCount) / 10.0;
 end;
 
-function TWeatherCity.OutputSumLine: string;
+function TWeatherCity.OutputSumLine(const FirstOutput: Boolean): string;
 begin
-  Result := Format(' %s=%0.1f/%0.1f/%0.1f', [CityName,
-                                             MinTemp / 10,
-                                             Mean,
-                                             MaxTemp / 10]);
+  if FirstOutput then
+    Result := ''
+  else
+    Result := ', ';
 
+  Result := Result + Format('%s=%0.1f/%0.1f/%0.1f', [CityName,
+                                                     MinTemp / 10,
+                                                     Mean,
+                                                     MaxTemp / 10]);
 end;
 
 end.

@@ -33,7 +33,7 @@ Conakry;31.2
 Istanbul;23.0
 ```
 
-The task is to write an Object Pascal program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on `STDOUT` like this (i.e., sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit towards positive infinity with both `17.01` and `17.05` being rounded to `17.1`, with the decimal separator being a period `.`):
+The task is to write an Object Pascal program which reads the file, calculates the min, mean, and max temperature value per weather station, and emits the results on `STDOUT` like this (i.e., sorted alphabetically by station name, and the result values per station in the format `<min>/<mean>/<max>`, rounded to one fractional digit, with the decimal separator being a period `.`, and for that you can chose one of the options presented in the [Rounding Section](#rounding) or implement your own that is consistent with the options provided.):
 
 ```
 {Abha=-23.0/18.0/59.2, Abidjan=-16.2/26.0/67.3, Abéché=-10.0/29.4/69.0, Accra=-10.1/26.4/66.4, Addis Ababa=-23.7/16.0/67.0, Adelaide=-27.8/17.3/58.5, ...}
@@ -70,45 +70,11 @@ Submit your implementation and become part of the leader board!
 
 ## Rounding
 
-In a discussion with [Mr. Packman](https://pack.ac/) themselves, we came up with a simpler solution. They even added some _Unit Testing_ :D.
+With the help of this magnificent community, we were able to finally get to a rounding solution that works.
 
-This will be the official way to round the output values, so pick your poison:
-```pas
-function RoundEx(x: Currency): Double; inline;
-begin
-  Result := Ceil(x * 10) / 10;
-end;
-
-function RoundExInteger(x: Currency): Integer; inline;
-begin
-  Result := Ceil(x * 10);
-end;
-
-{ Neater version by @bytebites from Lazarus forum }
-function RoundExString(x: Currency): String; inline;
-var
-  V, Q, R: Integer;
-begin
-  V := RoundExInteger(x);
-  divmod(V, 10, Q, R);
-  Result := IntToStr(Q) + '.' + chr(48 + Abs(R))
-end;
-
-procedure Test;
-var
-  F: Double;
-begin
-  for F in [10.01, 10.04, -10.01, -10.0, 0, -0, -0.01] do
-    WriteLn(RoundExInteger(F), ' ', RoundExString(F), ' ', RoundEx(F));
-  //101 10.1  1.0100000000000000E+001
-  //101 10.1  1.0100000000000000E+001
-  //-100 -10.0 -1.0000000000000000E+001
-  //-100 -10.0 -1.0000000000000000E+001
-  //0 0.0  0.0000000000000000E+000
-  //0 0.0  0.0000000000000000E+000
-  //0 0.0  0.0000000000000000E+000
-end;
-```
+This means that I'm encouraging everyone to use the code that is now in the [Baseline.Common](baseline/Common) unit.\
+I do have to make crystal clear that using that code is an **option**, one that you can always opt out of.\
+But if you do opt in, just include that unit in your entry and job's a done.
 
 ## Generating the measurements.txt
 > **NOTE**  
@@ -156,12 +122,12 @@ Expected `SHA256` hash:
 `ebad17b266ee9f5cb3d118531f197e6f68c9ab988abc5cb9506e6257e1a52ce6`
 
 ## Verify Output File
-> **NOTE**
->
-> We are still waiting for the Delphi version to be completed in order for us to have an official `SHA256` hash for the output.
->
-> Until then, this is the current one: `683bb3d247f53bab96e98983771d66bc9d7dbfb38aa3fecac4c04b8ab29e3032`
-> There's also an archived version of the [baseline output](./data/baseline.output.gz)
+
+There is now a Delphi version of the baseline. This means that we now have an official way of generating a valid output on both sides of the fence.
+
+With this, we now have the official hash: `4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910`
+
+There's also an archived version of the [baseline output](./data/baseline.output.gz)
 
 ## Differences From Original
 I've decided that I would want this challenge to be turned way up to 11!
@@ -188,11 +154,13 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
-| 1 | 0:1.7599   | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez    | Using `mORMot2`, 32 threads | |
-| 2 | 0:16.874   | lazarus-3.0, fpc-3.2.2 | Székely Balázs    | Using 32 threads | |
-| 3 | 0:20.0693  | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | Using 32 threads | |
-| 4 | 1:16.059   | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using 1 thread   | |
-| 5 | 12:37.7864 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using 1 thread | |
+| 1 | 0:1.971   | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez    | Using `mORMot2`, 32 threads | |
+| 2 | 0:20.960  | lazarus-3.0, fpc-3.2.2 | Székely Balázs    | Using 32 threads | |
+| 3 | 0:23.158  | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | Using 32 threads **(failed hash)** | |
+| 4 | 1:23.684  | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using a single thread | |
+| 5 | 5:2.512   | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using a single thread | |
+| 6 | 7:54.606  | delphi 12.1            | David Cornelius   | Using 1 threads **(failed hash)** | |
+| 7 | 10:55.724 | delphi 12.1            | Brian Fire        | Using 1 threads | |
 
 > **NOTE**
 >
@@ -224,7 +192,8 @@ I'd like to thank [@mobius](https://github.com/mobius1qwe) for taking the time t
 I'd like to thank [@dtpfl](https://github.com/dtpfl) for his invaluable work on maintaining the `README.md` file up to date with everything.\
 I'd like to thank Székely Balázs for providing many patches to make everything compliant with the original challenge.\
 I'd like to thank [@corneliusdavid](https://github.com/corneliusdavid) for giving some of the information files a once over and making things more legible and clear.\
-I'd like to thank Mr. **Pack**man, aka O, for clearing the fog around the rounding issues.
+I'd like to thank Mr. **Pack**man, aka O, for clearing the fog around the rounding issues.\
+I'd like to thank [Georges](https://github.com/georges-hatem) for providing us with the Delphi version of baseline.
 
 ## Links
 The original repository: https://github.com/gunnarmorling/1brc \

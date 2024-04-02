@@ -29,12 +29,20 @@ type
       const AOLdPattern, ANewPattern: TStringArray;
       const AFlags: TReplaceFlags
     ): String;
+
+    function GetHeader(const AHeader: String): String;
+    function GetVariablesBash: String;
+    function GetFunctionCompileBash(const AEntry: TEntry): String;
+    function GetFunctionCompileWindows(const AEntry: TEntry): String;
+    function GetFunctionTestBash(const AEntry: TEntry): String;
+    function GetFunctionRunBash(const AEntry: TEntry): String;
   protected
   public
     constructor Create(AConfigFile: String);
     destructor Destroy; override;
 
     procedure BuildCompileScriptBash;
+    procedure BuildCompileScriptCmd;
     procedure BuildTestScriptBash;
     procedure BuildRunScriptBash;
   published
@@ -56,11 +64,14 @@ uses
 const
   lineBreak = #13;
   cCompileBash         = 'compile_all.sh';
+  cCompileCmd         = 'compile_all.cmd';
   cTestBash            = 'test_all.sh';
   cRunBash             = 'run_all.sh';
 
-  cLazbuildDefault     = '%s -B "%s"';
-  cLazbuildRelease     = '%s -B --bm="Release" "%s"';
+  {$IFDEF UNIX}
+  cLazbuildDefault     = '%s \'#10'    -B \'#10'    "%s"';
+  cLazbuildRelease     = '%s \'#10'    -B \'#10'    --bm="Release" \'#10'    "%s"';
+  {$ENDIF}
 
   cReplaceName         = '[[name]]';
   cReplaceJSONResults  = '[[results-json]]';
@@ -133,77 +144,240 @@ begin
   end;
 end;
 
+function TBuilder.GetHeader(const AHeader: String): String;
+begin
+  {$IFDEF UNIX}
+  Result:= '#!/bin/bash' + LineEnding + LineEnding;
+  Result:= Result + 'echo "******** ' + AHeader + ' ********"' + LineEnding;
+  Result:= Result + 'echo' + LineEnding + LineEnding;
+  {$ELSE}
+  Result:= '@echo off' + LineEnding + LineEnding;
+  Result:= Result + 'CALL rsvars' + LineEnding + LineEnding;
+  Result:= Result + 'setlocal EnableExtensions EnableDelayedExpansion' + LineEnding + LineEnding;
+  Result:= Result + 'echo "******** ' + AHeader + ' ********"' + LineEnding + LineEnding;
+  Result:= Result + 'SET param=%1' + LineEnding + LineEnding;
+  Result:= Result + 'if NOT DEFINED param CALL :all' + LineEnding;
+  Result:= Result + 'if NOT DEFINED param EXIT /B' + LineEnding + LineEnding;
+  {$ENDIF}
+end;
+
+function TBuilder.GetVariablesBash: String;
+begin
+  Result:= 'BIN="' + FConfig.BinLinux + '"' + LineEnding;
+  Result:= Result + 'ENTRIES="' + FConfig.EntriesLinux + '"' + LineEnding;
+  Result:= Result + 'RESULTS="' + FConfig.ResultsFolder + '"' + LineEnding;
+  Result:= Result + 'INPUT="' + FConfig.Input + '"' + LineEnding;
+  Result:= Result + LineEnding;
+end;
+
+function TBuilder.GetFunctionCompileBash(const AEntry: TEntry): String;
+begin
+  Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
+  Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name) +' ======"' + LineEnding;
+  {$IFDEF UNIX}
+  if AEntry.HasRelease then
+  begin
+   Result:= Result + '  ' +
+   Format(cLazbuildRelease, [
+     FConfig.Lazbuild,
+     '${ENTRIES}/' + AEntry.EntryFolder + '/' + AEntry.LPI
+   ] ) +
+   LineEnding;
+  end
+  else
+  begin
+    Result:= Result + '  ' +
+    Format(cLazbuildDefault, [
+      FConfig.Lazbuild,
+      '${ENTRIES}/' + AEntry.EntryFolder + '/' + AEntry.LPI
+    ] ) +
+    LineEnding;
+  end;
+  {$ELSE}
+  Result:= Result + Format(
+    '  "${DELPHICC}" '+
+    '-\$D0 '+
+    '-\$L- '+
+    '-\$Y- '+
+    '--no-config '+
+    '-B '+
+    '-Q '+
+    '"-A${GENERICS}" '+
+    '"-D${DEFINES}" '+
+    '"-E${BIN}" '+
+    '"-I${INCLUDE}" '+
+    '"-LEC:${BPL}" '+
+    '"-LNC:${DCP}" '+
+    '-NS '+
+    '"-O${INCLUDE}" '+
+    '"-R${INCLUDE}" '+
+    '"-U${INCLUDE}" '+
+    '"--syslibroot:${SDK}" '+
+    '"--libpath:${LIBPATH}" '+
+    '"-NHC:${HEADERS}" '+
+    '"${ENTRIES}/%s/%s" && \' + LineEnding +
+    '  scp ${BIN}/' + AEntry.EntryBinary + ' ' +
+    'gcarreno@10.42.0.1:/home/gcarreno/Programming/1brc-ObjectPascal/bin'
+    ,
+  [
+    AEntry.EntryFolder,
+    AEntry.DPROJ
+  ]) + LineEnding;
+  {$ENDIF}
+  Result:= Result + '  echo "==========="' + LineEnding;
+  Result:= Result + '  echo' + LineEnding + '}' + LineEnding + LineEnding;
+end;
+
+function TBuilder.GetFunctionCompileWindows(const AEntry: TEntry): String;
+begin
+  Result:= ':' + AEntry.EntryBinary + LineEnding;
+  Result:= Result + 'echo ===== '+ UTF8Encode(AEntry.Name) +' ======' + LineEnding;
+  Result:= Result +
+  'msbuild /t:Build /p:Config=Release /p:platform=Linux64 ' +
+    ExpandFileName(
+      ConcatPaths([
+            FConfig.EntriesWindows,
+            AEntry.EntryFolder,
+            AEntry.DPROJ
+          ])
+    ) + LineEnding;
+  Result:= Result + 'if ERRORLEVEL 0 (' + LineEnding;
+  Result:= Result + '  echo -- Transfering --' + LineEnding;
+  Result:= Result + '  scp ' +
+    ExpandFileName(ConcatPaths([
+      FConfig.BinWindows,
+      AEntry.EntryBinary
+    ])) +
+    ' gcarreno@10.42.0.1:' + FConfig.BinLinux + '/' +
+    Aentry.EntryBinary + LineEnding;
+  Result:= Result + ') else (' + LineEnding;
+  Result:= Result + '  echo ERROR compiling' + LineEnding;
+  Result:= Result + ')' + LineEnding;
+  Result:= Result + 'echo ===========' + LineEnding;
+  Result:= Result + 'EXIT /B' + LineEnding + LineEnding;
+end;
+
+function TBuilder.GetFunctionTestBash(const AEntry: TEntry): String;
+var
+  tmpStr: String;
+begin
+  Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
+  Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name) +' ======"' + LineEnding;
+  if AEntry.Compiler = cCompilerDelphi then
+  begin
+   Result:= Result + '  chmod +x ${BIN}/' + AEntry.EntryBinary + LineEnding;
+  end;
+  tmpStr:= Format('%s/%s %s', [
+    '${BIN}',
+    AEntry.EntryBinary,
+    AEntry.RunParams
+  ]);
+  tmpStr:= StringsReplace(
+    tmpStr,
+    [
+      cReplaceEntryInput,
+      cReplaceEntryThreads
+    ],
+    [
+      FConfig.Input,
+      IntToStr(AEntry.Threads)
+    ],
+    [rfReplaceAll]
+  );
+  tmpStr:= Format('  %s > %s/%s.output', [
+    tmpStr,
+    '${RESULTS}',
+    AEntry.EntryBinary
+  ]);
+  Result:= Result + tmpStr + LineEnding;
+  tmpStr:= Format('  sha256sum %s/%s.output',[
+    '${RESULTS}',
+    AEntry.EntryBinary
+  ]);
+  Result:= Result + tmpStr + LineEnding;
+  Result:= Result + Format('  echo "%s  Official Output Hash"',[
+    FConfig.OutputHash
+  ]) + LineEnding;
+  Result:= Result + Format('  #rm %s/%s.output',[
+    '${RESULTS}',
+    AEntry.EntryBinary
+  ]) + LineEnding;
+  Result:= Result + '  echo "==========="' + LineEnding;
+  Result:= Result + '  echo' + LineEnding + '}' + LineEnding + LineEnding;
+end;
+
+function TBuilder.GetFunctionRunBash(const AEntry: TEntry): String;
+var
+  tmpStr: String;
+begin
+  Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
+  Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name)  +' ======"' + LineEnding;
+  if AEntry.Compiler = cCompilerDelphi then
+  begin
+   Result:= Result + '  chmod -v +x ${BIN}/' + AEntry.EntryBinary + LineEnding;
+  end;
+  // Run for SSD
+  tmpStr:= StringsReplace(
+    FConfig.Hyperfine,
+    [
+      cReplaceName,
+      cReplaceJSONResults,
+      cReplaceEntryBinary
+    ],
+    [
+      AEntry.EntryBinary,
+      Format('%s/%s', [
+        '${RESULTS}',
+        AEntry.EntryBinary + '-1_000_000_000-' + cSSD + '.json'
+      ]),
+      Format('%s/%s %s', [
+        '${BIN}',
+        AEntry.EntryBinary,
+        AEntry.RunParams
+      ])
+    ],
+    [rfReplaceAll]
+  );
+  tmpStr:= StringsReplace(
+    tmpStr,
+    [
+      cReplaceEntryInput,
+      cReplaceEntryThreads
+    ],
+    [
+      '${INPUT}',
+      IntToStr(AEntry.Threads)
+    ],
+    [rfReplaceAll]
+  );
+  Result:= Result + '  echo "-- ' + cSSD + ' --"' + LineEnding + '  ' + tmpStr + LineEnding;
+  Result:= Result + '  echo "==========="' + LineEnding;
+  Result:= Result + '  echo' + LineEnding + '}' + LineEnding + LineEnding;
+end;
+
 procedure TBuilder.BuildCompileScriptBash;
 var
   index: Integer;
-  //entry: TEntry;
-  line: TJSONStringType;
+  line
+: TJSONStringType;
 begin
-  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootFolder) + cCompileBash;
+  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootLinux) + cCompileBash;
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
-    line:= '#!/bin/bash' + LineEnding + LineEnding;
-    line:= line + 'echo "******** Compile ********"' + LineEnding;
-    line:= line + 'echo' + LineEnding + LineEnding;
+    line:= GetHeader('Compile');
+    line:= line + GetVariablesBash;
     for index:= 0 to Pred(FConfig.Entries.Count) do
-    //for entry in FConfig.Entries do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
-      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
-      {$ELSE}
-      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
-      {$ENDIF}
-      //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
-      line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + '  echo "===== '+ UTF8Encode(FConfig.Entries[index].Name) +' ======"' + LineEnding;
-      {$IFDEF UNIX}
-      if FConfig.Entries[index].HasRelease then
-      begin
-       line:= line + '  ' +
-       Format(cLazbuildRelease, [
-         FConfig.Lazbuild,
-         ExpandFileName(
-           ConcatPaths([
-             IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
-             IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
-             FConfig.Entries[index].LPI
-           ])
-         )
-       ] ) +
-       LineEnding;
-      end
-      else
-      begin
-        line:= line + '  ' +
-        Format(cLazbuildDefault, [
-          FConfig.Lazbuild,
-          ExpandFileName(
-            ConcatPaths([
-              IncludeTrailingPathDelimiter(FConfig.EntriesFolder),
-              IncludeTrailingPathDelimiter(FConfig.Entries[index].EntryFolder),
-              FConfig.Entries[index].LPI
-            ])
-          )
-        ] ) +
-        LineEnding;
-      end;
-      {$ELSE}
-      line:= line + '  # Needs the Delphi command line stuff' + LineEnding;
-      {$ENDIF}
-      line:= line + '  echo "==========="' + LineEnding;
-      line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
+      line:= line + GetFunctionCompileBash(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
-      {$ELSE}
-      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
-      {$ENDIF}
       line:= line + '  ' + FConfig.Entries[index].EntryBinary + LineEnding;
     end;
     line:= line + 'else'  + LineEnding;
@@ -211,11 +385,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
-      {$ELSE}
-      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
-      {$ENDIF}
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;
@@ -234,61 +404,62 @@ begin
   {$ENDIF}
 end;
 
+procedure TBuilder.BuildCompileScriptCmd;
+var
+  index: Integer;
+  line: TJSONStringType;
+begin
+  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootWindows) + cCompileCmd;
+  FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
+  try
+    line:= GetHeader('Compile');
+    for index:=1 to Pred(FConfig.Entries.Count) do
+    begin
+      if FConfig.Entries[index].Compiler = cCompilerFPC then Continue;
+      line:= line + 'if %1 == ' + FConfig.Entries[index].EntryBinary + ' (' + LineEnding;
+      line:= line + ' CALL :' + FConfig.Entries[index].EntryBinary + LineEnding;
+      line:= line + ' EXIT /B 0' + LineEnding;
+      line:= line + ')' + LineEnding;
+    end;
+    line:= line + 'echo Unknown "%1"' + LineEnding;
+    line:= line + 'EXIT /B 0' + LineEnding + LineEnding;
+    line:= line + ':all' + LineEnding;
+    for index:=1 to Pred(FConfig.Entries.Count) do
+    begin
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].Compiler = cCompilerFPC then Continue;
+      line:= line + 'CALL :' + FConfig.Entries[index].EntryBinary + LineEnding;
+    end;
+    line:= line + 'EXIT /B' + LineEnding;
+    line:= line + LineEnding;
+    for index:=1 to Pred(FConfig.Entries.Count) do
+    begin
+      Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].Compiler = cCompilerFPC then Continue;
+      line:= line + GetFunctionCompileWindows(FConfig.Entries[index]);
+    end;
+    FScriptStream.WriteBuffer(line[1], Length(line));
+  finally
+    FScriptStream.Free;
+  end;
+end;
+
 procedure TBuilder.BuildTestScriptBash;
 var
   index: Integer;
-  line, tmpStr: TJSONStringType;
+  line: TJSONStringType;
 begin
-  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootFolder) + cTestBash;
+  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootLinux) + cTestBash;
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
-    line:= '#!/bin/bash' + LineEnding + LineEnding;
-    line:= line + 'echo "******** Test ********"' + LineEnding;
-    line:= line + 'echo' + LineEnding + LineEnding;
+    line:= GetHeader('Test');
+    line:= line + GetVariablesBash;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
-      //if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
-      line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + '  echo "===== '+ UTF8Encode(FConfig.Entries[index].Name) +' ======"' + LineEnding;
-      tmpStr:= Format('%s%s %s', [
-        IncludeTrailingPathDelimiter(FConfig.BinFolder),
-        FConfig.Entries[index].EntryBinary,
-        FConfig.Entries[index].RunParams
-      ]);
-      tmpStr:= StringsReplace(
-        tmpStr,
-        [
-          cReplaceEntryInput,
-          cReplaceEntryThreads
-        ],
-        [
-          FConfig.Input,
-          IntToStr(FConfig.Entries[index].Threads)
-        ],
-        [rfReplaceAll]
-      );
-      tmpStr:= Format('  %s > %s%s.output', [
-        tmpStr,
-        IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
-        FConfig.Entries[index].EntryBinary
-      ]);
-      line:= line + tmpStr + LineEnding;
-      tmpStr:= Format('  sha256sum %s%s.output',[
-        IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
-        FConfig.Entries[index].EntryBinary
-      ]);
-      line:= line + tmpStr + LineEnding;
-      line:= line + Format('  echo "%s  Official Output Hash"',[
-        FConfig.OutputHash
-      ]) + LineEnding;
-      line:= line + Format('  rm %s%s.output',[
-        IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
-        FConfig.Entries[index].EntryBinary
-      ]) + LineEnding;
-      line:= line + '  echo "==========="' + LineEnding;
-      line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
+      line:= line + GetFunctionTestBash(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
@@ -322,58 +493,19 @@ end;
 procedure TBuilder.BuildRunScriptBash;
 var
   index: Integer;
-  line, tmpStr: TJSONStringType;
+  line: TJSONStringType;
 begin
-  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootFolder) + cRunBash;
+  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootLinux) + cRunBash;
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
-    line:= '#!/bin/bash' + LineEnding + LineEnding;
-    line:= line + 'echo "******** Run ********"' + LineEnding;
-    line:= line + 'echo' + LineEnding + LineEnding;
+    line:= GetHeader('Run');
+    line:= line + GetVariablesBash;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
-      line:= line + 'function ' + FConfig.Entries[index].EntryBinary + '() {' + LineEnding + LineEnding;
-      line:= line + '  echo "===== '+ UTF8Encode(FConfig.Entries[index].Name)  +' ======"' + LineEnding;
-      // Run for SSD
-      tmpStr:= StringsReplace(
-        FConfig.Hyperfine,
-        [
-          cReplaceName,
-          cReplaceJSONResults,
-          cReplaceEntryBinary
-        ],
-        [
-          FConfig.Entries[index].EntryBinary,
-          Format('%s%s', [
-            IncludeTrailingPathDelimiter(FConfig.ResultsFolder),
-            FConfig.Entries[index].EntryBinary + '-1_000_000_000-' + cSSD + '.json'
-          ]),
-          Format('%s%s %s', [
-            IncludeTrailingPathDelimiter(FConfig.BinFolder),
-            FConfig.Entries[index].EntryBinary,
-            FConfig.Entries[index].RunParams
-          ])
-        ],
-        [rfReplaceAll]
-      );
-      tmpStr:= StringsReplace(
-        tmpStr,
-        [
-          cReplaceEntryInput,
-          cReplaceEntryThreads
-        ],
-        [
-          FConfig.Input,
-          IntToStr(FConfig.Entries[index].Threads)
-        ],
-        [rfReplaceAll]
-      );
-      line:= line + '  echo "-- ' + cSSD + ' --"' + LineEnding + '  ' + tmpStr + LineEnding;
-      line:= line + '  echo "==========="' + LineEnding;
-      line:= line + '  echo' + LineEnding + LineEnding + '}' + LineEnding + LineEnding;
+      line:= line + GetFunctionRunBash(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do

@@ -46,6 +46,7 @@ implementation
 {$R *.dfm}
 
 uses
+  System.Math,
   uChallengeCommon;
 
 procedure ChallengeWithFireDAC;
@@ -55,13 +56,13 @@ var
 
   function OutputLine: string;
   begin
-    var MeanTemp := ChallengeCommon.PascalRound(dmChallengeWithFireDAC.qryCityTempsSumTemp.AsFloat /
-                                                dmChallengeWithFireDAC.qryCityTempsTempCount.AsFloat);
+    var MeanTemp := Ceil(dmChallengeWithFireDAC.qryCityTempsSumTemp.AsFloat /
+                         dmChallengeWithFireDAC.qryCityTempsTempCount.AsFloat / 10.0);
     Result := Format('%s=%0.1f/%0.1f/%0.1f',
                        [dmChallengeWithFireDAC.qryCityTempsCityName.AsString,
-                        dmChallengeWithFireDAC.qryCityTempsMinTemp.AsFloat,
-                        MeanTemp,
-                        dmChallengeWithFireDAC.qryCityTempsMaxTemp.AsFloat]);
+                        dmChallengeWithFireDAC.qryCityTempsMinTemp.AsFloat / 10.0,
+                        MeanTemp / 10.0,
+                        dmChallengeWithFireDAC.qryCityTempsMaxTemp.AsFloat / 10.0]);
     Inc(TotalOutput);
   end;
 

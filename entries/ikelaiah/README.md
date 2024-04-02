@@ -55,7 +55,7 @@ Run `sha256sum` on your output.
 
 ```bash
 $ sha256sum.exe ikelaiah-output.txt
-db3d79d31b50daa8c03a1e4f2025029cb137f9971aa04129d8bca004795ae524 *ikelaiah-output.txt
+4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910 *ikelaiah-output.txt
 ```
 
 ## Help
@@ -78,7 +78,7 @@ Use `-v` to check version.
 
 ```bash
 $ ./OneBRC.exe -v
-OneBRC version 1.3
+OneBRC version 1.5
 ```
 
 ## Authors
@@ -110,7 +110,12 @@ Iwan Kelaiah
   * Replaced `TFileStream` with `TBufferedFileStream`. Now, ~1 min faster. Total time for 1BRC (Object Pascal) is now approx. 11 mins on my laptop.
   * Replaced `TDictionary` with `TGHashMapQP`. Now ~4 mins faster. Total time for 1BRC (Object Pascal) is now approx. 7 mins on my laptop.
   * Replaced `StringReplace` with a simpler function avoiding creating a new string for each replacement. This saves 15-30 seconds on my laptop. The run time now is approx. 6-8 minutes.
-  * Updated the rounding method as per the latest README.md in the 1BRC GitHub page.
+  * Updated the rounding method as per the latest `README.md` in the 1BRC GitHub page.
+
+* 1.5 
+* Revision release - Sequential approach. 6-8 mins on my Inspiron 15 7510 laptop (No improvements on speed).
+* Encapsulate process in a class.
+* Updated the rounding method as per the latest `README.md` in the 1BRC GitHub page.
 
 ## License
 
