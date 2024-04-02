@@ -62,6 +62,7 @@ Here are the main ideas behind this implementation proposal:
 - The station names are stored as UTF-8 pointers to the memmap location where they appear first, in `StationName[]`, to be emitted eventually for the final output, not during temperature parsing;
 - No memory allocation (e.g. no transient `string` or `TBytes`) nor any syscall is done during the parsing process to reduce contention and ensure the process is only CPU-bound and RAM-bound (we checked this with `strace` on Linux);
 - Pascal code was tuned to generate the best possible asm output on FPC x86_64 (which is our target) - perhaps making it less readable, because we used pointer arithmetics when it matters (I like to think as such low-level pascal code as [portable assembly](https://sqlite.org/whyc.html#performance) similar to "unsafe" code in managed languages);
+- We even tried an optimized SSE2 asm sub-function for searching the name `';'` delimiter - which is a O(n) part of the process, and in practice... it was slower than a slightly unrolled pure pascal inlined loop;
 - It can optionally output timing statistics and resultset hash value on the console to debug and refine settings (with the `-v` command line switch);
 - It can optionally set each thread affinity to a single core (with the `-a` command line switch).
 
