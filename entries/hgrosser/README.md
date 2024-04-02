@@ -1,4 +1,6 @@
-# 1 billion row Challenge entry by Hartmut Grosser #
+# Hartmut Grosser #
+
+# 1 billion row Challenge entry #
 
 # Version #
 Version 1.0
