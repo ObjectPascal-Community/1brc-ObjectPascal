@@ -1,0 +1,4 @@
+*.pas diff
+*.dpr diff
+*.dproj diff
+*.inc diff
