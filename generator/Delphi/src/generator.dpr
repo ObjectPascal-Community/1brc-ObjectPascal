@@ -114,12 +114,12 @@ begin
   J := 0;
   for I := 1 to ParamCount do
   begin
-    if pos('--', ParamStr(I)) > 0 then
+    if ParamStr(I).StartsWith('--') then
     begin
       FParams.Add(Copy(ParamStr(I), 3, ParamStr(I).Length));
       inc(J);
     end
-    else if pos('-', ParamStr(I)) > 0 then
+    else if ParamStr(I).StartsWith('-') then
     begin
       FParams.Add(Copy(ParamStr(I), 2, ParamStr(I).Length));
       inc(J);
