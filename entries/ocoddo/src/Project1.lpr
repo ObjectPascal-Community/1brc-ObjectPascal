@@ -365,13 +365,8 @@ type
   end;
 
   function HandleParameters(out AFilePath: TFilePath): Bool;
-  var
-    I: Ind;
-    N: Str;
-    V: I64;
-  begin
-    Result := False;
-    if Length(Parameters) = 0 then
+
+    procedure WriteHelp;
     begin
       WriteLn;
       WriteLn('1BRC');
@@ -386,6 +381,17 @@ type
       WriteLn('--part-size=[Value]. Use 128, 192, 256, etc');
       WriteLn('--processor-count=[Value]. Use 1 or more');
       WriteLn;
+    end;
+
+  var
+    I: Ind;
+    N: Str;
+    V: I64;
+  begin
+    Result := False;
+    if Length(Parameters) = 0 then
+    begin
+      WriteHelp;
       Exit;
     end;
 
@@ -393,7 +399,7 @@ type
     JumperCount := 256 * 1024;
     PartSize := 192 * 1024 - ReadMargin;
 
-    for I := 1 to High(Parameters) do
+    for I := 0 to High(Parameters) do
     begin
       N := Name(Parameters[I]);
       ToI64(Value(Parameters[I]), V);
@@ -403,10 +409,20 @@ type
       else if N = 'part-size' then
         PartSize := (V * 1024) - ReadMargin
       else if N = 'processor-count' then
-        ProcessorCount := V;
+        ProcessorCount := V
+      else if N = 'help' then
+      begin
+        WriteHelp;
+        Exit;
+      end;
     end;
 
     AFilePath := Fix(Value(Parameters[0]));
+    if not Exists(FileSystemObject(AFilePath)) then
+    begin
+      WriteLn('File not found');
+      Exit;
+    end;
     Result := True;
   end;
 
