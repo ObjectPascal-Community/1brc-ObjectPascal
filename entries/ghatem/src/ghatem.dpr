@@ -1,4 +1,4 @@
-﻿program GHatemOneBRC;
+﻿program ghatem;
 
 {$APPTYPE CONSOLE}
 
