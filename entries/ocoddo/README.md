@@ -12,8 +12,8 @@ Hope you find this interesting.
 - Open the project from `src` folder
 - Make sure you set build mode to `Release`
 - Build
-- Run as `o ./input.txt`
-- You can try different parameters for your hardware: `--jumper-count=192` `--part-size=192`. Try values from `128`, `192`, `256`, and up
+- Run as `./ocoddo ./input.txt`
+- You can try different parameters for your hardware: `./ocoddo ./input.txt --jumper-count=192 --part-size=192`. Try values from `128`, `192`, `256`, and up
 
 
 
