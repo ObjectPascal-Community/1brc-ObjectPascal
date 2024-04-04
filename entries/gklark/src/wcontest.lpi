@@ -9,7 +9,7 @@
         <MainUnitHasScaledStatement Value="False"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="bytebitespas"/>
+      <Title Value="wcontest"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -19,7 +19,7 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="bytebitespas"/>
+            <Filename Value="../../../bin/gklark"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -60,7 +60,7 @@
     </RequiredPackages>
     <Units>
       <Unit>
-        <Filename Value="bytebitespas.lpr"/>
+        <Filename Value="wcontest.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit>
     </Units>
@@ -68,7 +68,7 @@
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="bytebitespas"/>
+      <Filename Value="../../../bin/gklark"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>

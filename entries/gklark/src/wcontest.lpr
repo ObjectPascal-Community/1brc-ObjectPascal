@@ -1,4 +1,4 @@
-program bytebitespas;
+program wcontest;
 {$mode delphi}
 
 uses
@@ -151,6 +151,7 @@ var
     i: integer;
   begin
     i := 0;
+    keys:=nil;
     SetLength(keys, sum.Count);
     for pair in sum do
     begin
