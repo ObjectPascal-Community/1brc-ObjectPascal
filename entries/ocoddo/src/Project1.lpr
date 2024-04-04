@@ -31,6 +31,7 @@ const
 var
   JumperCount: UPS;
   PartSize: UPS;
+  ProcessorCount: U8;
 
 type
   THash = U32;
@@ -240,11 +241,6 @@ type
 
     procedure Process(out AStations: TStationResultArray); overload;
 
-      function ProcessorCount: U8;
-      begin
-        Result := LogicalProcessorCount;
-      end;
-
       procedure Initialize(out AContext: TContext);
       var
         I: Ind;
@@ -376,6 +372,7 @@ begin
   if Length(Parameters) = 0 then
     Exit;
 
+  ProcessorCount := LogicalProcessorCount;
   JumperCount := 256 * 1024;
   PartSize := 192 * 1024 - ReadMargin;
 
@@ -387,7 +384,9 @@ begin
     if N = 'jumper-count' then
       JumperCount := V * 1024
     else if N = 'part-size' then
-      PartSize := (V * 1024) - ReadMargin;
+      PartSize := (V * 1024) - ReadMargin
+    else if N = 'processor-count' then
+      ProcessorCount := V;
   end;
 
   Run(&File(Fix(Value(Parameters[0]))));
