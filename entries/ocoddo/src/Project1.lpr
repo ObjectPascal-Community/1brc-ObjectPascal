@@ -31,6 +31,7 @@ const
 var
   JumperCount: UPS;
   PartSize: UPS;
+  ProcessorCount: U8;
 
 type
   THash = U32;
@@ -240,11 +241,6 @@ type
 
     procedure Process(out AStations: TStationResultArray); overload;
 
-      function ProcessorCount: U8;
-      begin
-        Result := LogicalProcessorCount;
-      end;
-
       procedure Initialize(out AContext: TContext);
       var
         I: Ind;
@@ -368,27 +364,55 @@ type
     WriteLn(ToStr(RST));
   end;
 
-var
-  I: Ind;
-  N: Str;
-  V: I64;
-begin
-  if Length(Parameters) = 0 then
-    Exit;
-
-  JumperCount := 256 * 1024;
-  PartSize := 192 * 1024 - ReadMargin;
-
-  for I := 1 to High(Parameters) do
+  function HandleParameters(out AFilePath: TFilePath): Bool;
+  var
+    I: Ind;
+    N: Str;
+    V: I64;
   begin
-    N := Name(Parameters[I]);
-    ToI64(Value(Parameters[I]), V);
+    Result := False;
+    if Length(Parameters) = 0 then
+    begin
+      WriteLn;
+      WriteLn('1BRC');
+      WriteLn('----');
+      WriteLn('Made by O');
+      WriteLn;
+      WriteLn('Usage:');
+      WriteLn('./ocoddo ./input.txt [Options]');
+      WriteLn;
+      WriteLn('Options:');
+      WriteLn('--jumper-count=[Value]. Use 128, 192, 256, etc');
+      WriteLn('--part-size=[Value]. Use 128, 192, 256, etc');
+      WriteLn('--processor-count=[Value]. Use 1 or more');
+      WriteLn;
+      Exit;
+    end;
 
-    if N = 'jumper-count' then
-      JumperCount := V * 1024
-    else if N = 'part-size' then
-      PartSize := (V * 1024) - ReadMargin;
+    ProcessorCount := LogicalProcessorCount;
+    JumperCount := 256 * 1024;
+    PartSize := 192 * 1024 - ReadMargin;
+
+    for I := 1 to High(Parameters) do
+    begin
+      N := Name(Parameters[I]);
+      ToI64(Value(Parameters[I]), V);
+
+      if N = 'jumper-count' then
+        JumperCount := V * 1024
+      else if N = 'part-size' then
+        PartSize := (V * 1024) - ReadMargin
+      else if N = 'processor-count' then
+        ProcessorCount := V;
+    end;
+
+    AFilePath := Fix(Value(Parameters[0]));
+    Result := True;
   end;
 
-  Run(&File(Fix(Value(Parameters[0]))));
+var
+  FN: TFilePath;
+begin
+  if HandleParameters(FN) then
+    Run(&File(FN));
 end.
