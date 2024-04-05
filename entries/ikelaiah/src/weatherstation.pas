@@ -19,7 +19,7 @@ type
   { Create a record of temperature stats.
     Borrowed the concept from go's approach, save floats as int64.
     This saved ~2 mins processing time for processing 1 billion rows.
-    2024-04-05. Using pointers saves ~ 30 seconds.}
+    2024-04-05. Using pointers saves approx. 30 seconds for processing 1BRC.}
   PStat = ^TStat;
   TStat = record
   var
@@ -31,9 +31,8 @@ type
     function ToString: string;
   end;
 
-
 type
-  // Create a dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
+  // Create a dictionary, now approx. 4 mins faster than Generics.Collections.TDictionary
   TWeatherDictionaryLG = specialize TGHashMapQP<string, PStat>;
 
 type
@@ -230,7 +229,7 @@ begin
   // If city name doesn't exist add a new entry
   if not self.weatherDictionary.Contains(cityName) then
   begin
-    //self.weatherDictionary.Add(cityName, TStat.Create(newTemp, newTemp, newTemp, 1));
+    // Create a new Stat record
     New(stat);
     stat^.min := newTemp;
     stat^.max := newTemp;
@@ -334,35 +333,7 @@ begin
   end;
 end;
 
-{procedure TWeatherStation.ParseStationAndTempFromChunk(const chunkData: pansichar;
-  const dataSize: int64; const chunkIndex: int64);
-var
-  mStream: TMemoryStream;
-  streamReader: TStreamReader;
-  currentString: string;
-begin
-  mStream:=TMemoryStream.Create;
-  try
-    mStream.WriteBuffer(chunkData^, dataSize);
-    mStream.Position:=0;
-
-    streamReader:=TStreamReader.Create(mStream, 1048576, False);
-    try
-      while not streamReader.Eof do
-      begin
-        currentString:=streamReader.ReadLine;
-        self.ParseStationAndTemp(currentString);
-      end;
-    finally
-      streamReader.Free;
-    end;
-  finally
-    mStream.Free;
-  end;
-end;}
-
-procedure TWeatherStation.ParseStationAndTempFromChunk(const chunkData: pansichar;
-  const dataSize: int64; const chunkIndex: int64);
+procedure TWeatherStation.ParseStationAndTempFromChunk(const chunkData: pansichar; const dataSize: int64; const chunkIndex: int64);
 var
   index, lineStart, lineLength: int64;
   line:string;
@@ -398,9 +369,8 @@ var
   bytesRead, totalBytesRead, chunkSize, lineBreakPos, chunkIndex: int64;
 begin
 
-  // chunkSize := defaultChunkSize * 2; // Now 128MB in bytes ~ 5.52 :D
-  chunkSize := defaultChunkSize * 4; // Now 256MB in bytes ~ 5.50 :D
-  // chunkSize := defaultChunkSize * 4 * 4; // Now 1GB in bytes ~ 5:53 :D
+  // Set chunk size
+  chunkSize := defaultChunkSize * 4; // Now 256MB in bytes
 
   // Open the file for reading
   fileStream := TFileStream.Create(filename, fmOpenRead or fmShareDenyWrite);
@@ -464,7 +434,7 @@ procedure TWeatherStation.ProcessMeasurements;
 begin
   // self.ReadMeasurements;
   // self.ReadMeasurementsClassic;
-  {chunking cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
+  {Read in chunks cuts ~ 30 - 40 seconds of processing time.}
   self.ReadMeasurementsInChunks(self.fname);
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
