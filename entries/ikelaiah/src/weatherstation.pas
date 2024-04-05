@@ -199,8 +199,7 @@ begin
   {$ENDIF DEBUG}
 end;
 
-procedure TWeatherStation.AddCityTemperatureLG(const cityName: string;
-  const newTemp: int64);
+procedure TWeatherStation.AddCityTemperatureLG(const cityName: string; const newTemp: int64);
 var
   stat: PStat;
 begin
@@ -211,12 +210,10 @@ begin
     stat := self.weatherDictionary[cityName];
 
     // If the temp lower then min, set the new min.
-    if newTemp < stat^.min then
-      stat^.min := newTemp;
+    if newTemp < stat^.min then stat^.min := newTemp;
 
     // If the temp higher than max, set the new max.
-    if newTemp > stat^.max then
-      stat^.max := newTemp;
+    if newTemp > stat^.max then stat^.max := newTemp;
 
     // Add count for this city.
     stat^.sum := stat^.sum + newTemp;
@@ -224,8 +221,6 @@ begin
     // Increase the counter
     stat^.cnt := stat^.cnt + 1;
 
-    // Update the stat of this city
-    // self.weatherDictionary.AddOrSetValue(cityName, stat);
     {$IFDEF DEBUG}
     // Display the line.
     WriteLn('Updated: ', cityName);
@@ -370,35 +365,28 @@ procedure TWeatherStation.ParseStationAndTempFromChunk(const chunkData: pansicha
   const dataSize: int64; const chunkIndex: int64);
 var
   index, lineStart, lineLength: int64;
-  batch: TStringList;
+  line:string;
+
 begin
   lineStart := 0;
-  batch := TStringList.Create;
-  try
+
     // Check for Line Feed (LF)
     for index := 0 to dataSize - 1 do
     begin
       if chunkData[index] = #10 then
       begin
-
         lineLength := index - lineStart;
-
         // Remove potential CR before LF (for Windows)
         if (chunkData[index - 1] = #13) and (index < dataSize - 1) then
           Dec(LineLength);
 
         // The current line is now: Buffer[LineStart..LineStart+LineLength-1]
-        // WriteLn(chunkData[lineStart..lineStart + lineLength - 1], '.');
+        // To print: WriteLn(chunkData[lineStart..lineStart + lineLength - 1], '.');
         self.ParseStationAndTemp(chunkData[lineStart..lineStart + lineLength - 1]);
         // Skip to the next 'line' in the buffer
         lineStart := index + 1;
       end;
     end;
-
-  finally
-    batch.Free;
-  end;
-
 end;
 
 procedure TWeatherStation.ReadMeasurementsInChunks(const filename: string);
@@ -478,7 +466,6 @@ begin
   // self.ReadMeasurementsClassic;
   {chunking cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
   self.ReadMeasurementsInChunks(self.fname);
-
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
 end;
