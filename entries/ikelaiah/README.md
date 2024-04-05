@@ -119,8 +119,9 @@ Iwan Kelaiah
 
 
 * 1.6
-* Revision release - Sequential approach. 6-8 mins on my Inspiron 15 7510 laptop (a little improvements on speed).
-* Read input file in chunks and process each chunk line by line. This saves approx 30 - 40 seconds.
+* Revision release - Sequential approach. 5-7 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
+* Read input file in chunks and process each chunk line by line. This saves approx. 30 - 40 seconds.
+* Use a pointer to Stat records,  `PStat = ^Tstat;`, saves approx. 20 seconds.
 
 ## License
 

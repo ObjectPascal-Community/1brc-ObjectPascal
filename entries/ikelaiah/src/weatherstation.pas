@@ -17,9 +17,10 @@ uses
 
 type
   { Create a record of temperature stats.
-
-    Borrowed the concept from go's approach to improve performance, save floats as int64.
-    This saved ~2 mins processing time for processing 1 billion rows.}
+    Borrowed the concept from go's approach, save floats as int64.
+    This saved ~2 mins processing time for processing 1 billion rows.
+    2024-04-05. Using pointers saves ~ 30 seconds.}
+  PStat = ^TStat;
   TStat = record
   var
     min: int64;
@@ -27,15 +28,13 @@ type
     sum: int64;
     cnt: int64;
   public
-    constructor Create(const newMin: int64; const newMax: int64;
-      const newSum: int64; const newCount: int64);
     function ToString: string;
   end;
-  PStat = ^TStat;
+
 
 type
   // Create a dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
-  TWeatherDictionaryLG = specialize TGHashMapQP<string, TStat>;
+  TWeatherDictionaryLG = specialize TGHashMapQP<string, PStat>;
 
 type
   // Create a class to encapsulate the temperature observations of each weather station.
@@ -101,15 +100,6 @@ begin
   end;
 end;
 
-constructor TStat.Create(const newMin: int64; const newMax: int64;
-  const newSum: int64; const newCount: int64);
-begin
-  self.min := newMin;
-  self.max := newMax;
-  self.sum := newSum;
-  self.cnt := newCount;
-end;
-
 function TStat.ToString: string;
 var
   minR, meanR, maxR: double; // Store the rounded values prior saving to TStringList.
@@ -132,12 +122,18 @@ begin
 end;
 
 destructor TWeatherStation.Destroy;
+var
+  stationName: string;
 begin
   // Free TStringLIst dictionary
   weatherStationList.Free;
-  // Free the dictionary
+  // Free the dictionary - 1. Free the PStat first before the container!
+  for stationName in self.weatherDictionary.Keys do
+    Dispose(PStat(self.weatherDictionary.Items[stationName]));
+  // Free the dictionary - 2. Free the container last.
   weatherDictionary.Free;
 end;
+
 
 procedure TWeatherStation.PrintSortedWeatherStationAndStats;
 var
@@ -191,7 +187,7 @@ begin
 
   for wsKey in weatherDictionary.Keys do
   begin
-    self.weatherStationList.Add(wsKey + '=' + weatherDictionary[wsKey].ToString + ', ');
+    self.weatherStationList.Add(wsKey + '=' + weatherDictionary[wsKey]^.ToString + ', ');
   end;
 
   self.weatherStationList.CustomSort(@CustomTStringListComparer);
@@ -206,7 +202,7 @@ end;
 procedure TWeatherStation.AddCityTemperatureLG(const cityName: string;
   const newTemp: int64);
 var
-  stat: TStat;
+  stat: PStat;
 begin
   // If city name esxists, modify temp as needed
   if self.weatherDictionary.Contains(cityName) then
@@ -215,21 +211,21 @@ begin
     stat := self.weatherDictionary[cityName];
 
     // If the temp lower then min, set the new min.
-    if newTemp < stat.min then
-      stat.min := newTemp;
+    if newTemp < stat^.min then
+      stat^.min := newTemp;
 
     // If the temp higher than max, set the new max.
-    if newTemp > stat.max then
-      stat.max := newTemp;
+    if newTemp > stat^.max then
+      stat^.max := newTemp;
 
     // Add count for this city.
-    stat.sum := stat.sum + newTemp;
+    stat^.sum := stat^.sum + newTemp;
 
     // Increase the counter
-    stat.cnt := stat.cnt + 1;
+    stat^.cnt := stat^.cnt + 1;
 
     // Update the stat of this city
-    self.weatherDictionary.AddOrSetValue(cityName, stat);
+    // self.weatherDictionary.AddOrSetValue(cityName, stat);
     {$IFDEF DEBUG}
     // Display the line.
     WriteLn('Updated: ', cityName);
@@ -239,7 +235,13 @@ begin
   // If city name doesn't exist add a new entry
   if not self.weatherDictionary.Contains(cityName) then
   begin
-    self.weatherDictionary.Add(cityName, TStat.Create(newTemp, newTemp, newTemp, 1));
+    //self.weatherDictionary.Add(cityName, TStat.Create(newTemp, newTemp, newTemp, 1));
+    New(stat);
+    stat^.min := newTemp;
+    stat^.max := newTemp;
+    stat^.sum := newTemp;
+    stat^.cnt := 1;
+    self.weatherDictionary.Add(cityName, stat);
 
     {$IFDEF DEBUG}
     // Display the line.
@@ -368,28 +370,35 @@ procedure TWeatherStation.ParseStationAndTempFromChunk(const chunkData: pansicha
   const dataSize: int64; const chunkIndex: int64);
 var
   index, lineStart, lineLength: int64;
+  batch: TStringList;
 begin
   lineStart := 0;
-
-  // Check for Line Feed (LF)
-  for index := 0 to dataSize - 1 do
-  begin
-    if chunkData[index] = #10 then
+  batch := TStringList.Create;
+  try
+    // Check for Line Feed (LF)
+    for index := 0 to dataSize - 1 do
     begin
+      if chunkData[index] = #10 then
+      begin
 
-      lineLength := index - lineStart;
+        lineLength := index - lineStart;
 
-      // Remove potential CR before LF (for Windows)
-      if (chunkData[index - 1] = #13) and (index < dataSize - 1) then
-        Dec(LineLength);
+        // Remove potential CR before LF (for Windows)
+        if (chunkData[index - 1] = #13) and (index < dataSize - 1) then
+          Dec(LineLength);
 
-      // The current line is now: Buffer[LineStart..LineStart+LineLength-1]
-      // WriteLn(chunkData[lineStart..lineStart + lineLength - 1], '.');
-      self.ParseStationAndTemp(chunkData[lineStart..lineStart + lineLength - 1]);
-      // Skip to the next 'line' in the buffer
-      lineStart := index + 1;
+        // The current line is now: Buffer[LineStart..LineStart+LineLength-1]
+        // WriteLn(chunkData[lineStart..lineStart + lineLength - 1], '.');
+        self.ParseStationAndTemp(chunkData[lineStart..lineStart + lineLength - 1]);
+        // Skip to the next 'line' in the buffer
+        lineStart := index + 1;
+      end;
     end;
+
+  finally
+    batch.Free;
   end;
+
 end;
 
 procedure TWeatherStation.ReadMeasurementsInChunks(const filename: string);
@@ -402,8 +411,8 @@ var
 begin
 
   // chunkSize := defaultChunkSize * 2; // Now 128MB in bytes ~ 5.52 :D
-  // chunkSize := defaultChunkSize * 4; // Now 256MB in bytes ~ 5.50 :D
-  chunkSize := defaultChunkSize * 4 * 4; // Now 1GB in bytes ~ 5:53 :D
+  chunkSize := defaultChunkSize * 4; // Now 256MB in bytes ~ 5.50 :D
+  // chunkSize := defaultChunkSize * 4 * 4; // Now 1GB in bytes ~ 5:53 :D
 
   // Open the file for reading
   fileStream := TFileStream.Create(filename, fmOpenRead or fmShareDenyWrite);
@@ -467,8 +476,9 @@ procedure TWeatherStation.ProcessMeasurements;
 begin
   // self.ReadMeasurements;
   // self.ReadMeasurementsClassic;
+  {chunking cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
   self.ReadMeasurementsInChunks(self.fname);
-  {This method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
+
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
 end;
