@@ -9,7 +9,6 @@ uses
   , SysUtils
   , Math
   , streamex
-  , bufstream
   , lgHashMap
   {$IFDEF DEBUG}
   , Stopwatch
@@ -35,7 +34,7 @@ type
   PStat = ^TStat;
 
 type
-  // Create a dictionary
+  // Create a dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
   TWeatherDictionaryLG = specialize TGHashMapQP<string, TStat>;
 
 type
@@ -146,6 +145,11 @@ var
   index: int64;
 begin
 
+  {$IFDEF DEBUG}
+  // Display the line.
+  WriteLn('Printing now: ', DateTimeToStr(Now));
+  {$ENDIF DEBUG}
+
   if self.weatherStationList.Count = 0 then
   begin
     WriteLn('Nothing to print. The list is empty.');
@@ -160,12 +164,23 @@ begin
   // Remove last comma and space; ', ', a neat trick from Gus.
   SetLength(outputList, Length(outputList) - 2);
   WriteLn('{', outputList, '}');
+
+  {$IFDEF DEBUG}
+  // Display the line.
+  WriteLn('Printing done: ', DateTimeToStr(Now));
+  {$ENDIF DEBUG}
 end;
 
 procedure TWeatherStation.SortWeatherStationAndStats;
 var
   wsKey: string;
 begin
+
+  {$IFDEF DEBUG}
+  // Display the line.
+  WriteLn('Sorting now: ', DateTimeToStr(Now));
+  {$ENDIF DEBUG}
+
   wsKey := '';
 
   if self.weatherDictionary.GetCapacity = 0 then
@@ -180,6 +195,12 @@ begin
   end;
 
   self.weatherStationList.CustomSort(@CustomTStringListComparer);
+
+
+  {$IFDEF DEBUG}
+  // Display the line.
+  WriteLn('Sorting done: ', DateTimeToStr(Now));
+  {$ENDIF DEBUG}
 end;
 
 procedure TWeatherStation.AddCityTemperatureLG(const cityName: string;
@@ -359,12 +380,12 @@ begin
       lineLength := index - lineStart;
 
       // Remove potential CR before LF (for Windows)
-      if (chunkData[index-1] = #13) and (index < dataSize - 1) then
+      if (chunkData[index - 1] = #13) and (index < dataSize - 1) then
         Dec(LineLength);
 
       // The current line is now: Buffer[LineStart..LineStart+LineLength-1]
       // WriteLn(chunkData[lineStart..lineStart + lineLength - 1], '.');
-      self.ParseStationAndTemp(chunkData[lineStart..lineStart+lineLength - 1]);
+      self.ParseStationAndTemp(chunkData[lineStart..lineStart + lineLength - 1]);
       // Skip to the next 'line' in the buffer
       lineStart := index + 1;
     end;
@@ -373,16 +394,17 @@ end;
 
 procedure TWeatherStation.ReadMeasurementsInChunks(const filename: string);
 const
-  defaultChunkSize: integer = 536870912; // 512MB in bytes
+  defaultChunkSize: int64 = 67108864; // 64MB in bytes
 var
   fileStream: TFileStream;
   buffer: pansichar;
   bytesRead, totalBytesRead, chunkSize, lineBreakPos, chunkIndex: int64;
 begin
-  chunkSize := defaultChunkSize * 1;
+  chunkSize := defaultChunkSize * 4 * 4; // Now 1GB in bytes ~ 5:53 :D
+  // chunkSize := defaultChunkSize * 4; // Now 512GB in bytes ~ 5.50 :D
 
   // Open the file for reading
-  fileStream := TFileStream.Create(filename, fmOpenRead);
+  fileStream := TFileStream.Create(filename, fmOpenRead or fmShareDenyWrite);
   try
     // Allocate memory buffer for reading chunks
     // Ref: https://www.freepascal.org/docs-html/rtl/system/getmem.html
@@ -395,7 +417,7 @@ begin
       while totalBytesRead < fileStream.Size do
       begin
         {$IFDEF DEBUG}
-      WriteLn('Processing chunk index: ', IntToStr(chunkIndex));
+        WriteLn('Processing chunk index: ', IntToStr(chunkIndex));
         {$ENDIF DEBUG}
 
         bytesRead := fileStream.Read(buffer^, chunkSize);
@@ -443,7 +465,7 @@ procedure TWeatherStation.ProcessMeasurements;
 begin
   // self.ReadMeasurements;
   // self.ReadMeasurementsClassic;
-  self.ReadMeasurementsInChunks(self.fname); // This method cuts approx 30 seconds of processing time
+  self.ReadMeasurementsInChunks(self.fname); {This method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
 end;
