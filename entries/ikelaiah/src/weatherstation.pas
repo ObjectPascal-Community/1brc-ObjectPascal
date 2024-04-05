@@ -35,7 +35,7 @@ type
 
 type
   // Create a dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
-  TWeatherDictionaryLG = specialize TGHashMapQP<string, TStat>;
+  TWeatherDictionaryLG = specialize TGHashMapQP<string, PStat>;
 
 type
   // Create a class to encapsulate the temperature observations of each weather station.
@@ -47,7 +47,8 @@ type
     procedure ReadMeasurements;
     procedure ReadMeasurementsClassic;
     procedure ReadMeasurementsInChunks(const filename: string);
-    procedure ParseStationAndTempFromChunk(const chunkData: pansichar; const dataSize: int64; const chunkIndex: int64);
+    procedure ParseStationAndTempFromChunk(const chunkData: pansichar;
+      const dataSize: int64; const chunkIndex: int64);
     procedure ParseStationAndTemp(const line: string);
     procedure AddCityTemperatureLG(const cityName: string; const newTemp: int64);
     procedure SortWeatherStationAndStats;
@@ -68,7 +69,8 @@ implementation
   The following procedure Written by Székely Balázs for the 1BRC for Object Pascal.
   URL: https://github.com/gcarreno/1brc-ObjectPascal/tree/main
 }
-function CustomTStringListComparer(AList: TStringList; AIndex1, AIndex2: integer): integer;
+function CustomTStringListComparer(AList: TStringList;
+  AIndex1, AIndex2: integer): integer;
 var
   Pos1, Pos2: integer;
   Str1, Str2: string;
@@ -130,10 +132,17 @@ begin
 end;
 
 destructor TWeatherStation.Destroy;
+var
+  stationName:string;
 begin
-  // Free TStringLIst dictionary
+  // Free TStringList dictionary
   weatherStationList.Free;
-  // Free the dictionary
+
+  // Free the dictionary - 1. Free PStat first
+  for stationName in self.weatherDictionary.Keys do
+    Dispose(PStat(self.weatherDictionary.Items[stationName]));
+
+  // Free the dictionary - 2. Finally free the container itself
   weatherDictionary.Free;
 end;
 
@@ -189,7 +198,7 @@ begin
 
   for wsKey in weatherDictionary.Keys do
   begin
-    self.weatherStationList.Add(wsKey + '=' + weatherDictionary[wsKey].ToString + ', ');
+    self.weatherStationList.Add(wsKey + '=' + weatherDictionary[wsKey]^.ToString + ', ');
   end;
 
   self.weatherStationList.CustomSort(@CustomTStringListComparer);
@@ -204,7 +213,7 @@ end;
 procedure TWeatherStation.AddCityTemperatureLG(const cityName: string;
   const newTemp: int64);
 var
-  stat: TStat;
+  stat: PStat;
 begin
   // If city name esxists, modify temp as needed
   if self.weatherDictionary.Contains(cityName) then
@@ -213,21 +222,21 @@ begin
     stat := self.weatherDictionary[cityName];
 
     // If the temp lower then min, set the new min.
-    if newTemp < stat.min then
-      stat.min := newTemp;
+    if newTemp < stat^.min then
+      stat^.min := newTemp;
 
     // If the temp higher than max, set the new max.
-    if newTemp > stat.max then
-      stat.max := newTemp;
+    if newTemp > stat^.max then
+      stat^.max := newTemp;
 
     // Add count for this city.
-    stat.sum := stat.sum + newTemp;
+    stat^.sum := stat^.sum + newTemp;
 
     // Increase the counter
-    stat.cnt := stat.cnt + 1;
+    stat^.cnt := stat^.cnt + 1;
 
     // Update the stat of this city
-    self.weatherDictionary.AddOrSetValue(cityName, stat);
+    // self.weatherDictionary.AddOrSetValue(cityName, stat);
     {$IFDEF DEBUG}
     // Display the line.
     WriteLn('Updated: ', cityName);
@@ -237,7 +246,12 @@ begin
   // If city name doesn't exist add a new entry
   if not self.weatherDictionary.Contains(cityName) then
   begin
-    self.weatherDictionary.Add(cityName, TStat.Create(newTemp, newTemp, newTemp, 1));
+    New(stat);
+    stat^.min := newTemp;
+    stat^.max := newTemp;
+    stat^.sum := newTemp;
+    stat^.cnt := 1;
+    self.weatherDictionary.Add(cityName, stat);
 
     {$IFDEF DEBUG}
     // Display the line.
@@ -335,7 +349,8 @@ begin
   end;
 end;
 
-procedure TWeatherStation.ParseStationAndTempFromChunk(const chunkData: pansichar; const dataSize: int64; const chunkIndex: int64);
+procedure TWeatherStation.ParseStationAndTempFromChunk(const chunkData: pansichar;
+  const dataSize: int64; const chunkIndex: int64);
 var
   index, lineStart, lineLength: int64;
 begin
@@ -433,10 +448,10 @@ end;
 // The main algorithm
 procedure TWeatherStation.ProcessMeasurements;
 begin
-  // self.ReadMeasurements;
+  self.ReadMeasurements;
   // self.ReadMeasurementsClassic;
   {This chunking method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
-  self.ReadMeasurementsInChunks(self.fname);
+  // self.ReadMeasurementsInChunks(self.fname);
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
 end;
