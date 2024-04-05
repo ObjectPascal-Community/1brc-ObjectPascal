@@ -117,6 +117,11 @@ Iwan Kelaiah
 * Encapsulate process in a class.
 * Updated the rounding method as per the latest `README.md` in the 1BRC GitHub page.
 
+
+* 1.6
+* Revision release - Sequential approach. 5-7 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
+* Introduced a pointer to the weather record, `PStat` = ^TStat. This saves approx. 30 - 60 seconds.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details
