@@ -400,8 +400,10 @@ var
   buffer: pansichar;
   bytesRead, totalBytesRead, chunkSize, lineBreakPos, chunkIndex: int64;
 begin
+
+  // chunkSize := defaultChunkSize * 2; // Now 128MB in bytes ~ 5.52 :D
+  // chunkSize := defaultChunkSize * 4; // Now 256MB in bytes ~ 5.50 :D
   chunkSize := defaultChunkSize * 4 * 4; // Now 1GB in bytes ~ 5:53 :D
-  // chunkSize := defaultChunkSize * 4; // Now 512GB in bytes ~ 5.50 :D
 
   // Open the file for reading
   fileStream := TFileStream.Create(filename, fmOpenRead or fmShareDenyWrite);
@@ -465,7 +467,8 @@ procedure TWeatherStation.ProcessMeasurements;
 begin
   // self.ReadMeasurements;
   // self.ReadMeasurementsClassic;
-  self.ReadMeasurementsInChunks(self.fname); {This method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
+  self.ReadMeasurementsInChunks(self.fname);
+  {This method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
 end;
