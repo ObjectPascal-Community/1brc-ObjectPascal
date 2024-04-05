@@ -31,6 +31,7 @@ type
       const newSum: int64; const newCount: int64);
     function ToString: string;
   end;
+  {Using pointer to TStat saves approx. 30-60 seconds for processing 1 billion rows}
   PStat = ^TStat;
 
 type
@@ -306,7 +307,7 @@ begin
   // Open the file for reading
   fileStream := TFileStream.Create(self.fname, fmOpenRead or fmShareDenyNone);
   try
-    streamReader := TStreamReader.Create(fileStream, 655360, False);
+    streamReader := TStreamReader.Create(fileStream, 65536 * 2, False);
     try
       // Read and parse chunks of data until EOF -------------------------------
       while not streamReader.EOF do
@@ -450,7 +451,8 @@ procedure TWeatherStation.ProcessMeasurements;
 begin
   self.ReadMeasurements;
   // self.ReadMeasurementsClassic;
-  {This chunking method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00}
+  {This chunking method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00
+   But the SHA256 at the end is incorrect}
   // self.ReadMeasurementsInChunks(self.fname);
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
