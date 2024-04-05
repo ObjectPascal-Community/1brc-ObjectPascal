@@ -46,6 +46,7 @@ type
     FHyperfine: TJSONStringType;
 
     FLazbuild: TJSONStringType;
+    FLazbuildTrunk: TJSONStringType;
     FDelphiCompiler: TJSONStringType;
 
     FOutputHash: TJSONStringType;
@@ -95,6 +96,9 @@ type
     property Lazbuild: TJSONStringType
       read FLazbuild
       write FLazbuild;
+    property LazbuildTrunk: TJSONStringType
+      read FLazbuildTrunk
+      write FLazbuildTrunk;
     property DelphiCompiler: TJSONStringType
       read FDelphiCompiler
       write FDelphiCompiler;
@@ -120,6 +124,7 @@ const
   cJSONInput          = 'input';
   cJSONHyperfine      = 'hyperfine';
   cJSONLazbuild       = 'lazbuild';
+  cJSONLazbuildTrunk  = 'lazbuild-trunk';
   cJSONDelphiCompiler = 'delphi-compiler';
   cJSONOutpuHash      = 'output-hash';
   cJSONEntries        = 'entries';
@@ -144,6 +149,7 @@ begin
   FInput:= '';
   FHyperfine:= '';
   FLazbuild:= '';
+  FLazbuildTrunk:= '';
   FDelphiCompiler:= '';
   FOutputHash:= '';
 end;
@@ -187,6 +193,7 @@ begin
   FHyperfine:= AJSONObject.Get(cJSONHyperfine, FHyperfine);
 
   FLazbuild:= AJSONObject.Get(cJSONLazbuild, FLazbuild);
+  FLazbuildTrunk:= AJSONObject.Get(cJSONLazbuildTrunk, FLazbuildTrunk);
   FDelphiCompiler:= AJSONObject.Get(cJSONDelphiCompiler, FDelphiCompiler);
 
   FOutputHash:= AJSONObject.Get(cJSONOutpuHash, FOutputHash);

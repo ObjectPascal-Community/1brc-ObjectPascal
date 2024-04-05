@@ -37,10 +37,11 @@ type
     FName: TJSONStringType;
     FNotes: TJSONStringType;
     FCompiler: TJSONStringType;
+    FUseTrunk: Boolean;
     FEntryFolder: TJSONStringType;
     FEntryBinary: TJSONStringType;
     FLPI: TJSONStringType;
-    FDPR: TJSONStringType;
+    FDPROJ: TJSONStringType;
     FHasRelease: Boolean;
     FThreads: Integer;
     FRunParams: TJSONStringType;
@@ -68,6 +69,9 @@ type
     property Compiler: TJSONStringType
       read FCompiler
       write FCompiler;
+    property UseTrunk: Boolean
+      read FUseTrunk
+      write FUseTrunk;
     property EntryFolder: TJSONStringType
       read FEntryFolder
       write FEntryFolder;
@@ -77,9 +81,9 @@ type
     property LPI: TJSONStringType
       read FLPI
       write FLPI;
-    property DPR: TJSONStringType
-      read FDPR
-      write FDPR;
+    property DPROJ: TJSONStringType
+      read FDPROJ
+      write FDPROJ;
     property HasRelease: Boolean
       read FHasRelease
       write FHasRelease;
@@ -146,10 +150,11 @@ const
   cJSONName        = 'name';
   cJSONNotes       = 'notes';
   cJSONCompiler    = 'compiler';
+  cJSONUseTrunk    = 'use-trunk';
   cJSONEntryFolder = 'entry-folder';
   cJSONEntryBinary = 'entry-binary';
   cJSONLPI         = 'lpi';
-  cJSONDPR       = 'dpr';
+  cJSONDPROJ       = 'dproj';
   cJSONHasRelease  = 'has-release';
   cJSONThreads     = 'threads';
   cJSONRunParams   = 'run-params';
@@ -169,10 +174,11 @@ begin
   FName:= '';
   FNotes:= '';
   FCompiler:= '';
+  FUseTrunk:= False;
   FEntryFolder:= '';
   FEntryBinary:= '';
   FLPI:= '';
-  FDPR:= '';
+  FDPROJ:= '';
   FHasRelease:= True;
   FThreads:= 1;
   FRunParams:= '';
@@ -204,10 +210,11 @@ begin
   FName:= AJSONObject.Get(cJSONName, FName);
   FNotes:= AJSONObject.Get(cJSONNotes, FNotes);
   FCompiler:= AJSONObject.Get(cJSONCompiler, FCompiler);
+  FUseTrunk:= AJSONObject.Get(cJSONUseTrunk, FUseTrunk);
   FEntryFolder:= AJSONObject.Get(cJSONEntryFolder, FEntryFolder);
   FEntryBinary:= AJSONObject.Get(cJSONEntryBinary, FEntryBinary);
   FLPI:= AJSONObject.Get(cJSONLPI, FLPI);
-  FDPR:= AJSONObject.Get(cJSONDPR, FDPR);
+  FDPROJ:= AJSONObject.Get(cJSONDPROJ, FDPROJ);
   FHasRelease:= AJSONObject.Get(cJSONHasRelease, FHasRelease);
   FThreads:= AJSONObject.Get(cJSONThreads, FThreads);
   FRunParams:= AJSONObject.Get(cJSONRunParams, FRunParams);

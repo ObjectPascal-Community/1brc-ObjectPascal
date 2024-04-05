@@ -26,66 +26,33 @@ uses
 
 procedure ChallengeWithStringList;
 var
-  WeatherStream: TStream;
-  WeatherLines: TStringList;
   SortedList: TStringList;
-  WeatherCity: string;
-  CityTemp: Integer;
   ListCity: Integer;
-  CurrLine: Int64;
 begin
-  WeatherLines := TStringList.Create;
+  SortedList := TStringList.Create(TDuplicates.dupAccept, False, True);
   try
-    WeatherLines.Delimiter := ';';
+    ChallengeCommon.ReadAndParseAllData(procedure (const CityName: string; const CityTemp: Integer)
+      begin
+        ListCity := SortedList.IndexOf(CityName);
+        if ListCity = -1 then
+          SortedList.AddObject(CityName, TWeatherCity.Create(CityName, CityTemp))
+        else
+          TWeatherCity(SortedList.Objects[ListCity]).AddNewTemp(CityTemp);
+      end);
+
+    SortedList.UseLocale := False;
+    SortedList.Sort;
+
+    Write('{');
+    Write(Trim(TWeatherCity(SortedList.Objects[0]).OutputSumLine(True)));
+    for var i := 1 to SortedList.Count - 1 do
+      Write(TWeatherCity(SortedList.Objects[i]).OutputSumLine(False));
+    Writeln('}');
     {$IFDEF DEBUG}
-    Writeln('Reading from ' + ChallengeCommon.InputFilename);
-
-    var StopWatch := TStopwatch.StartNew;
+    Writeln('Unique Stations: ', SortedList.Count);
     {$ENDIF}
-
-    //WeatherLines.LoadFromFile(ChallengeCommon.InputFilename, TEncoding.UTF8);
-
-    WeatherStream := TFileStream.Create(ChallengeCommon.InputFilename, fmOpenRead);
-    try
-      WeatherLines.LoadFromStream(WeatherStream, TEncoding.UTF8);
-    finally
-      WeatherStream.Free;
-    end;
-
-    {$IFDEF DEBUG}
-    StopWatch.Stop;
-    Writeln(Format('Loaded %d lines from %s in %d milliseconds', [WeatherLines.Count, ChallengeCommon.InputFilename,
-                         StopWatch.ElapsedMilliseconds]));
-    {$ENDIF}
-
-    SortedList := TStringList.Create(TDuplicates.dupAccept, False, True);
-    try
-      // process all rows
-      for CurrLine := 0 to WeatherLines.Count - 1 do begin
-        // parse the data and add to our list
-        if ChallengeCommon.SplitCityTemp(WeatherLines[CurrLine], WeatherCity, CityTemp) then begin
-          ListCity := SortedList.IndexOf(WeatherCity);
-          if ListCity = -1 then
-            SortedList.AddObject(WeatherCity, TWeatherCity.Create(WeatherCity, CityTemp))
-          else
-            TWeatherCity(SortedList.Objects[ListCity]).AddNewTemp(CityTemp);
-        end;
-      end;
-      SortedList.Sort;
-
-      Write('{');
-      Write(Trim(TWeatherCity(SortedList.Objects[0]).OutputSumLine));
-      for var i := 1 to SortedList.Count - 1 do
-        Write(TWeatherCity(SortedList.Objects[i]).OutputSumLine);
-      Writeln('}');
-      {$IFDEF DEBUG}
-      Writeln('Unique Stations: ', SortedList.Count);
-      {$ENDIF}
-    finally
-      SortedList.Free;
-    end;
   finally
-    WeatherLines.Free;
+    SortedList.Free;
   end;
 end;
 

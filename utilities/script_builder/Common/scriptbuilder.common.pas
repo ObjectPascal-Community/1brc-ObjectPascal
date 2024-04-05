@@ -31,16 +31,18 @@ type
     ): String;
 
     function GetHeader(const AHeader: String): String;
-    function GetVariables: String;
-    function GetFunctionCompile(const AEntry: TEntry): String;
-    function GetFunctionTest(const AEntry: TEntry): String;
-    function GetFunctionRun(const AEntry: TEntry): String;
+    function GetVariablesBash: String;
+    function GetFunctionCompileBash(const AEntry: TEntry): String;
+    function GetFunctionCompileWindows(const AEntry: TEntry): String;
+    function GetFunctionTestBash(const AEntry: TEntry): String;
+    function GetFunctionRunBash(const AEntry: TEntry): String;
   protected
   public
     constructor Create(AConfigFile: String);
     destructor Destroy; override;
 
     procedure BuildCompileScriptBash;
+    procedure BuildCompileScriptCmd;
     procedure BuildTestScriptBash;
     procedure BuildRunScriptBash;
   published
@@ -62,6 +64,7 @@ uses
 const
   lineBreak = #13;
   cCompileBash         = 'compile_all.sh';
+  cCompileCmd         = 'compile_all.cmd';
   cTestBash            = 'test_all.sh';
   cRunBash             = 'run_all.sh';
 
@@ -143,45 +146,47 @@ end;
 
 function TBuilder.GetHeader(const AHeader: String): String;
 begin
+  {$IFDEF UNIX}
   Result:= '#!/bin/bash' + LineEnding + LineEnding;
   Result:= Result + 'echo "******** ' + AHeader + ' ********"' + LineEnding;
   Result:= Result + 'echo' + LineEnding + LineEnding;
+  {$ELSE}
+  Result:= '@echo off' + LineEnding + LineEnding;
+  Result:= Result + 'CALL rsvars' + LineEnding + LineEnding;
+  Result:= Result + 'setlocal EnableExtensions EnableDelayedExpansion' + LineEnding + LineEnding;
+  Result:= Result + 'echo "******** ' + AHeader + ' ********"' + LineEnding + LineEnding;
+  Result:= Result + 'SET param=%1' + LineEnding + LineEnding;
+  Result:= Result + 'if NOT DEFINED param CALL :all' + LineEnding;
+  Result:= Result + 'if NOT DEFINED param EXIT /B' + LineEnding + LineEnding;
+  {$ENDIF}
 end;
 
-function TBuilder.GetVariables: String;
+function TBuilder.GetVariablesBash: String;
 begin
-  Result:= '';
-  {$IFDEF UNIX}
-  Result:= Result + 'BIN="' + FConfig.BinLinux + '"' + LineEnding;
+  Result:= 'BIN="' + FConfig.BinLinux + '"' + LineEnding;
   Result:= Result + 'ENTRIES="' + FConfig.EntriesLinux + '"' + LineEnding;
   Result:= Result + 'RESULTS="' + FConfig.ResultsFolder + '"' + LineEnding;
   Result:= Result + 'INPUT="' + FConfig.Input + '"' + LineEnding;
-  {$ELSE}
-  Result:= Result + 'BIN="' + FConfig.BinWindows + '"' + LineEnding;
-  Result:= Result + 'ENTRIES="' + FConfig.EntriesWindows + '"' + LineEnding;
-  Result:= Result + 'DELPHICC="' + FConfig.DelphiCompiler + '"' + LineEnding;
-  Result:= Result + 'INCLUDE="baseline\Common;c:\program files (x86)\embarcadero\studio\23.0\lib\Linux64\release;C:\Users\gcarr\Documents\Embarcadero\Studio\23.0\Imports;c:\program files (x86)\embarcadero\studio\23.0\Imports;C:\Users\Public\Documents\Embarcadero\Studio\23.0\Dcp\Linux64;c:\program files (x86)\embarcadero\studio\23.0\include;c:\program files (x86)\embarcadero\studio\23.0\redist\Linux64;C:\Users\Public\Documents\Embarcadero\Studio\23.0\Bpl\Linux64;C:\Users\gcarr\Documents\Embarcadero\Studio\23.0\CatalogRepository\ChatGPTWizard-2.2.0.9"' + LineEnding;
-  Result:= Result + 'SDK="C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk"' + LineEnding;
-  Result:= Result + 'LIBPATH="C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk\usr\lib\gcc\x86_64-linux-gnu\13;C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk\usr\lib\x86_64-linux-gnu;C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk\lib\x86_64-linux-gnu;C:\Users\gcarr\Documents\Embarcadero\Studio\SDKs\ubuntu23.10.sdk\lib64"' + LineEnding;
-  Result:= Result + 'BPL="\Users\Public\Documents\Embarcadero\Studio\23.0\Bpl\Linux64"' + LineEnding;
-  Result:= Result + 'DCP="\Users\Public\Documents\Embarcadero\Studio\23.0\Dcp\Linux64"' + LineEnding;
-  Result:= Result + 'GENERICS="Generics.Collections=System.Generics.Collections;Generics.Defaults=System.Generics.Defaults"' + LineEnding;
-  Result:= Result + 'HEADERS="\Users\Public\Documents\Embarcadero\Studio\23.0\hpp\Linux64"' + LineEnding;
-  Result:= Result + 'DEFINES="RELEASE;LINUX"' + LineEnding;
-  {$ENDIF}
   Result:= Result + LineEnding;
 end;
 
-function TBuilder.GetFunctionCompile(const AEntry: TEntry): String;
+function TBuilder.GetFunctionCompileBash(const AEntry: TEntry): String;
+var
+  lazbuild: String;
 begin
   Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
   Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name) +' ======"' + LineEnding;
   {$IFDEF UNIX}
+  if AEntry.UseTrunk then
+   lazbuild:= FConfig.LazbuildTrunk
+  else
+    lazbuild:= FConfig.Lazbuild;
+
   if AEntry.HasRelease then
   begin
    Result:= Result + '  ' +
    Format(cLazbuildRelease, [
-     FConfig.Lazbuild,
+     lazbuild,
      '${ENTRIES}/' + AEntry.EntryFolder + '/' + AEntry.LPI
    ] ) +
    LineEnding;
@@ -190,7 +195,7 @@ begin
   begin
     Result:= Result + '  ' +
     Format(cLazbuildDefault, [
-      FConfig.Lazbuild,
+      lazbuild,
       '${ENTRIES}/' + AEntry.EntryFolder + '/' + AEntry.LPI
     ] ) +
     LineEnding;
@@ -223,14 +228,43 @@ begin
     ,
   [
     AEntry.EntryFolder,
-    AEntry.DPR
+    AEntry.DPROJ
   ]) + LineEnding;
   {$ENDIF}
   Result:= Result + '  echo "==========="' + LineEnding;
   Result:= Result + '  echo' + LineEnding + '}' + LineEnding + LineEnding;
 end;
 
-function TBuilder.GetFunctionTest(const AEntry: TEntry): String;
+function TBuilder.GetFunctionCompileWindows(const AEntry: TEntry): String;
+begin
+  Result:= ':' + AEntry.EntryBinary + LineEnding;
+  Result:= Result + 'echo ===== '+ UTF8Encode(AEntry.Name) +' ======' + LineEnding;
+  Result:= Result +
+  'msbuild /t:Build /p:Config=Release /p:platform=Linux64 ' +
+    ExpandFileName(
+      ConcatPaths([
+            FConfig.EntriesWindows,
+            AEntry.EntryFolder,
+            AEntry.DPROJ
+          ])
+    ) + LineEnding;
+  Result:= Result + 'if ERRORLEVEL 0 (' + LineEnding;
+  Result:= Result + '  echo -- Transfering --' + LineEnding;
+  Result:= Result + '  scp ' +
+    ExpandFileName(ConcatPaths([
+      FConfig.BinWindows,
+      AEntry.EntryBinary
+    ])) +
+    ' gcarreno@10.42.0.1:' + FConfig.BinLinux + '/' +
+    Aentry.EntryBinary + LineEnding;
+  Result:= Result + ') else (' + LineEnding;
+  Result:= Result + '  echo ERROR compiling' + LineEnding;
+  Result:= Result + ')' + LineEnding;
+  Result:= Result + 'echo ===========' + LineEnding;
+  Result:= Result + 'EXIT /B' + LineEnding + LineEnding;
+end;
+
+function TBuilder.GetFunctionTestBash(const AEntry: TEntry): String;
 var
   tmpStr: String;
 begin
@@ -271,7 +305,7 @@ begin
   Result:= Result + Format('  echo "%s  Official Output Hash"',[
     FConfig.OutputHash
   ]) + LineEnding;
-  Result:= Result + Format('  rm %s/%s.output',[
+  Result:= Result + Format('  #rm %s/%s.output',[
     '${RESULTS}',
     AEntry.EntryBinary
   ]) + LineEnding;
@@ -279,7 +313,7 @@ begin
   Result:= Result + '  echo' + LineEnding + '}' + LineEnding + LineEnding;
 end;
 
-function TBuilder.GetFunctionRun(const AEntry: TEntry): String;
+function TBuilder.GetFunctionRunBash(const AEntry: TEntry): String;
 var
   tmpStr: String;
 begin
@@ -334,35 +368,23 @@ var
   line
 : TJSONStringType;
 begin
-  {$IFDEF UNIX}
   FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootLinux) + cCompileBash;
-  {$ELSE}
-  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootWIndows) + cCompileBash;
-  {$ENDIF}
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= GetHeader('Compile');
-    line:= line + GetVariables;
+    line:= line + GetVariablesBash;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
-      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
-      {$ELSE}
-      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
-      {$ENDIF}
-      line:= line + GetFunctionCompile(FConfig.Entries[index]);
+      line:= line + GetFunctionCompileBash(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
-      {$ELSE}
-      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
-      {$ENDIF}
       line:= line + '  ' + FConfig.Entries[index].EntryBinary + LineEnding;
     end;
     line:= line + 'else'  + LineEnding;
@@ -370,11 +392,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      {$IFDEF UNIX}
       if FConfig.Entries[index].Compiler <> cCompilerFPC then continue;
-      {$ELSE}
-      if FConfig.Entries[index].Compiler <> cCompilerDelphi then continue;
-      {$ENDIF}
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;
@@ -393,6 +411,47 @@ begin
   {$ENDIF}
 end;
 
+procedure TBuilder.BuildCompileScriptCmd;
+var
+  index: Integer;
+  line: TJSONStringType;
+begin
+  FScriptFile:= IncludeTrailingPathDelimiter(FConfig.RootWindows) + cCompileCmd;
+  FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
+  try
+    line:= GetHeader('Compile');
+    for index:=1 to Pred(FConfig.Entries.Count) do
+    begin
+      if FConfig.Entries[index].Compiler = cCompilerFPC then Continue;
+      line:= line + 'if %1 == ' + FConfig.Entries[index].EntryBinary + ' (' + LineEnding;
+      line:= line + ' CALL :' + FConfig.Entries[index].EntryBinary + LineEnding;
+      line:= line + ' EXIT /B 0' + LineEnding;
+      line:= line + ')' + LineEnding;
+    end;
+    line:= line + 'echo Unknown "%1"' + LineEnding;
+    line:= line + 'EXIT /B 0' + LineEnding + LineEnding;
+    line:= line + ':all' + LineEnding;
+    for index:=1 to Pred(FConfig.Entries.Count) do
+    begin
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].Compiler = cCompilerFPC then Continue;
+      line:= line + 'CALL :' + FConfig.Entries[index].EntryBinary + LineEnding;
+    end;
+    line:= line + 'EXIT /B' + LineEnding;
+    line:= line + LineEnding;
+    for index:=1 to Pred(FConfig.Entries.Count) do
+    begin
+      Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
+      if not FConfig.Entries[index].Active then continue;
+      if FConfig.Entries[index].Compiler = cCompilerFPC then Continue;
+      line:= line + GetFunctionCompileWindows(FConfig.Entries[index]);
+    end;
+    FScriptStream.WriteBuffer(line[1], Length(line));
+  finally
+    FScriptStream.Free;
+  end;
+end;
+
 procedure TBuilder.BuildTestScriptBash;
 var
   index: Integer;
@@ -402,12 +461,12 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= GetHeader('Test');
-    line:= line + GetVariables;
+    line:= line + GetVariablesBash;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
-      line:= line + GetFunctionTest(FConfig.Entries[index]);
+      line:= line + GetFunctionTestBash(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
@@ -447,13 +506,13 @@ begin
   FScriptStream:= TFileStream.Create(FScriptFile, fmCreate);
   try
     line:= GetHeader('Run');
-    line:= line + GetVariables;
+    line:= line + GetVariablesBash;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
       if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
-      line:= line + GetFunctionRun(FConfig.Entries[index]);
+      line:= line + GetFunctionRunBash(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
