@@ -162,7 +162,7 @@ var
     cmp := tcmp.Create;
     TArrayHelper<tsortitem>.sort(keys, cmp);
     cmp.Free;
-    stream := THandleStream.Create(0);
+    stream := THandleStream.Create(1);
     stream.WriteByte(Ord('{'));
     eka := True;
     for k in keys do
