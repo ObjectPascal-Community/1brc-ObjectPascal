@@ -16,7 +16,7 @@ procedure ChallengeWithDictionary;
 implementation
 
 uses
-  System.Classes, System.SysUtils, System.Generics.Collections, System.StrUtils, System.Generics.Defaults,
+  System.AnsiStrings, System.Classes, System.Generics.Collections, System.Generics.Defaults,
   uChallengeCommon;
 
 type
@@ -69,7 +69,7 @@ end;
 
 function TUTF8CustomComparer.Compare(const Left, Right: string): Integer;
 begin
-  Result := CompareStr(Left, Right);
+  Result := CompareStr(AnsiToUtf8(Left), AnsiToUtf8(Right));
 end;
 
 end.
