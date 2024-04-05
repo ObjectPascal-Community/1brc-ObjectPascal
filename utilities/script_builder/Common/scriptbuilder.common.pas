@@ -171,15 +171,22 @@ begin
 end;
 
 function TBuilder.GetFunctionCompileBash(const AEntry: TEntry): String;
+var
+  lazbuild: String;
 begin
   Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
   Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name) +' ======"' + LineEnding;
   {$IFDEF UNIX}
+  if AEntry.UseTrunk then
+   lazbuild:= FConfig.LazbuildTrunk
+  else
+    lazbuild:= FConfig.Lazbuild;
+
   if AEntry.HasRelease then
   begin
    Result:= Result + '  ' +
    Format(cLazbuildRelease, [
-     FConfig.Lazbuild,
+     lazbuild,
      '${ENTRIES}/' + AEntry.EntryFolder + '/' + AEntry.LPI
    ] ) +
    LineEnding;
@@ -188,7 +195,7 @@ begin
   begin
     Result:= Result + '  ' +
     Format(cLazbuildDefault, [
-      FConfig.Lazbuild,
+      lazbuild,
       '${ENTRIES}/' + AEntry.EntryFolder + '/' + AEntry.LPI
     ] ) +
     LineEnding;

@@ -37,6 +37,7 @@ type
     FName: TJSONStringType;
     FNotes: TJSONStringType;
     FCompiler: TJSONStringType;
+    FUseTrunk: Boolean;
     FEntryFolder: TJSONStringType;
     FEntryBinary: TJSONStringType;
     FLPI: TJSONStringType;
@@ -68,6 +69,9 @@ type
     property Compiler: TJSONStringType
       read FCompiler
       write FCompiler;
+    property UseTrunk: Boolean
+      read FUseTrunk
+      write FUseTrunk;
     property EntryFolder: TJSONStringType
       read FEntryFolder
       write FEntryFolder;
@@ -146,6 +150,7 @@ const
   cJSONName        = 'name';
   cJSONNotes       = 'notes';
   cJSONCompiler    = 'compiler';
+  cJSONUseTrunk    = 'use-trunk';
   cJSONEntryFolder = 'entry-folder';
   cJSONEntryBinary = 'entry-binary';
   cJSONLPI         = 'lpi';
@@ -169,6 +174,7 @@ begin
   FName:= '';
   FNotes:= '';
   FCompiler:= '';
+  FUseTrunk:= False;
   FEntryFolder:= '';
   FEntryBinary:= '';
   FLPI:= '';
@@ -204,6 +210,7 @@ begin
   FName:= AJSONObject.Get(cJSONName, FName);
   FNotes:= AJSONObject.Get(cJSONNotes, FNotes);
   FCompiler:= AJSONObject.Get(cJSONCompiler, FCompiler);
+  FUseTrunk:= AJSONObject.Get(cJSONUseTrunk, FUseTrunk);
   FEntryFolder:= AJSONObject.Get(cJSONEntryFolder, FEntryFolder);
   FEntryBinary:= AJSONObject.Get(cJSONEntryBinary, FEntryBinary);
   FLPI:= AJSONObject.Get(cJSONLPI, FLPI);
