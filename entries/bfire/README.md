@@ -46,7 +46,12 @@ I haven't used Delphi very much recently, really needed to work on this for a re
 I like TStringList self-sorting, but it is not as fast as other techniques.
 Now that this entry is set up, I can play with improvements. Maybe even get a time under 15 minutes! :)
 
+Second version uses hash of station name to accumulate data and fill a TStringList for Unicode station name.
+The list is initially unsorted and has linked objects for records holding accumulated data for each station.
+Finally, the TStringList is sorted and used to output sorted data.
+
 ## History
 
 - Version 1.0: first working version, based on TStringList.
 - Version 1.1: modified rounding to new baseline.
+- Version 2.0: use hashing, sort later.

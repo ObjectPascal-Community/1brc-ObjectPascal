@@ -5,9 +5,9 @@ program bfire;
 
 uses
   System.SysUtils,
-  System.Classes,
+  Classes,
   ConsoleUnit in 'ConsoleUnit.pas',
-  ProcessUnit in 'ProcessUnit.pas';
+  ProcessByHashUnit in 'ProcessByHashUnit.pas';
 
 var
   keypress: String; // dummy for readln
@@ -29,11 +29,29 @@ begin
         start := Now();
       end;
 
-      ProcessFile(inputFilename, outputFilename, UseStdOut);
-      DumpFile(outputFilename, UseStdOut);
+      // Read file byte-wise andd igest to station name and temperature
+      // Hash station name, use hash as index into (initially unsorted)
+      //   TStringList that holds unsorted Unicode station name, and
+      //   has linked objects for records holding accumulated data
+      //   for each station.
+      // Sort station name TStringList, then output sorted data.
+
+      // 6 seconds for 1E7 records, 11 min 8 sec for 1E9 records
+
+      FileToArrays(inputFilename, UseStdOut);    // read
 
       if Not (UseStdOut) then
       begin
+        WriteLn(Format('Read + Sort Elapsed: %s', [FormatDateTime('n" min, "s" sec"',
+          Now - start)]));
+      end;
+
+      SortArrays;                                // sort
+      ArrayToFile(outputFilename, UseStdOut);    // output
+
+      if Not (UseStdOut) then
+      begin
+        WriteLn('Places: ' + IntToStr(PlaceCount));
         WriteLn(Format('Total Elapsed: %s', [FormatDateTime('n" min, "s" sec"',
           Now - start)]));
         WriteLn('Press ENTER to exit');
