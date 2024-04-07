@@ -56,7 +56,7 @@ var
 
   // static arrays
   // size entry_name_array to hold longest (by byte count) name
-  //   Dolores Hidalgo Cuna de la Independencia Nacional = 98 bytes
+  // Dolores Hidalgo Cuna de la Independencia Nacional = 98 bytes
   // size entry_temp_array to hold -9999
   entry_name_array: array [0 .. 255] of Byte; // will hold place name
   entry_temp_array: array [0 .. 15] of Byte; // will hold place temperature
@@ -95,7 +95,7 @@ function MeanFixup(total: Integer; count: Integer): String; inline;
 var
   temp: string;
   ratio: Integer;
-//  remainder: Integer;
+  // remainder: Integer;
   neg: Boolean;
 begin
   if total < 0 then
@@ -148,29 +148,31 @@ function BytesToTemp(count: Integer): Integer; inline;
 // entry_temp_array   is global, only pass length
 // convert entry_chars_temp to signed integer, '0' is ascii 48 decimal
 // note: we always have at least two bytes
-//       temperatures range from -99.9 to 99.8
-//       that appears here as -999 to 998
+// temperatures range from -99.9 to 99.8
+// that appears here as -999 to 998
 var
   BTT: Integer;
 begin
   if entry_temp_array[0] = 45 then // negative number
   begin
-//    BTT :=  -(entry_temp_array[count -1] -48) - 10 * (entry_temp_array[count -2] - 48);
-//    BTT :=  48 - entry_temp_array[count -1] - 10 * (entry_temp_array[count -2] - 48);
-//    BTT :=  48 + 480 - entry_temp_array[count -1] - 10 * (entry_temp_array[count -2]);
-    BTT :=  528 - entry_temp_array[count -1] - 10 * (entry_temp_array[count -2]);
-    if count = 4  then  // do one more digit
+    // BTT :=  -(entry_temp_array[count -1] -48) - 10 * (entry_temp_array[count -2] - 48);
+    // BTT :=  48 - entry_temp_array[count -1] - 10 * (entry_temp_array[count -2] - 48);
+    // BTT :=  48 + 480 - entry_temp_array[count -1] - 10 * (entry_temp_array[count -2]);
+    BTT := 528 - entry_temp_array[count - 1] - 10 *
+      (entry_temp_array[count - 2]);
+    if count = 4 then // do one more digit
     begin
       BTT := BTT - 100 * (entry_temp_array[1] - 48);
     end;
   end
   else
   begin
-//    BTT :=  (entry_temp_array[count -1] -48) + 10 * (entry_temp_array[count -2] - 48);
-//    BTT :=  entry_temp_array[count -1] -48 + 10 * (entry_temp_array[count -2] - 48);
-//    BTT :=  entry_temp_array[count -1] -48 - 480 + 10 * (entry_temp_array[count -2]);
-    BTT :=  -528 + (entry_temp_array[count -1]) + 10 * (entry_temp_array[count -2]);
-    if count = 3  then  // do one more digit
+    // BTT :=  (entry_temp_array[count -1] -48) + 10 * (entry_temp_array[count -2] - 48);
+    // BTT :=  entry_temp_array[count -1] -48 + 10 * (entry_temp_array[count -2] - 48);
+    // BTT :=  entry_temp_array[count -1] -48 - 480 + 10 * (entry_temp_array[count -2]);
+    BTT := -528 + (entry_temp_array[count - 1]) + 10 *
+      (entry_temp_array[count - 2]);
+    if count = 3 then // do one more digit
     begin
       BTT := BTT + 100 * (entry_temp_array[0] - 48);
     end;
@@ -193,15 +195,6 @@ var
   i: Integer;
   Hash: Integer;
 begin
-  // Hash := 0;
-  // for i := 1 to length(A) do begin
-  // Hash := (Hash shl 4) + A[i];
-  // G := Hash and $F0000000;
-  // if (G <> 0) then
-  // Hash := (Hash xor (G shr 24)) xor G;
-  // end;
-  // BytesToIndexHash := Hash mod aTableSize;    // original
-
   Hash := 0;
   for i := 0 to count - 1 do
   begin
@@ -240,11 +233,10 @@ begin
   StationsForSort.Sorted := False; // sort later
 end;
 
-
 function StaticBytesToString(K: Integer): String; inline;
 // entry_name_array is global, only pass length
 var
-  ugly: TArray<Byte>;   // prefer not to use TArray, but for now...
+  ugly: TArray<Byte>; // prefer not to use TArray, but for now...
   i: Integer;
 begin
   SetLength(ugly, K);
@@ -260,19 +252,14 @@ end;
 procedure HashAndSave(K: Integer; J: Integer); inline;
 var
   entry_integer: Integer;
-  // entry_WS: WideString; // will hold place name
   entry_Unicode: String;
   my_data_item: TStationForSortClass;
 
-//  HashHandled: Boolean;
   entry_hash: Integer;
   PlaceIndex: Integer; // location in index array
 
 begin
   entry_integer := BytesToTemp(J); // only pass J
-
-  // entry_WS := TEncoding.UTF8.GetString(a_name);
-  // entry_Unicode := TEncoding.Unicode.GetString(a_name[0]);    // error of unknown character  - try again with fixed gloobal array
 
   entry_Unicode := StaticBytesToString(K);
   // entry_name_array is global, only pass length
@@ -280,9 +267,7 @@ begin
   entry_hash := BytesToIndexHash(K);
   // entry_name_array is global, only pass length
 
-//  HashHandled := False;
-//  while Not(HashHandled) do
-  while True do   // success is handled by breaking out of while loop
+  while True do // success is handled by breaking out of while loop
   begin
     PlaceIndex := HashMap[entry_hash];
 
@@ -299,7 +284,6 @@ begin
       StationsForSort.AddObject(entry_Unicode, TObject(my_data_item));
 
       Inc(PlaceCount);
-//      HashHandled := True;
       Break;
     end
     else // hash has been used, check for collision
@@ -324,7 +308,6 @@ begin
           (StationsForSort.Objects[PlaceIndex] as TStationForSortClass).DataMin
             := entry_integer;
 
-//        HashHandled := True;
         Break;
       end
       else // collision, try next spot in HashMap array
@@ -334,8 +317,7 @@ begin
           entry_hash := 0; // wrap around
       end;
     end;
-//  end; // of: while Not(HashHandled) do
-  end;   // of: while True do
+  end; // of: while True do
 
 end;
 
@@ -354,6 +336,8 @@ var
   iBytesRead: Integer;
   Buffer: PByte;
 
+  Challenge: TFileStream;
+
 begin
 
   if Not(UseStdOut) then
@@ -368,23 +352,23 @@ begin
 
   if FileExists(inFile) then
   begin
+
     try
-      iFileHandle := FileOpen(inFile, fmOpenRead);
-      FileSeek(iFileHandle, 0, 0); // position to BOF
-      Buffer := System.AllocMem(myBufferSize + 1);
+      Challenge := TFileStream.Create(inFile, fmOpenRead);
+      Challenge.Seek(0, soFromBeginning);
+      // Buffer := System.AllocMem(myBufferSize +1);   // why +1 ??
+      Buffer := System.AllocMem(myBufferSize); // seems OK
       i := 0;
       J := 0;
       K := 0;
       LF := False;
       SC := False;
-      // SetLength(entry_chars, 0);
-      // SetLength(entry_chars_temp, 0);
       move(empty_entry_name_array[0], entry_name_array[0], 256);
       // will hold place name
       move(empty_entry_temp_array[0], entry_temp_array[0], 16);
       // will hold temperature
 
-      iBytesRead := FileRead(iFileHandle, Buffer^, myBufferSize);
+      iBytesRead := Challenge.Read(Buffer^, myBufferSize);
       while iBytesRead > 0 do
       begin
         while Not LF do // read byte by byte
@@ -420,7 +404,7 @@ begin
           Inc(i); // next byte
           if i >= iBytesRead then // need next buffer
           begin
-            iBytesRead := FileRead(iFileHandle, Buffer^, myBufferSize);
+            iBytesRead := Challenge.Read(Buffer^, myBufferSize);
             i := 0; // reset to beggining of buffer
           end;
 
@@ -437,8 +421,6 @@ begin
         // reset to get next line
         LF := False;
         SC := False;
-        // SetLength(entry_chars, 0);
-        // SetLength(entry_chars_temp, 0);
         J := 0;
         K := 0;
         move(empty_entry_name_array[0], entry_name_array[0], 256);
@@ -447,11 +429,12 @@ begin
         // will hold temperature
 
       end; // of while iBytesRead > 0 do   --- implies end of file
-      FileClose(iFileHandle);
+      Challenge.Free;
 
     finally
       // nothing here
     end;
+
   end
   else
   begin
@@ -469,17 +452,12 @@ procedure ArrayToFile(outFile: String; UseStdOut: Boolean);
 // Inline; // inline not help
 var
   outputFileStream: TFileStream;
-//  StationCount: Integer;
   PlaceIndex: Integer; // location in array
   bufferStr: String;
-//  EntryName: WideString;
   EntrySum: Integer;
   EntryCount: Integer;
   EntryMax: Integer;
   EntryMin: Integer;
-//  temp: UnicodeString;
-
-//  LookUpIndex: Integer;
 
 begin
   try
@@ -512,16 +490,6 @@ begin
         IntegerFixup(EntryMin) + '/' + MeanFixup(EntrySum, EntryCount) + '/' +
         IntegerFixup(EntryMax);
 
-      // LookUpIndex := StationName[PlaceIndex].sIndex;
-      // EntryName := StationName[PlaceIndex].sName;
-      // EntrySum := StationData[LookUpIndex].DataSum;
-      // EntryCount := StationData[LookUpIndex].DataCount;
-      // EntryMax := StationData[LookUpIndex].DataMax;
-      // EntryMin := StationData[LookUpIndex].DataMin;
-      //
-      // bufferStr := bufferStr + EntryName + '=' + IntegerFixup(EntryMin) + '/' +
-      // MeanFixup(EntrySum, EntryCount) + '/' + IntegerFixup(EntryMax);
-
       if UseStdOut then // send to STDOUT, where it gets mangled
       begin
         write(bufferStr);
@@ -531,7 +499,6 @@ begin
         outputFileStream.WriteBuffer(TEncoding.UTF8.GetBytes(bufferStr),
           TEncoding.UTF8.GetByteCount(bufferStr));
       end;
-
     end;
 
     bufferStr := '}' + Chr(10); // linefeed appears at end of baseline file
