@@ -22,6 +22,7 @@ type
     Name: String;
     Notes: String;
     Compiler: String;
+    GoodHash: Boolean;
     Result: Double;
     Count: Integer;
     constructor Create;
@@ -77,6 +78,7 @@ begin
   Name := '';
   Notes := '';
   Compiler := '';
+  GoodHash := False;
   Result := 0;
   Count := 0;
 end;
@@ -171,6 +173,7 @@ begin
           FList[index2].Name:= UTF8Encode(FConfig.Entries[index].Name);
           FList[index2].Notes:= UTF8Encode(FConfig.Entries[index].Notes);
           FList[index2].Count := FResult.times.Count;
+          FList[index2].GoodHash := FConfig.Entries[index].GoodHash;
           FList[index2].Result:= FResult.times.AvgValueWithOutMinMax;
         finally
           FResult.Free;
@@ -191,6 +194,7 @@ begin
   content:= '';
   for index:= 0 to FList.Count - 1 do
   begin
+    if not FList[index].GoodHash then FList[index].Notes:= FList[index].Notes + ' (**failed hash)**';
     content:= content + Format('| %d | %s | %s | %s | %s | |'+LineEnding, [
       index + 1,
       FormatTime(FList[index].Result),

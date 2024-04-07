@@ -43,6 +43,7 @@ type
     FLPI: TJSONStringType;
     FDPROJ: TJSONStringType;
     FHasRelease: Boolean;
+    FGoodHash: Boolean;
     FThreads: Integer;
     FRunParams: TJSONStringType;
 
@@ -87,6 +88,9 @@ type
     property HasRelease: Boolean
       read FHasRelease
       write FHasRelease;
+    property GoodHash: Boolean
+      read FGoodHash
+      write FGoodHash;
     property Threads: Integer
       read FThreads
       write FThreads;
@@ -156,6 +160,7 @@ const
   cJSONLPI         = 'lpi';
   cJSONDPROJ       = 'dproj';
   cJSONHasRelease  = 'has-release';
+  cJSONGoodHash    = 'good-hash';
   cJSONThreads     = 'threads';
   cJSONRunParams   = 'run-params';
 
@@ -216,6 +221,7 @@ begin
   FLPI:= AJSONObject.Get(cJSONLPI, FLPI);
   FDPROJ:= AJSONObject.Get(cJSONDPROJ, FDPROJ);
   FHasRelease:= AJSONObject.Get(cJSONHasRelease, FHasRelease);
+  FGoodHash:= AJSONObject.Get(cJSONGoodHash, FGoodHash);
   FThreads:= AJSONObject.Get(cJSONThreads, FThreads);
   FRunParams:= AJSONObject.Get(cJSONRunParams, FRunParams);
 end;
