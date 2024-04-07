@@ -1,4 +1,5 @@
 # 1BRC project specific
+Linux64
 /bin
 /data/measurements*.txt
 /profiling
