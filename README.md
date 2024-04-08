@@ -154,7 +154,6 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
-| 1  | 0:1.697  | lazarus-3.99, fpc-3.3.1 | O Coddo           | Using `SCL`, 32 threads | |
 | 2  | 0:1.784  | lazarus-3.0, fpc-3.2.2  | Arnaud Bouchez    | Using `mORMot2`, 32 threads | |
 | 3  | 0:9.817  | lazarus-3.99, fpc-3.3.1 | G Klark           | Using 32 threads | |
 | 4  | 0:21.463 | lazarus-3.0, fpc-3.2.2  | Székely Balázs    | Using 32 threads | |
@@ -162,8 +161,9 @@ These are the results from running all entries into the challenge on my personal
 | 6  | 1:16.844 | lazarus-3.0, fpc-3.2.2  | Richard Lawson    | Using 1 thread | |
 | 7  | 3:59.917 | lazarus-3.0, fpc-3.2.2  | Iwan Kelaiah      | Using 1 thread | |
 | 8  | 7:2.726  | delphi 12.1             | David Cornelius   | Using 1 threads | |
-| 9 | 7:9.974  | delphi 12.1             | Brian Fire        | Using 1 threads | |
-| -  | 0:19.699 | lazarus-3.0, fpc-3.2.2  | Lurendrejer Aksen | Using 32 threads **(failed hash)** | |
+| 9  | 7:9.974  | delphi 12.1             | Brian Fire        | Using 1 threads | |
+| 🟨 | 0:1.697  | lazarus-3.99, fpc-3.3.1 | O Coddo           | Yellow Card: use of `C/C++` libs | |
+| 🟠 | 0:19.699 | lazarus-3.0, fpc-3.2.2  | Lurendrejer Aksen | Using 32 threads **(failed hash)** | |
 
 > **NOTE**
 >

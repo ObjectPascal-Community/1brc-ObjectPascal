@@ -194,7 +194,7 @@ begin
   content:= '';
   for index:= 0 to FList.Count - 1 do
   begin
-    if not FList[index].GoodHash then FList[index].Notes:= FList[index].Notes + ' (**failed hash)**';
+    if not FList[index].GoodHash then FList[index].Notes:= FList[index].Notes + ' **(failed hash)**';
     content:= content + Format('| %d | %s | %s | %s | %s | |'+LineEnding, [
       index + 1,
       FormatTime(FList[index].Result),
