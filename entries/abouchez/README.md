@@ -51,15 +51,16 @@ Here are the main ideas behind this implementation proposal:
 - **mORMot** makes cross-platform and cross-compiler support simple - e.g. `TMemMap`, `TDynArray`,`TTextWriter`, `SetThreadCpuAffinity`, `crc32c`, `ConsoleWrite` or command-line parsing;
 - The entire 16GB file is `memmap`ed at once into memory - it won't work on 32-bit OS, but avoid any `read` syscall or memory copy;
 - File is processed in parallel using several threads - configurable via the `-t=` switch, default being the total number of CPUs reported by the OS;
-- Input is fed into each thread as 4MB chunks (see also the `-c` command line switch): because thread scheduling is unbalanced, it is inefficient to pre-divide the size of the whole input file into the number of threads;
-- Each thread manages its own `Station[]` data, so there is no lock until the thread is finished and data is consolidated;
-- Each `Station[]` information is packed into a record of exactly 16 bytes, with no external pointer/string, to leverage the CPU L1 cache size (64 bytes) for efficiency;
-- A O(1) hash table is maintained for the name lookup, with crc32c perfect hash function - no name comparison nor storage is needed with a perfect hash (see below);
+- Input is fed into each thread as 8MB chunks (see also the `-c` command line switch): because thread scheduling is unbalanced, it is inefficient to pre-divide the size of the whole input file into the number of threads;
+- Each thread manages its own `fStation[]` data, so there is no lock until the thread is finished and data is consolidated;
+- Each `fStation[]` information is packed into a record of 12 bytes, with no external pointer/string, to leverage the CPU L1 cache size (64 bytes) for efficiency;
+- A shared O(1) hash table is maintained for the name lookup, with crc32c perfect hash function - no name comparison nor storage is needed with a perfect hash (see below);
 - On Intel/AMD/AARCH64 CPUs, *mORMot* offers hardware SSE4.2 opcodes for this crc32c computation;
-- The hash table does not directly store the `Station[]` data, but use a separated `StationHash[]` lookup array of 16-bit indexes (as our `TDynArray` does) to leverage the CPU caches;
+- The hash table does not directly store the `fStation[]` data, but use a shared `fHash[]` lookup array of 16-bit indexes (as our `TDynArray` does) to leverage the CPU caches;
+- This name hash table is shared between threads to favor CPU cache locality, and contention only occurs at startup, the first time a station name is encountered;
 - Values are stored as 16-bit or 32-bit integers, as temperature multiplied by 10;
 - Temperatures are parsed with a dedicated code (expects single decimal input values);
-- The station names are stored as UTF-8 pointers to the memmap location where they appear first, in `StationName[]`, to be emitted eventually for the final output, not during temperature parsing;
+- The station names are stored as UTF-8 pointers to the `memmap`ed location where they appear first, in `fNameText[]`, to be emitted eventually for the final output, not during temperature parsing;
 - No memory allocation (e.g. no transient `string` or `TBytes`) nor any syscall is done during the parsing process to reduce contention and ensure the process is only CPU-bound and RAM-bound (we checked this with `strace` on Linux);
 - Pascal code was tuned to generate the best possible asm output on FPC x86_64 (which is our target) - perhaps making it less readable, because we used pointer arithmetics when it matters (I like to think as such low-level pascal code as [portable assembly](https://sqlite.org/whyc.html#performance) similar to "unsafe" code in managed languages);
 - We even tried an optimized SSE2 asm sub-function for searching the name `';'` delimiter - which is a O(n) part of the process, and in practice... it was slower than a slightly unrolled pure pascal inlined loop;
@@ -76,13 +77,13 @@ The L1 cache is well known in the performance hacking litterature to be the main
 
 Count and Sum values can fit in 32-bit `integer` fields (with a range of about 2 billions signed values), whereas min/max values have been reduced as 16-bit `smallint` - resulting in temperature range of -3276.7..+3276.8 celsius grads. It seems fair on our galaxy according to the IPCC. ;)
 
-As a result, each `Station[]` entry takes only 16 bytes, so we can fit exactly 4 entries in a single CPU L1 cache line. To be accurate, if we put some more data into the record (e.g. use `Int64` instead of `smallint`/`integer`), the performance degrades only for a few percents. The main fact seems to be that the entry is likely to fit into a single cache line, even if filling two cache lines may be sometimes needed for misaligned data.
+As a result, each `fStation[]` entry takes only 12 bytes, so we can fit exactly several entries in a single CPU L1 cache line. To be accurate, if we put some more data into the record (e.g. use `Int64` instead of `smallint`/`integer`), the performance degrades only for a few percents. The main fact seems to be that the entry is likely to fit into a single cache line, even if filling two cache lines may be sometimes needed for misaligned data.
 
-In our first attempt (see "Old Version" below), we stored the name into the `Station[]` array, so that each entry is 64 bytes long exactly. But since `crc32c` is a perfect hash function for our dataset, it is enough to just store the 32-bit hash instead, and not the actual name. Less data would mean less cache size involved.
+In our first attempt (see "Old Version" below), we stored the name into the `Station[]` array, so that each entry is 64 bytes long exactly. But since `crc32c` is a perfect hash function for our dataset, it is enough to just store the 32-bit hash instead in a shared `fNameHash[]` array, and not the actual name. Less data would mean less cache size involved.
 
-We tried to remove the `StationHash[]` array of `word` lookup table. It made one data read less, but performed almost three times slower. Data locality and cache pollution prevails on absolute number of memory reads. It is faster to access twice the memory, if this memory could remain in the CPU caches. Only profiling and timing would show this. The shortest code is not the fastest with modern CPUs.
+We tried to remove the `fHash[]` array of `word` lookup table. It made one data read less, but performed almost three times slower. Data locality and cache pollution prevails on absolute number of memory reads. It is faster to access twice the memory, if this memory could remain in the CPU caches. Only profiling and timing would show this. The shortest code is not the fastest with modern CPUs.
 
-Note that if we reduce the number of stations from 41343 to 400 (as other languages 1brc projects do), the performance is much higher, also with a 16GB file as input. My guess is that since 400x16 = 6400, each dataset could fit entirely in each core L1 cache. No slower L2/L3 cache is involved, therefore performance is better.
+Note that if we reduce the number of stations from 41343 to 400 (as other languages 1brc projects do), the performance is higher, also with a 16GB file as input. My guess is that since 400x12 = 4800, each dataset could fit entirely in each core L1 cache. No slower L2/L3 cache is involved, therefore performance is better.
 
 Once again, some reference material is available at https://en.algorithmica.org/hpc/cpu-cache/
 including some mind-blowing experiment [about cache associativity](https://en.algorithmica.org/hpc/cpu-cache/associativity/). I told you CPUs were complex! :D
@@ -110,14 +111,14 @@ Options:
 Params:
   -t, --threads <number> (default 20)
                       number of threads to run
-  -c, --chunk <megabytes> (default 4)
+  -c, --chunk <megabytes> (default 8)
                       size in megabytes used for per-thread chunking
 ```
 We will use these command-line switches for local (dev PC), and benchmark (challenge HW) analysis.
 
 ## Local Analysis
 
-On my PC, it takes less than 3 seconds to process the 16GB file with 8/10 threads.
+On my PC, it takes less than 2 seconds to process the 16GB file. Numbers below were with the initial version of our code. Current trunk is faster. But the analysis is still accurate.
 
 Let's compare `abouchez` with a solid multi-threaded entry using file buffer reads and no memory map (like `sbalazs`), using the `time` command on Linux:
 
@@ -138,7 +139,7 @@ We defined 20 threads for both executables, because our PC CPU has 20 threads in
 
 Apart from the obvious global "wall" time reduction (`real` numbers), the raw parsing and data gathering in the threads match the number of threads and the running time (`user` numbers), and no syscall is involved by `abouchez` thanks to the memory mapping of the whole file (`sys` numbers, which contain only memory page faults, is much lower).
 
-The `memmap()` feature makes the initial/cold `abouchez` call slower, because it needs to cache all measurements data from file into RAM (I have 32GB of RAM, so the whole data file will remain in memory, as on the benchmark hardware):
+The `memmap()` feature makes the initial/cold `abouchez` call slower, because it needs to cache all measurements data from file into RAM (I have 64GB of RAM, so the whole data file will remain in memory, as on the benchmark hardware):
 ```
 ab@dev:~/dev/github/1brc-ObjectPascal/bin$ time ./abouchez measurements.txt -t=20 >resmormot.txt
 
@@ -163,6 +164,15 @@ done in 2.44s 6.4 GB/s
 Affinity may help on Ryzen 9, because its Zen 3 architecture is made of identical 16 cores with 32 threads, not this Intel E/P cores mess. But we will validate that on real hardware - no premature guess!
 
 The `-v` verbose mode makes such testing easy. The `hash` value can quickly check that the generated output is correct, and that it is valid `utf8` content (as expected).
+
+To be accurate, here is the current state of our code on my local machine:
+```
+ab@dev:~/dev/github/1brc-ObjectPascal/bin$ ./abouchez data.csv -v
+Processing data.csv with 20 threads, 8MB chunks and affinity=0
+result hash=85614446, result length=1139413, stations count=41343, valid utf8=1
+done in 1.82s 8.6 GB/s
+```
+So we were able to make some progress between iterations - especially by sharing the hash table between threads.
 
 ## Benchmark Integration
 
@@ -232,7 +242,7 @@ The Ryzen CPU has 16 cores with 32 threads, and it makes sense that each thread 
 
 In the version same `src` sub-folder, you will find our first attempt of this challenge, as `brcmormotold.lpr`. In respect to the "final/new" version, it did store the name as a "shortstring" within its `Station[]` record, to fill exactly the 64-byte cache line size.
 
-It was already very fast, but since `crc32c` is a perfect hash function, we finally decided to just stored the 32-bit hash, and not the name itself.
+It was already very fast, but since `crc32c` is a perfect hash function, we finally decided to just stored the 32-bit hash, and not the name itself. Lately, we even shared the name hash table process for all threads.
 
 You could disable our tuned asm in the project source code, and loose about 10% by using general purpose *mORMot* `crc32c()` and `CompareMem()` functions, which already runs SSE2/SSE4.2 tune assembly. No custom asm is needed on the "new" version: we directly use the *mORMot* functions.
 
