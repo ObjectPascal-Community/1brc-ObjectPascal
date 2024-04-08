@@ -154,7 +154,7 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
-| 1  | 0:1.697  | lazarus-3.99, fpc-3.3.1 | O Coddo           | Using 32 threads | |
+| 1  | 0:1.697  | lazarus-3.99, fpc-3.3.1 | O Coddo           | Using `SCL`, 32 threads | |
 | 2  | 0:1.784  | lazarus-3.0, fpc-3.2.2  | Arnaud Bouchez    | Using `mORMot2`, 32 threads | |
 | 3  | 0:9.817  | lazarus-3.99, fpc-3.3.1 | G Klark           | Using 32 threads | |
 | 4  | 0:19.699 | lazarus-3.0, fpc-3.2.2  | Lurendrejer Aksen | Using 32 threads **(failed hash)** | |
