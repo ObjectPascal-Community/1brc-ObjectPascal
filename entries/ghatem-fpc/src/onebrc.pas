@@ -258,7 +258,8 @@ begin
     vStream.WriteString('}' + #10);
 {$IFDEF DEBUG}
     vStream.SaveToFile('ghatem-out.txt');
-{$ELSEIF defined(RELEASE)}
+{$ENDIF}
+{$IFDEF RELEASE}
     WriteLn (vStream.DataString);
 {$ENDIF}
   finally

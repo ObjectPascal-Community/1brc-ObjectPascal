@@ -61,7 +61,6 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="C:\DelphiLibs\Mormot\mORMot2-master\src\core\"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -88,6 +87,9 @@
       <FormatVersion Value="2"/>
     </RunParams>
     <RequiredPackages>
+      <Item>
+        <PackageName Value="mormot2"/>
+      </Item>
       <Item>
         <PackageName Value="LCLBase"/>
       </Item>
