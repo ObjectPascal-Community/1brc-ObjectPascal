@@ -124,7 +124,7 @@ Iwan Kelaiah
 
 * 1.7
   * Revision release - Sequential approach. 4-6 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
-  * Converting Float as String to Int was a bit slow, so resorted to a lookup instead. This saves 30-55 seconds.
+  * Converting Float as String to Int was a bit slow, so resorted to a lookup instead. This saves 30-45 seconds.
   * Re-arranged `if` statements in two places. This saves 10-15 seconds x 2 = ~ 30 seconds saving.
 
 ## License
