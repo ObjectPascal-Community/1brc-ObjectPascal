@@ -22,11 +22,11 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="OneBRCproj"/>
+            <Filename Value="..\..\..\bin\ghatem"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+            <UnitOutputDirectory Value="..\..\..\bin\lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
             <SyntaxOptions>
@@ -110,11 +110,11 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="OneBRCproj"/>
+      <Filename Value="..\..\..\bin\ghatem"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+      <UnitOutputDirectory Value="..\..\..\bin\lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>
       <Debugging>
