@@ -256,13 +256,12 @@ begin
 
     vStream.SetSize(vStream.Size - 2);
     vStream.WriteString('}' + #10);
-//{$IFDEF DEBUG}
+{$IFDEF DEBUG}
     vStream.SaveToFile('ghatem-out.txt');
-//{$ELSEIF defined(RELEASE)}
-    //WriteLn (vStream.DataString);
-//{$ENDIF}
+{$ELSEIF defined(RELEASE)}
+    WriteLn (vStream.DataString);
+{$ENDIF}
   finally
-    //vStations.Free;
     vStream.Free;
   end;
 end;
