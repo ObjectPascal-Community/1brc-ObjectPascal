@@ -120,7 +120,7 @@ Iwan Kelaiah
 
 * 1.6
   * Revision release - Sequential approach. 5-7 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
-  * Introduced a pointer to the weather record, `PStat` = ^TStat. This saves approx. 30 - 60 seconds.
+  * Introduced a pointer to the weather record, `PStat = ^TStat`. This saves approx. 30 - 60 seconds.
 
 * 1.7
   * Revision release - Sequential approach. 4-6 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
