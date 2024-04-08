@@ -9,7 +9,9 @@ uses
   , SysUtils
   , Math
   , streamex
+  , bufstream
   , lgHashMap
+  , StrUtils
   {$IFDEF DEBUG}
   , Stopwatch
   {$ENDIF}
@@ -35,8 +37,12 @@ type
   PStat = ^TStat;
 
 type
-  // Create a dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
+  // Using this dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
   TWeatherDictionaryLG = specialize TGHashMapQP<string, PStat>;
+
+type
+  // a type for storing valid lookup temperature
+  TValidTemperatureDictionary = specialize TGHashMapQP<string, int64>;
 
 type
   // Create a class to encapsulate the temperature observations of each weather station.
@@ -45,11 +51,9 @@ type
     fname: string;
     weatherDictionary: TWeatherDictionaryLG;
     weatherStationList: TStringList;
+    lookupStrFloatToIntList: TValidTemperatureDictionary;
+    procedure CreateLookupTemp;
     procedure ReadMeasurements;
-    procedure ReadMeasurementsClassic;
-    procedure ReadMeasurementsInChunks(const filename: string);
-    procedure ParseStationAndTempFromChunk(const chunkData: pansichar;
-      const dataSize: int64; const chunkIndex: int64);
     procedure ParseStationAndTemp(const line: string);
     procedure AddCityTemperatureLG(const cityName: string; const newTemp: int64);
     procedure SortWeatherStationAndStats;
@@ -126,6 +130,8 @@ constructor TWeatherStation.Create(const filename: string);
 begin
   // Assign filename
   fname := filename;
+  // Create a lookup
+  self.lookupStrFloatToIntList := TValidTemperatureDictionary.Create;
   // Create a dictionary
   weatherDictionary := TWeatherDictionaryLG.Create;
   // Create a TStringList for sorting
@@ -134,8 +140,12 @@ end;
 
 destructor TWeatherStation.Destroy;
 var
-  stationName:string;
+  stationName: string;
 begin
+
+  // Free the lookup dictionary
+  self.lookupStrFloatToIntList.Free;
+
   // Free TStringList dictionary
   weatherStationList.Free;
 
@@ -145,6 +155,30 @@ begin
 
   // Free the dictionary - 2. Finally free the container itself
   weatherDictionary.Free;
+end;
+
+procedure TWeatherStation.CreateLookupTemp;
+var
+  startTemp: int64 = -1000;
+  finishTemp: int64 = 1000;
+  currentTemp: int64;
+  numStr: string;
+begin
+
+  currentTemp := startTemp;
+
+  while currentTemp <> finishTemp do
+  begin
+    self.lookupStrFloatToIntList.Add(formatfloat('0.0', currentTemp / 10), currentTemp);
+    currentTemp := currentTemp + 1;
+  end;
+
+  {$ifdef DEBUG}
+  for numStr in self.lookupStrFloatToIntList.Keys do
+    WriteLn('We have key: ', numStr, ' with value of: ',
+      IntToStr(self.lookupStrFloatToIntList[numStr]));
+  Writeln(self.lookupStrFloatToIntList.Count);
+  {$endif DEBUG}
 end;
 
 procedure TWeatherStation.PrintSortedWeatherStationAndStats;
@@ -191,7 +225,7 @@ begin
 
   wsKey := '';
 
-  if self.weatherDictionary.GetCapacity = 0 then
+  if self.weatherDictionary.Count = 0 then
   begin
     WriteLn('Nothing to Sort.');
     Exit;
@@ -203,7 +237,6 @@ begin
   end;
 
   self.weatherStationList.CustomSort(@CustomTStringListComparer);
-
 
   {$IFDEF DEBUG}
   // Display the line.
@@ -222,14 +255,18 @@ begin
     // Get the temp record
     stat := self.weatherDictionary[cityName];
 
-    // If the temp lower then min, set the new min.
-    if newTemp < stat^.min then
-      stat^.min := newTemp;
-
-    // If the temp higher than max, set the new max.
-    if newTemp > stat^.max then
-      stat^.max := newTemp;
-
+    // Update min and max temps if needed
+    // Re-arranged the if statement, to achieve minimal if checks.
+    // This saves approx 15 seconds when processing 1 billion row.
+    if (newTemp < stat^.min) or (newTemp > stat^.max) then
+    begin
+      // If the temp lower then min, set the new min.
+      if newTemp < stat^.min then
+        stat^.min := newTemp;
+      // If the temp higher than max, set the new max.
+      if newTemp > stat^.max then
+        stat^.max := newTemp;
+    end;
     // Add count for this city.
     stat^.sum := stat^.sum + newTemp;
 
@@ -242,11 +279,12 @@ begin
     // Display the line.
     WriteLn('Updated: ', cityName);
     {$ENDIF DEBUG}
-  end;
-
-  // If city name doesn't exist add a new entry
-  if not self.weatherDictionary.Contains(cityName) then
+  end
+  else
   begin
+    // Re-arranged this if portion also to achieve minimal if checks.
+    // This saves approx 15 seconds when processing 1 billion row.
+    // If city name doesn't exist add a new entry
     New(stat);
     stat^.min := newTemp;
     stat^.max := newTemp;
@@ -265,11 +303,31 @@ end;
 procedure TWeatherStation.ParseStationAndTemp(const line: string);
 var
   delimiterPos: integer;
-  parsedStation, strTemp: string;
+  parsedStation, strFloatTemp: string;
+  results: array of string;
   parsedTemp, valCode: int64;
 begin
-
   // Get position of the delimiter
+  delimiterPos := Pos(';', line);
+  if delimiterPos > 0 then
+  begin
+    // Get the weather station name
+    // Using Copy and POS - as suggested by Gemini AI.
+    // This part saves 3 mins faster when processing 1 billion rows.
+    //parsedStation := Copy(line, 1, delimiterPos - 1);
+    strFloatTemp := Copy(line, delimiterPos + 1, Length(line));
+
+    // Using a lookup value speeds up 30-45 seconds
+    if self.lookupStrFloatToIntList.Contains(strFloatTemp) then
+    begin
+      parsedTemp := self.lookupStrFloatToIntList[strFloatTemp];
+      self.AddCityTemperatureLG(Copy(line, 1, delimiterPos - 1),
+        parsedTemp);
+    end;
+
+  end;
+
+  {// Get position of the delimiter
   delimiterPos := Pos(';', line);
   if delimiterPos > 0 then
   begin
@@ -280,21 +338,24 @@ begin
 
     // Get the temperature recorded, as string, remove '.' from string float
     // because we want to save it as int64.
-    strTemp := Copy(line, delimiterPos + 1, Length(line));
-    // strTemp := StringReplace(strTemp, '.', '', [rfReplaceAll]);
+    strFloatTemp := Copy(line, delimiterPos + 1, Length(line));
+
+    // strFloatTemp := StringReplace(strFloatTemp, '.', '', [rfReplaceAll]);
     // The above operation is a bit expensive.
     // Rewrote a simple function which prevents creation of new string
     // in each iteration. Saved approx 20-30 seconds for 1 billion row.
     // Remove dots turns a float into an int.
-    strTemp := RemoveDots(strTemp);
+    strFloatTemp := RemoveDots(strFloatTemp);
 
     // Add the weather station and the recorded temp (as int64) in the TDictionary
-    Val(strTemp, parsedTemp, valCode);
+    Val(strFloatTemp,
+      parsedTemp,
+      valCode);
     if valCode <> 0 then Exit;
 
     // Add a record in TWeatherDictionary
     self.AddCityTemperatureLG(parsedStation, parsedTemp);
-  end;
+  end;}
 end;
 
 procedure TWeatherStation.ReadMeasurements;
@@ -312,7 +373,7 @@ begin
       // Read and parse chunks of data until EOF -------------------------------
       while not streamReader.EOF do
       begin
-        //line := streamReader.ReadLine;
+        // line := streamReader.ReadLine;
         self.ParseStationAndTemp(streamReader.ReadLine);
       end;// End of read and parse chunks of data ------------------------------
     finally
@@ -324,132 +385,12 @@ begin
   end;
 end;
 
-procedure TWeatherStation.ReadMeasurementsClassic;
-var
-  inputFile: System.TextFile;
-  textBuffer: array[1..131072] of byte;
-  line: string;
-begin
-
-  // Open the file for reading
-  AssignFile(inputFile, self.fname);
-  SetTextBuf(inputFile, textBuffer);
-  try
-    Reset(inputFile);
-
-    // Read and parse chunks of data until EOF -------------------------------
-    while not EOF(inputFile) do
-    begin
-      ReadLn(inputFile, line);
-      self.ParseStationAndTemp(line);
-    end;// End of read and parse chunks of data ------------------------------
-
-  finally
-    // Close the file
-    CloseFile(inputFile);
-  end;
-end;
-
-procedure TWeatherStation.ParseStationAndTempFromChunk(const chunkData: pansichar;
-  const dataSize: int64; const chunkIndex: int64);
-var
-  index, lineStart, lineLength: int64;
-begin
-  lineStart := 0;
-
-  // Check for Line Feed (LF)
-  for index := 0 to dataSize - 1 do
-  begin
-    if chunkData[index] = #10 then
-    begin
-
-      lineLength := index - lineStart;
-
-      // Remove potential CR before LF (for Windows)
-      if (chunkData[index - 1] = #13) and (index < dataSize - 1) then
-        Dec(LineLength);
-
-      // The current line is now: Buffer[LineStart..LineStart+LineLength-1]
-      // WriteLn(chunkData[lineStart..lineStart + lineLength - 1], '.');
-      self.ParseStationAndTemp(chunkData[lineStart..lineStart + lineLength - 1]);
-      // Skip to the next 'line' in the buffer
-      lineStart := index + 1;
-    end;
-  end;
-end;
-
-procedure TWeatherStation.ReadMeasurementsInChunks(const filename: string);
-const
-  defaultChunkSize: int64 = 67108864; // 64MB in bytes
-var
-  fileStream: TFileStream;
-  buffer: pansichar;
-  bytesRead, totalBytesRead, chunkSize, lineBreakPos, chunkIndex: int64;
-begin
-
-  chunkSize := defaultChunkSize * 4; // 256MB in bytes
-
-  // Open the file for reading
-  fileStream := TFileStream.Create(filename, fmOpenRead or fmShareDenyWrite);
-  try
-    // Allocate memory buffer for reading chunks
-    // Ref: https://www.freepascal.org/docs-html/rtl/system/getmem.html
-    GetMem(buffer, chunkSize);
-    try
-      totalBytesRead := 0;
-      chunkIndex := 0;
-
-      // Read and parse chunks of data until EOF
-      while totalBytesRead < fileStream.Size do
-      begin
-        {$IFDEF DEBUG}
-        WriteLn('Processing chunk index: ', IntToStr(chunkIndex));
-        {$ENDIF DEBUG}
-
-        bytesRead := fileStream.Read(buffer^, chunkSize);
-
-        // Update total bytes read
-        Inc(totalBytesRead, bytesRead);
-
-        // Find the position of the last newline character in the chunk
-        lineBreakPos := BytesRead;
-        while (lineBreakPos > 0) and (Buffer[lineBreakPos - 1] <> #10) do
-          Dec(lineBreakPos);
-
-        { Now, must ensure that if the last byte read in the current chunk
-          is not a newline character, the file pointer is moved back to include
-          that byte and any preceding bytes of the partial line in the next
-          chunk's read operation.
-
-          Also, no need to update the BytesRead variable in this context because
-          it represents the actual number of bytes read from the file, including
-          any partial line that may have been included due to moving the file
-          pointer back.
-          Ref: https://www.freepascal.org/docs-html/rtl/classes/tstream.seek.html}
-        if lineBreakPos < bytesRead then
-          fileStream.Seek(-(bytesRead - lineBreakPos), soCurrent);
-
-        // Parse the buffer line by line here
-        // This is to slow!
-        self.ParseStationAndTempFromChunk(buffer, lineBreakPos, chunkIndex);
-
-        // Increase chunk index - a counter
-        Inc(chunkIndex);
-      end;
-    finally
-      // Free the memory buffer
-      FreeMem(buffer);
-    end;
-  finally
-    // Close the file
-    fileStream.Free;
-  end;
-end;
-
 // The main algorithm
 procedure TWeatherStation.ProcessMeasurements;
 begin
+  self.CreateLookupTemp;
   self.ReadMeasurements;
+  // self.ReadMeasurementsBuf;
   // self.ReadMeasurementsClassic;
   {This chunking method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00
    But the SHA256 at the end is incorrect}

@@ -113,14 +113,19 @@ Iwan Kelaiah
   * Updated the rounding method as per the latest `README.md` in the 1BRC GitHub page.
 
 * 1.5 
-* Revision release - Sequential approach. 6-8 mins on my Inspiron 15 7510 laptop (No improvements on speed).
-* Encapsulate process in a class.
-* Updated the rounding method as per the latest `README.md` in the 1BRC GitHub page.
+  * Revision release - Sequential approach. 6-8 mins on my Inspiron 15 7510 laptop (No improvements on speed).
+  * Encapsulate process in a class.
+  * Updated the rounding method as per the latest `README.md` in the 1BRC GitHub page.
 
 
 * 1.6
-* Revision release - Sequential approach. 5-7 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
-* Introduced a pointer to the weather record, `PStat` = ^TStat. This saves approx. 30 - 60 seconds.
+  * Revision release - Sequential approach. 5-7 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
+  * Introduced a pointer to the weather record, `PStat = ^TStat`. This saves approx. 30 - 60 seconds.
+
+* 1.7
+  * Revision release - Sequential approach. 4-6 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
+  * Converting Float as String to Int was a bit slow, so resorted to a lookup instead. This saves 30-45 seconds.
+  * Re-arranged `if` statements in two places. This saves 10-15 seconds x 2 = ~ 30 seconds saving.
 
 ## License
 
