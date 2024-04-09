@@ -83,12 +83,11 @@ begin
   vOneBRC := TOneBRC.Create;
   try
     try
-      //vOneBRC.mORMotMMF(vFileName);
-      //vOneBRC.SingleThread;
-      //vOneBRC.GenerateOutput;
-      //vOneBRC.Free;
+      vOneBRC.mORMotMMF(vFileName);
+      vOneBRC.SingleThread;
+      vOneBRC.GenerateOutput;
 
-      vStart := GetTickCount;
+      {vStart := GetTickCount;
       vOneBRC.mORMotMMF (vFileName);
       vTime := GetTickCount - vStart;
       WriteLn('read: ' + FloatToStr(vTime / 1000));
@@ -102,15 +101,13 @@ begin
       WriteLn('-----------');
       WriteLn;
 
-
-
       vStart := GetTickCount;
       vOneBRC.GenerateOutput;
       vTime := GetTickCount - vStart;
       WriteLn('generate: ' + FloatToStr(vTime / 1000));
       WriteLn('-----------');
       WriteLn;
-      ReadLn;
+      ReadLn; }
     except
       on E: Exception do
       begin

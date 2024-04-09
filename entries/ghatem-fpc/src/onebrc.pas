@@ -5,14 +5,12 @@ unit OneBRC;
 interface
 
 uses
-  Classes, SysUtils, Contnrs,
-  //Baseline.Common,
+  Classes, SysUtils, Generics.Collections,
   mormot.core.os;
 
 function RoundExDouble(const ATemp: Double): Double; inline;
 
 type
-  PSmallInt = ^SmallInt;
 
   // record is packed to minimize its size
   // use pointers to avoid passing entire records around
@@ -23,6 +21,7 @@ type
     Sum: Integer;
   end;
   PStationData = ^TStationData;
+  TStationsDict = specialize TDictionary<Cardinal, PStationData>;
 
   TOneBRC = class
   private
@@ -32,17 +31,14 @@ type
     FData: pAnsiChar;
     FDataSize: Int64;
 
-    FTempArr: array [0..2000] of SmallInt;
-    FTempIter: Integer;
-
-    FStationsDict: TFPHashList;
+    FStationsDict: TStationsDict;
     FStations: TStringList;
 
     // pre-allocate space for N records at once (why can't I use a const in here??)
     FRecords: array[0..45000] of TStationData;
 
-    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; var aStation, aTempStr: AnsiString); inline;
-    procedure DoTempsDict (var aDict: TFPHashList; var aStrVal: AnsiString; var aIntVal: SmallInt); inline;
+    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
+
   public
     constructor Create;
     function mORMotMMF (const afilename: string): Boolean;
@@ -50,23 +46,32 @@ type
     procedure GenerateOutput;
   end;
 
+
 implementation
 
-function Ceiling(const ANumber: Double): integer; inline;
+uses
+  CRC;
+
+const
+  c0ascii: ShortInt = 48;
+  c9ascii: ShortInt = 57;
+  cNegAscii: ShortInt = 45;
+
+function Ceiling (const ANumber: Double): integer; inline;
 begin
   Result := Trunc(ANumber) + Ord(Frac(ANumber) > 0);
 end;
 
-function RoundExDouble(const ATemp: Double): Double; inline;
+function RoundExDouble (const aTemp: Double): Double; inline;
 var
-  tmp: Double;
+  vTmp: Double;
 begin
-  tmp:= ATemp * 10;
-  Result := Ceiling(tmp) / 10;
+  vTmp := aTemp * 10;
+  Result := Ceiling (vTmp) / 10;
 end;
 
 //---------------------------------------------------
-{ TProcesser }
+{ TOneBRC }
 
 function Compare(AList: TStringList; AIndex1, AIndex2: Integer): Integer;
 var
@@ -77,77 +82,55 @@ begin
   Result := CompareStr(Str1, Str2);
 end;
 
-procedure TOneBRC.ExtractLineData(const aStart: Int64; const aEnd: Int64; var aStation, aTempStr: AnsiString);
-// given a line of data, extract the station name and temperature, as strings.
+procedure TOneBRC.ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt);
+// given a line of data, extract the length of station name, and temperature as Integer.
 var
   I: Int64;
+  vDigit: Integer;
 begin
   // we're looking for the semicolon ';', but backwards since there's fewer characters to traverse
   // a thermo measurement must be at least 3 characters long (one decimal, one period, and the units)
   // e.g. input: Rock Hill;-54.3
   // can safely skip 3:      ^^^
-  I := aEnd-3;
+  I := aEnd - 3;
 
   while True do begin
     if FData[I] = ';' then
       break;
     Dec(I);
   end;
-
   // I is the position of the semi-colon, extract what's before and after it
-  SetString(aStation, pAnsiChar(@FData[aStart]), i-aStart);
-  SetString(aTempStr, pAnsiChar(@FData[i+1])   , aEnd-i);
-end;
 
-//---------------------------------------------------
+  // length of the station name string
+  aLength := i - aStart;
 
-procedure TOneBRC.DoTempsDict (var aDict: TFPHashList; var aStrVal: AnsiString;
-                       var aIntVal: SmallInt);
-// the parsed temperatures are as strings, we need them as smallInts.
-// however, a few problems:
-// - StrToInt is VERY expensive
-// - Val is less expensive than StrToInt, but still very expensive
-// solution:
-// temperatures vary (between at most -100.0 and 100.0, that's 200*10=2000 possible different readings,
-// regardless if there are 100M or 1B lines.
-// practically in this input file, there are 1998 readings exactly:
-// convert each one once, and store the resulting smallInt in a dictionary
-{TODO: thread-safety}
-var vSuccess: Integer;
-    vIdx: Integer;
-    pInt: PSmallInt;
-begin
-  // replicate the last char, then drop it
-  aStrVal[Length(aStrVal) - 1] := aStrVal[Length(aStrVal)];
-  SetLength (aStrVal, Length(aStrVal) - 1);
-
-  //vIdx := aDict.FindIndexOf(aStrVal);
-  //if vIdx >= 0 then begin
-    //pInt := PSmallInt (aDict.Items[vIdx]);
-    //aIntVal := pInt^;
-  //end
-  //else begin
-    Val (aStrVal, aIntVal, vSuccess);
-    if vSuccess <> 0 then
-      raise Exception.Create('cannot decode value');
-    //FTempArr[FTempIter] := aIntVal;
-    //aDict.Add (aStrVal, @(FTempArr[FTempIter]));
-    //Inc (FTempIter);
-  //end;
+  // ASCII of 3 is 51.
+  // subtract ASCII of 0 to get the digit 3
+  // repeat with the remaining digits, multiplying by 10^x (skip the '.')
+  // multiply by -1 upon reaching a '-'
+  aTemp :=     (Ord(FData[aEnd])   - c0ascii)
+         + 10 *(Ord(FData[aEnd-2]) - c0ascii);
+  vDigit := Ord(FData[aEnd-3]);
+  if (vDigit >= c0ascii) and (vDigit <= c9ascii) then begin
+    aTemp := aTemp + 100*(Ord(FData[aEnd-3]) - c0ascii);
+    vDigit := Ord(FData[aEnd-4]);
+    if vDigit = cNegAscii then
+      aTemp := -1 * aTemp;
+  end
+  else if vDigit = cNegAscii then
+    aTemp := -1 * aTemp;
 end;
 
 //---------------------------------------------------
 
 constructor TOneBRC.Create;
 begin
-  FStationsDict := TFPHashList.Create;
+  FStationsDict := TStationsDict.Create;
   FStationsDict.Capacity := 45000;
 
   FStations := TStringList.Create;
   FStations.Capacity := 45000;
   FStations.UseLocale := False;
-
-  FTempIter := 0;
 end;
 
 //---------------------------------------------------
@@ -165,20 +148,15 @@ end;
 
 procedure TOneBRC.SingleThread;
 var
-  vTempDict: TFPHashList;
   i: Int64;
   vStation: AnsiString;
-  vTempStr: AnsiString;
   vTemp: SmallInt;
   vData: PStationData;
   vLineStart: Int64;
   vRecIdx: Integer;
-  vIdx: Integer;
+  vHash: Cardinal;
+  vLenStationName: ShortInt;
 begin
-  // expecting 1998 different temperature measurements
-  vTempDict := TFPHashList.Create;
-  vTempDict.Capacity := 2000;
-
   vLineStart := 0;
   i := 0;
   vRecIdx := 0;
@@ -186,17 +164,12 @@ begin
   while i < FDataSize - 1 do begin
     if FData[i] = #13 then begin
       // new line parsed, process its contents
-      ExtractLineData (vLineStart, i -1, vStation, vTempStr);
-      DoTempsDict (vTempDict, vTempStr, vTemp);
+      ExtractLineData (vLineStart, i - 1, vLenStationName, vTemp);
 
-      // next char is #10, so we can skip 2 instead of 1
-      vLineStart := i+2;
+      // compute the hash starting at the station's first char, and its length
+      vHash := crc32(0, @FData[vLineStart], vLenStationName);
 
-      // pre-allocated array of records instead of on-the-go allocation
-      vIdx := FStationsDict.FindIndexOf(vStation);
-
-      if vIdx >= 0 then begin
-        vData := FStationsDict.Items[vIdx];
+      if Fstationsdict.TryGetValue(vHash, vData) then begin
         if vTemp < vData^.Min then
           vData^.Min := vTemp;
         if vTemp > vData^.Max then
@@ -205,16 +178,24 @@ begin
         Inc (vData^.Count);
       end
       else begin
+        // pre-allocated array of records instead of on-the-go allocation
         vData := @FRecords[vRecIdx];
         vData^.Min := vTemp;
         vData^.Max := vTemp;
         vData^.Sum := vTemp;
         vData^.Count := 1;
-        FStationsDict.Add (vStation, vData);
+        FStationsDict.Add (vHash, vData);
+
+        // SetString done only once per station name, for later sorting
+        SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
         FStations.Add (vStation);
 
+        // point to the next pre-allocated record
         Inc (vRecIdx);
       end;
+
+      // next char is #10, so we can skip 2 instead of 1
+      vLineStart := i+2;
     end;
 
     Inc (i);
@@ -228,7 +209,7 @@ var vMin, vMean, vMax: Double;
     vStream: TStringStream;
     I, N: Int64;
     vData: PStationData;
-    vIdx: Integer;
+    vHash: Cardinal;
 begin
   vStream := TStringStream.Create;
 
@@ -240,8 +221,11 @@ begin
 
     vStream.WriteString('{');
     while I < N do begin
-      vIdx := FStationsDict.FindIndexOf(FStations[i]);
-      vData := FStationsDict.Items[vIdx];
+      // the stations are now sorted, but we need to locate the data: recompute hash
+      // would it be more efficient to store the hash as well?
+      // debatable, and the whole output generation is < 0.3 seconds, so not exactly worth it
+      vHash := crc32(0, @FStations[i][1], Length (FStations[i]));
+      FStationsDict.TryGetValue(vHash, vData);
       vMin := vData^.Min/10;
       vMax := vData^.Max/10;
       vMean := RoundExDouble(vData^.Sum/vData^.Count/10);
