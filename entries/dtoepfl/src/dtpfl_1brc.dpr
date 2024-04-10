@@ -11,26 +11,14 @@ uses
   System.TimeSpan,
   System.Generics.Collections,
   System.Diagnostics,
-  generate.console in '..\..\..\generator\Common\generate.console.pas';
+  generate.console in '..\..\..\generator\Common\generate.console.pas',
+  Baseline.Common in '..\..\..\Baseline\Common\Baseline.Common.pas';
 
 type TAlgorithm = (v1, v2, Count);
 var algorithm: TAlgorithm;
     FormatSettings: TFormatSettings;
 const paramPrefix = '--';
       paramPrefixShort = '-';
-
-function Ceiling(const ANumber: Double): integer;
-begin
-  Result := Trunc(ANumber) + Ord(Frac(ANumber) > 0);
-end;
-
-function RoundExDouble(const ATemp: Double): Double;
-var
-  tmp: Double;
-begin
-  tmp:= ATemp * 10;
-  Result := Ceiling(tmp) / 10;
-end;
 
 {$REGION 'v1'}
 
