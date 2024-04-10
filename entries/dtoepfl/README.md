@@ -1,4 +1,4 @@
-# General
+# Daniel Töpfl
 
 1. Be sure there is a valid measurements is available in .\data\measurements.txt !
 2. Open this project in Delphi
