@@ -19,9 +19,12 @@ type
     Max: SmallInt;
     Count: UInt32;
     Sum: Integer;
+    Name: AnsiString;
   end;
   PStationData = ^TStationData;
   TStationsDict = specialize TDictionary<Cardinal, PStationData>;
+
+  { TOneBRC }
 
   TOneBRC = class
   private
@@ -31,19 +34,40 @@ type
     FData: pAnsiChar;
     FDataSize: Int64;
 
-    FStationsDict: TStationsDict;
-    FStations: TStringList;
-
-    // pre-allocate space for N records at once (why can't I use a const in here??)
-    FRecords: array[0..45000] of TStationData;
+    FThreadCount: UInt16;
+    FThreads: array of TThread;
+    FStationsDicts: array of TStationsDict;
 
     procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
 
   public
-    constructor Create;
+    constructor Create (const aThreadCount: UInt16);
+    destructor Destroy; override;
     function mORMotMMF (const afilename: string): Boolean;
-    procedure SingleThread;
+    procedure DispatchThreads;
+    procedure WaitAll;
+    procedure ProcessData (aThreadNb: UInt16; aStartIdx: Int64; aEndIdx: Int64);
+    procedure Merge (aLeft: UInt16; aRight: UInt16);
+    procedure MergeAll;
     procedure GenerateOutput;
+    property DataSize: Int64 read FDataSize;
+  end;
+
+
+  { TBRCThread }
+
+  TThreadProc = procedure (aThreadNb: UInt16; aStartIdx: Int64; aEndIdx: Int64) of object;
+
+  TBRCThread = class (TThread)
+  private
+    FProc: TThreadProc;
+    FThreadNb: UInt16;
+    FStart: Int64;
+    FEnd: Int64;
+  protected
+    procedure Execute; override;
+  public
+    constructor Create (aProc: TThreadProc; aThreadNb: UInt16; aStart: Int64; aEnd: Int64);
   end;
 
 
@@ -57,7 +81,7 @@ const
   c9ascii: ShortInt = 57;
   cNegAscii: ShortInt = 45;
 
-function Ceiling (const ANumber: Double): integer; inline;
+function Ceiling (const ANumber: Double): Integer; inline;
 begin
   Result := Trunc(ANumber) + Ord(Frac(ANumber) > 0);
 end;
@@ -86,7 +110,7 @@ procedure TOneBRC.ExtractLineData(const aStart: Int64; const aEnd: Int64; out aL
 // given a line of data, extract the length of station name, and temperature as Integer.
 var
   I: Int64;
-  vDigit: Integer;
+  vDigit: UInt8;
 begin
   // we're looking for the semicolon ';', but backwards since there's fewer characters to traverse
   // a thermo measurement must be at least 3 characters long (one decimal, one period, and the units)
@@ -123,14 +147,23 @@ end;
 
 //---------------------------------------------------
 
-constructor TOneBRC.Create;
+constructor TOneBRC.Create (const aThreadCount: UInt16);
+var I: UInt16;
 begin
-  FStationsDict := TStationsDict.Create;
-  FStationsDict.Capacity := 45000;
+  FThreadCount := aThreadCount;
+  SetLength (FStationsDicts, aThreadCount);
+  SetLength (FThreads, aThreadCount);
 
-  FStations := TStringList.Create;
-  FStations.Capacity := 45000;
-  FStations.UseLocale := False;
+  for I := 0 to aThreadCount - 1 do begin
+    FStationsDicts[I] := TStationsDict.Create;
+    FStationsDicts[I].Capacity := 45000;
+  end;
+end;
+
+destructor TOneBRC.Destroy;
+begin
+  // TODO: free data structures
+  inherited Destroy;
 end;
 
 //---------------------------------------------------
@@ -144,24 +177,63 @@ begin
   end;
 end;
 
+procedure TOneBRC.DispatchThreads;
+var
+  I: UInt16;
+  vRange: Int64;
+begin
+  vRange := Trunc (FDataSize / FThreadCount);
+
+  for I := 0 to FThreadCount - 1 do begin
+    FThreads[I] := TBRCThread.Create (@ProcessData, I, I*vRange, (I+1)*vRange);
+  end;
+end;
+
+procedure TOneBRC.WaitAll;
+var
+  I: UInt16;
+begin
+  for I := 0 to FThreadCount - 1 do begin
+    FThreads[I].WaitFor;
+  end;
+end;
+
 //---------------------------------------------------
 
-procedure TOneBRC.SingleThread;
+procedure TOneBRC.ProcessData (aThreadNb: UInt16; aStartIdx: Int64; aEndIdx: Int64);
 var
   i: Int64;
   vStation: AnsiString;
   vTemp: SmallInt;
   vData: PStationData;
   vLineStart: Int64;
-  vRecIdx: Integer;
   vHash: Cardinal;
   vLenStationName: ShortInt;
 begin
-  vLineStart := 0;
-  i := 0;
-  vRecIdx := 0;
+  i := aStartIdx;
 
-  while i < FDataSize - 1 do begin
+  // the given starting point might be in the middle of a line:
+  // find the beginning of that line
+  while i-1 >= 0 do begin
+    if FData[i-1] <> #10 then
+      Dec (I)
+    else
+      break;
+  end;
+
+  // the given ending point might be in the middle of a line:
+  // find the beginning of that line (the last block works well)
+  while True do begin
+    if FData[aEndIdx] <> #13 then
+      Dec (aEndIdx)
+    else
+      break;
+  end;
+  Inc (aEndIdx, 1);
+
+  vLineStart := i;
+
+  while i < aEndIdx do begin
     if FData[i] = #13 then begin
       // new line parsed, process its contents
       ExtractLineData (vLineStart, i - 1, vLenStationName, vTemp);
@@ -169,7 +241,7 @@ begin
       // compute the hash starting at the station's first char, and its length
       vHash := crc32(0, @FData[vLineStart], vLenStationName);
 
-      if Fstationsdict.TryGetValue(vHash, vData) then begin
+      if FstationsDicts[aThreadNb].TryGetValue(vHash, vData) then begin
         if vTemp < vData^.Min then
           vData^.Min := vTemp;
         if vTemp > vData^.Max then
@@ -178,20 +250,20 @@ begin
         Inc (vData^.Count);
       end
       else begin
+        // SetString done only once per station name (per thread), for later sorting
+        // for 1-thread, I had a separate list to store station names
+        // for N-threads, merging those lists became costly.
+        // store the name directly in the record, we'll generate a stringlist at the end
+        SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
+
         // pre-allocated array of records instead of on-the-go allocation
-        vData := @FRecords[vRecIdx];
+        new(vData);
         vData^.Min := vTemp;
         vData^.Max := vTemp;
         vData^.Sum := vTemp;
         vData^.Count := 1;
-        FStationsDict.Add (vHash, vData);
-
-        // SetString done only once per station name, for later sorting
-        SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
-        FStations.Add (vStation);
-
-        // point to the next pre-allocated record
-        Inc (vRecIdx);
+        vData^.Name := vStation;
+        FStationsDicts[aThreadNb].Add (vHash, vData);
       end;
 
       // next char is #10, so we can skip 2 instead of 1
@@ -199,6 +271,37 @@ begin
     end;
 
     Inc (i);
+  end;
+end;
+
+procedure TOneBRC.Merge(aLeft: UInt16; aRight: UInt16);
+var iHash: Cardinal;
+    vDataR: PStationData;
+    vDataL: PStationData;
+begin
+  for iHash in FStationsDicts[aRight].Keys do begin
+    FStationsDicts[aRight].TryGetValue(iHash, vDataR);
+
+    if FStationsDicts[aLeft].TryGetValue(iHash, vDataL) then begin
+      vDataL^.Count := vDataL^.Count + vDataR^.Count;
+      vDataL^.Sum   := vDataL^.Sum + vDataR^.Sum;
+      if vDataR^.Max > vDataL^.Max then
+        vDataL^.Max := vDataR^.Max;
+      if vDataR^.Min < vDataL^.Min then
+        vDataL^.Min := vDataR^.Min;
+    end
+    else begin
+      FStationsDicts[aLeft].Add (iHash, vDataR);
+    end;
+  end;
+end;
+
+procedure TOneBRC.MergeAll;
+var
+  I: UInt16;
+begin
+  for I := 1 to FThreadCount - 1 do begin
+    Merge (0, I);
   end;
 end;
 
@@ -210,28 +313,37 @@ var vMin, vMean, vMax: Double;
     I, N: Int64;
     vData: PStationData;
     vHash: Cardinal;
+    vStations: TStringList;
 begin
   vStream := TStringStream.Create;
-
+  vStations := TStringList.Create;
+  vStations.Capacity := 45000;
+  vStations.UseLocale := False;
   try
-    FStations.CustomSort (@Compare);
+    vStations.BeginUpdate;
+    for vData in FStationsDicts[0].Values do begin
+      vStations.Add(vData^.Name);
+    end;
+    vStations.EndUpdate;
+
+    vStations.CustomSort (@Compare);
 
     I := 0;
-    N := FStations.Count;
+    N := vStations.Count;
 
     vStream.WriteString('{');
     while I < N do begin
       // the stations are now sorted, but we need to locate the data: recompute hash
       // would it be more efficient to store the hash as well?
       // debatable, and the whole output generation is < 0.3 seconds, so not exactly worth it
-      vHash := crc32(0, @FStations[i][1], Length (FStations[i]));
-      FStationsDict.TryGetValue(vHash, vData);
+      vHash := crc32(0, @vStations[i][1], Length (vStations[i]));
+      FStationsDicts[0].TryGetValue(vHash, vData);
       vMin := vData^.Min/10;
       vMax := vData^.Max/10;
       vMean := RoundExDouble(vData^.Sum/vData^.Count/10);
 
       vStream.WriteString(
-        FStations[i] + '=' + FormatFloat('0.0', vMin)
+        vStations[i] + '=' + FormatFloat('0.0', vMin)
                      + '/' + FormatFloat('0.0', vMean)
                      + '/' + FormatFloat('0.0', vMax) + ', '
       );
@@ -244,14 +356,34 @@ begin
     vStream.SaveToFile('ghatem-out.txt');
 {$ENDIF}
 {$IFDEF RELEASE}
-    WriteLn (vStream.DataString);
+    Write(vStream.DataString);
 {$ENDIF}
   finally
     vStream.Free;
+    vStations.Free;
   end;
 end;
 
+{ TBRCThread }
+
+procedure TBRCThread.Execute;
+begin
+  FProc (FThreadNb, FStart, FEnd);
+  Terminate;
+end;
+
+constructor TBRCThread.Create(aProc: TThreadProc; aThreadNb: UInt16; aStart: Int64; aEnd: Int64);
+begin
+  inherited Create(False);
+  FProc := aProc;
+  FThreadNb := aThreadNb;
+  FStart := aStart;
+  FEnd := aEnd;
+end;
+
 //---------------------------------------------------
+
+
 
 
 end.

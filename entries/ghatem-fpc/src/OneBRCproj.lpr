@@ -16,6 +16,8 @@ type
 
   TOneBRCApp = class(TCustomApplication)
   private
+    FFileName: string;
+    procedure RunOneBRC;
   protected
     procedure DoRun; override;
   public
@@ -26,13 +28,65 @@ type
 
 { TOneBRCApp }
 
+procedure TOneBRCApp.RunOneBRC;
+var
+  vOneBRC: TOneBRC;
+  vStart: Int64;
+  vTime: Int64;
+begin
+  vOneBRC := TOneBRC.Create (32);
+  try
+    try
+      vOneBRC.mORMotMMF(FFileName);
+      vOneBRC.DispatchThreads;
+      vOneBRC.WaitAll;
+      vOneBRC.MergeAll;
+      vOneBRC.GenerateOutput;
+
+      //vStart := GetTickCount;
+      //vOneBRC.mORMotMMF (FFileName);
+      //vTime := GetTickCount - vStart;
+      //WriteLn('read: ' + FloatToStr(vTime / 1000));
+      //WriteLn('-----------');
+      //WriteLn;
+      //
+      //vStart := GetTickCount;
+      //vOneBRC.DispatchThreads;
+      //vOneBRC.WaitAll;
+      //vTime := GetTickCount - vStart;
+      //WriteLn('process: ' + FloatToStr(vTime / 1000));
+      //WriteLn('-----------');
+      //WriteLn;
+      //
+      //vStart := GetTickCount;
+      //vOneBRC.MergeAll;
+      //vTime := GetTickCount - vStart;
+      //WriteLn('merge: ' + FloatToStr(vTime / 1000));
+      //WriteLn('-----------');
+      //WriteLn;
+      //
+      //vStart := GetTickCount;
+      //vOneBRC.GenerateOutput;
+      //vTime := GetTickCount - vStart;
+      //WriteLn('generate: ' + FloatToStr(vTime / 1000));
+      //WriteLn('-----------');
+      //WriteLn;
+      //ReadLn;
+    except
+      on E: Exception do
+      begin
+        WriteLn(Format(rsErrorMessage, [ E.Message ]));
+        ReadLn;
+      end;
+    end;
+  finally
+    vOneBRC.Free;
+  end;
+end;
+
 procedure TOneBRCApp.DoRun;
 var
   ErrorMsg: String;
-  vOneBRC: TOneBRC;
-  vFileName: string;
-  vStart: Int64;
-  vTime: Int64;
 begin
   // quick check parameters
   ErrorMsg:= CheckOptions(Format('%s%s%s:',[
@@ -67,7 +121,7 @@ begin
   end;
 
   if HasOption(cShortOptInput, cLongOptInput) then begin
-    vFileName := GetOptionValue(
+    FFileName := GetOptionValue(
       cShortOptInput,
       cLongOptInput
     );
@@ -78,45 +132,9 @@ begin
     Exit;
   end;
 
-  vFileName := ExpandFileName(vFileName);
+  FFileName := ExpandFileName(FFileName);
 
-  vOneBRC := TOneBRC.Create;
-  try
-    try
-      vOneBRC.mORMotMMF(vFileName);
-      vOneBRC.SingleThread;
-      vOneBRC.GenerateOutput;
-
-      {vStart := GetTickCount;
-      vOneBRC.mORMotMMF (vFileName);
-      vTime := GetTickCount - vStart;
-      WriteLn('read: ' + FloatToStr(vTime / 1000));
-      WriteLn('-----------');
-      WriteLn;
-
-      vStart := GetTickCount;
-      vOneBRC.SingleThread;
-      vTime := GetTickCount - vStart;
-      WriteLn('process: ' + FloatToStr(vTime / 1000));
-      WriteLn('-----------');
-      WriteLn;
-
-      vStart := GetTickCount;
-      vOneBRC.GenerateOutput;
-      vTime := GetTickCount - vStart;
-      WriteLn('generate: ' + FloatToStr(vTime / 1000));
-      WriteLn('-----------');
-      WriteLn;
-      ReadLn; }
-    except
-      on E: Exception do
-      begin
-        WriteLn(Format(rsErrorMessage, [ E.Message ]));
-      end;
-    end;
-  finally
-    vOneBRC.Free;
-  end;
+  RunOneBRC;
 
   // stop program loop
   Terminate;

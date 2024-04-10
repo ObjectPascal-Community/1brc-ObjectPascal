@@ -132,4 +132,54 @@ Instead of extracting the station name as a string 1B times, and use it as a dic
 This requires us to migrate from TFPHashList to the generic TDictionary. Even though TDictionary is slower than TFPHashList, the overall improvements yielded a significant performance gain.
 Using TDictionary, the code is more similar to my Delphi version, in case we get to run those tests on a Windows PC.
 
-** expected timing: ~60 seconds, single-threaded**
+* expected timing: ~60 seconds, single-threaded*
+** ACTUAL TIMING: 58 seconds as per gcarreno **
+
+
+## Multi-Threaded Attempt (2024-04-10)
+
+In a first attempt, using 2 threads, I evaluated how harmful were my "shared-memory" variables, namely:
+ - the pre-allocated records array
+ - its counter
+ - the dictionary of aggregated data
+ - the stringlist of station names
+
+Using a Critical-Section, even on just the stringlist, the performance drops quite a bit.
+
+### minimize shared-memory
+
+I got rid of the pre-allocated records array and its counter, back to on-the-fly allocation of records
+Got rid of the station names stringlist, because merging those lists at the end was very slow: instead, store the station name directly in the record.
+Replaced the singular dictionary with an array of dictionaries, 1-per-thread.
+
+### redundant work
+
+All of this causes some redundant work to be made by various threads:
+ - one record is allocated per-station-per-thread
+ - since we store the station name in the record, we convert it to string (using `SetString`) once per-station-per-thread
+
+### parallelism
+
+Given N bytes and K threads, a basic attempt is to distribute a range `N / K` of data per thread.
+A thread may get its start/end boundaries in the middle of a line: we ensure that each line is processed exactly once.
+
+Again, just to evaluate how things will go, we wait for all threads to complete before proceeding.
+
+### merging
+
+Given 2 dictionaries L and R, we merge them into L. This merge is applied K-1 times, and dictionaries[0] will contain the aggregated result.
+We could later consider merging every 2 threads that have completed their work.
+
+### expectations
+
+parallelization on my environment (see above) performed quite poorly, considering there is no shared-mem to protect against concurrent access:
+4 threads were barely getting 60% improvement over 1 thread.
+
+is it due to:
+ - VM virtualization?
+ - too many dictionaries were causing too many cache misses?
+ - work-load distributed unevenly?
+
+Better wait and see the results on the real environment, before judging.
+
+
