@@ -1,4 +1,4 @@
-program dtpfl_1brc;
+program dtoepfl;
 
 {$APPTYPE CONSOLE}
 {$R *.res}
