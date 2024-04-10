@@ -162,7 +162,7 @@ These are the results from running all entries into the challenge on my personal
 | 6  | 3:59.917 | lazarus-3.0, fpc-3.2.2  | Iwan Kelaiah      | Using 1 thread | |
 | 7  | 7:2.726  | delphi 12.1             | David Cornelius   | Using 1 threads | |
 | 8  | 7:9.974  | delphi 12.1             | Brian Fire        | Using 1 threads | |
-| 🟨 | 0:1.697  | lazarus-3.99, fpc-3.3.1 | O Coddo           | Yellow Card: use of `C/C++` libs | |
+| -  | 0:1.697  | lazarus-3.99, fpc-3.3.1 | O Coddo           | Now good. New results next run | |
 | 🟠 | 0:19.699 | lazarus-3.0, fpc-3.2.2  | Lurendrejer Aksen | Using 32 threads **(failed hash)** | |
 
 > **NOTE**

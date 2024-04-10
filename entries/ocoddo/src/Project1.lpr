@@ -20,9 +20,7 @@ uses
   UMemoryBlock,
   UThread,
   UThreadGroup,
-  UThreadHelp,
-  UxxHash,
-  UxxHashLibraryStatic;
+  UThreadHelp;
 
 const
   MaxCount: UPS = 48 * 1024;
@@ -82,13 +80,34 @@ type
     Result := A.Name > B.Name;
   end;
 
+  //Perfect quality, no repeat for this dataset
+  function FNV1a32Custom(P: PChar; L: NChar): U32; inline;
+  begin
+    Result := 2166136261;
+    while L >= 4 do
+    begin
+      Result := (Result xor PU32(P)^) * 16777619;
+      P += 3;
+      L -= 3;
+    end;
+    while L >= 2 do
+    begin
+      Result := (Result xor PU16(P)^) * 16777619;
+      P += 2;
+      L -= 2;
+    end;
+    if L = 1 then
+      Result := (Result xor PU8(P)^) * 16777619;
+  end;
+
   function FindOrAdd(P: PChar; NS, NE: NChar; var ACoordinator: TCoordinator): Ind; inline; overload;
   var
     H: THash;
     I: Ind;
     JN: TJumper;
   begin
-    H := XXH3_64bits(P + NS, NE - NS + 1) shr 32; //Good quality, no repeat for this dataset
+    H := FNV1a32Custom(P + NS, NE - NS + 1);
+
     I := H and (JumperCount - 1); //Index in Jumpers
 
     with ACoordinator do
@@ -396,8 +415,8 @@ type
     end;
 
     ProcessorCount := LogicalProcessorCount;
-    JumperCount := 256 * 1024;
-    PartSize := 192 * 1024 - ReadMargin;
+    JumperCount := 128 * 1024;
+    PartSize := 128 * 1024 - ReadMargin;
 
     for I := 0 to High(Parameters) do
     begin
