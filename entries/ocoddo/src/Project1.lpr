@@ -21,8 +21,7 @@ uses
   UThread,
   UThreadGroup,
   UThreadHelp,
-  UxxHash,
-  UxxHashLibraryStatic;
+  UHashes;
 
 const
   MaxCount: UPS = 48 * 1024;
@@ -32,6 +31,7 @@ var
   JumperCount: UPS;
   PartSize: UPS;
   ProcessorCount: U8;
+  HashKind: U8;
 
 type
   THash = U32;
@@ -88,7 +88,16 @@ type
     I: Ind;
     JN: TJumper;
   begin
-    H := XXH3_64bits(P + NS, NE - NS + 1) shr 32; //Good quality, no repeat for this dataset
+    //Perfect quality, no repeat for this dataset
+    case HashKind of
+      0: H := xxHash32C(P + NS, NE - NS + 1);
+      1: H := FNV1a32(P + NS, NE - NS + 1);
+      2: H := FNV1a32Custom(P + NS, NE - NS + 1);
+      3: H := crc32csse42(0, P + NS, NE - NS + 1);
+      4: H := crc32c(P + NS, NE - NS + 1);
+      5: H := crc32c2(P + NS, NE - NS + 1);
+      6: H := xxHash(PByte(P + NS), NE - NS + 1);
+    end;
     I := H and (JumperCount - 1); //Index in Jumpers
 
     with ACoordinator do
@@ -398,6 +407,7 @@ type
     ProcessorCount := LogicalProcessorCount;
     JumperCount := 256 * 1024;
     PartSize := 192 * 1024 - ReadMargin;
+    HashKind := 0;
 
     for I := 0 to High(Parameters) do
     begin
@@ -410,6 +420,8 @@ type
         PartSize := (V * 1024) - ReadMargin
       else if N = 'processor-count' then
         ProcessorCount := V
+      else if N = 'hash-kind' then
+        HashKind := V
       else if N = 'help' then
       begin
         WriteHelp;
