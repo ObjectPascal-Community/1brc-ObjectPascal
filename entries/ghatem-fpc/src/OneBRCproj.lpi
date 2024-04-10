@@ -50,6 +50,9 @@
               <UseExternalDbgSyms Value="True"/>
             </Debugging>
           </Linking>
+          <Other>
+            <CustomOptions Value="-dDEBUG"/>
+          </Other>
         </CompilerOptions>
       </Item2>
       <Item3 Name="Release">
@@ -76,6 +79,9 @@
             </Debugging>
             <LinkSmart Value="True"/>
           </Linking>
+          <Other>
+            <CustomOptions Value="-dRELEASE"/>
+          </Other>
         </CompilerOptions>
       </Item3>
     </BuildModes>
@@ -121,6 +127,9 @@
         <DebugInfoType Value="dsDwarf3"/>
       </Debugging>
     </Linking>
+    <Other>
+      <CustomOptions Value="-dDEBUG"/>
+    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">
