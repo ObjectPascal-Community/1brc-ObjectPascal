@@ -20,7 +20,7 @@ uses
      sysutils, strutils, math;
 
 const
-  M_version = '1.50'; {version number}
+  M_version = '1.51'; {version number}
 
 {------------------------------ Common routines: ------------------------------}
 
@@ -106,13 +106,10 @@ end;
 {$ASMMODE INTEL}
 
 function FPHashX_ASM(var buf; len: dword): dword; assembler; nostackframe;
-   {returns a hash code similar to function FPHash() from FPC-Unit 'Contnrs',
-    but with the difference, that all hash codes for all cities here are UNIQUE.
-    I: len: MUST BE > 0!}
-// var buf = RDI
-// var len = ESI
+  {returns a hash code similar to function FPHash() from FPC-Unit 'Contnrs',
+   but with the difference, that all hash codes for all cities here are UNIQUE.
+   I: len: MUST BE > 0!}
 asm
-         MOV     ECX,len
          MOV     EAX,dword(-1)
 
          @LOOP:
@@ -120,9 +117,9 @@ asm
          SHL     EAX,5         // eax := Result shl 5
          SUB     EAX,EDX       // eax := Result shl 5 - Result
 
-         XOR     AL, [RDI]
-         INC     RDI
-         DEC     ECX
+         XOR     AL, [buf]
+         INC     buf
+         DEC     len
          JNZ     @LOOP
 end; {FPHashX_ASM}
 

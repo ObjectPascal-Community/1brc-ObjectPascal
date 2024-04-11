@@ -3,7 +3,7 @@
 **1 billion row Challenge entry**
 
 ## Version
-Version 1.50
+Version 1.51
 
 ## How to compile
 The program was developed with FPC 3.2.2 and Lazarus 2.2.4
@@ -36,3 +36,4 @@ To speed things up:
 
 - Version 1.00: initial version
 - Version 1.50: hash-list optimized, small improvements in parsing the file
+- Version 1.51: small improvements in asm function
