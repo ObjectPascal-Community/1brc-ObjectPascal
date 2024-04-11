@@ -28,41 +28,49 @@ var
 begin
   if ParseCmdLineParams (vFileName) then begin
 
-    vOneBRC := TOneBRC.Create;
+    vOneBRC := TOneBRC.Create (32);
     try
       vOneBRC.mORMotMMF (vFileName);
-      vOneBRC.SingleThread;
+      vOneBRC.DispatchThreads;
+      vOneBRC.WaitAll;
+      vOneBRC.MergeAll;
       vOneBRC.GenerateOutput;
     finally
       vOneBRC.Free;
     end;
 
 {$REGION 'debug'}
-//    Timer ('read mmfile',
-//      procedure
-//      begin
-//
-//      end
-//    );
-//
-//    for I := 0 to 4 do begin
-//      Timer ('process single thread',
-//        procedure
-//        begin
-//
-//        end
-//      );
-//
-//      Timer ('generate output',
-//        procedure
-//        begin
-//
-//        end
-//      );
-//    end;
-//
-//    WriteLn ('DONE!');
-//    Readln;
+    {Timer ('read mmfile',
+      procedure
+      begin
+        vOneBRC.mORMotMMF (vFileName);
+      end
+    );
+
+    Timer ('process all',
+      procedure
+      begin
+        vOneBRC.DispatchThreads;
+        vOneBRC.WaitAll;
+      end
+    );
+
+    Timer ('merge all',
+      procedure
+      begin
+        vOneBRC.MergeAll;
+      end
+    );
+
+    Timer ('generate output',
+      procedure
+      begin
+        vOneBRC.GenerateOutput;
+      end
+    );
+
+    WriteLn ('DONE!');
+    Readln;   }
 {$ENDREGION}
 
   end;

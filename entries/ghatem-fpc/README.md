@@ -182,4 +182,9 @@ is it due to:
 
 Better wait and see the results on the real environment, before judging.
 
+### results
 
+** ACTUAL TIMING: 6.042 seconds as per gcarreno **
+
+Due to the unexpectedly slow performance on Craig Chapman's powerful computer, and since the results above intrigued me, I have ported my FPC code onto Delphi to be able to compare the output of both compilers on Windows x64.
+Hopefully, it will help identify is the issue stems from Windows x64 or FPC, in multi-threaded implementations.

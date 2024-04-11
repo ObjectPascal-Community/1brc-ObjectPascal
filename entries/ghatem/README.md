@@ -110,3 +110,10 @@ If there are any improvements to be done in this single-threaded version, they w
  - try improve the extraction of string data, maybe using pointers (6.5 sec / 23 sec)
  - try improve the type conversion, though not sure how at this point (4.5 sec / 23 sec)
  - somehow, incrementing an integer 1B times is taking 1.2 seconds, while incrementing the main input index (16B times) is only taking 0.5 second.  It's just 1.2 seconds, but I'm not understanding why it should behave that way. 
+
+
+# Delphi port of my FPC implementation, to try and compare performance issues on Craig Chapman's PC:
+
+Somehow on Windows x64, Craig and Gus noticed very poor performance as compared to Gus' setup on Linux FPC.
+Is it a Windows vs Linux problem? or a Delphi vs FPC problem?
+After discussing the matter with Gus, here's a (as close as possible) port of my FPC code onto Delphi, so we can compare the generated exe out of both compilers.
