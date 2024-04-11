@@ -17,11 +17,12 @@ uses
   {$IFDEF UNIX}
      cthreads,
   {$ENDIF}
-     sysutils, strutils, math,
-     Contnrs; {for type 'TFPHashList'}
+     sysutils, strutils, math;
 
 const
-  M_version = '1.0'; {version number}
+  M_version = '1.50'; {version number}
+
+{------------------------------ Common routines: ------------------------------}
 
 procedure debug(s: ansistring);
   {outputs a debug message}
@@ -95,23 +96,45 @@ begin
 end; {outTimer}
 
 procedure error_halt(s: ansistring);
-  {outputs a Fatal Error and halt's the program}
+{outputs a Fatal Error and halt's the program}
 begin
   writeln('FATAL ERROR!');
   writeln(s);
   halt(1);
 end;
 
+{$ASMMODE INTEL}
+
+function FPHashX_ASM(var buf; len: dword): dword; assembler; nostackframe;
+   {returns a hash code similar to function FPHash() from FPC-Unit 'Contnrs',
+    but with the difference, that all hash codes for all cities here are UNIQUE.
+    I: len: MUST BE > 0!}
+// var buf = RDI
+// var len = ESI
+asm
+         MOV     ECX,len
+         MOV     EAX,dword(-1)
+
+         @LOOP:
+         MOV     EDX,EAX       // save Result
+         SHL     EAX,5         // eax := Result shl 5
+         SUB     EAX,EDX       // eax := Result shl 5 - Result
+
+         XOR     AL, [RDI]
+         INC     RDI
+         DEC     ECX
+         JNZ     @LOOP
+end; {FPHashX_ASM}
+
 {----------------------------- consts and types: ------------------------------}
 
 const
-  MaxCities = 50000;    {max. size for array WA[]}
-  HL_Capacity = 120000;   {initial capacity for the hash list}
+  MaxCities = 42000;      {max. size for array WA[]}
   BufLenDefault_KB = 128; {Default buffer size in kb}
+  MaxHX = 27000;          {size of hash-extension array HX[]}
 
 type
-  cityStr = string[63]; {string for a cityname with temperature (maxlen=55)}
-  tempStr = string[7];  {string for a temparature as string e.g. "-99.9"}
+  cityStr = string[55]; {string for a cityname with temperature (maxlen=55)}
   tempTyp = int16;      {numeric temperature, multiplied by 10}
 
   weatherRec = record {collects weather data for 1 city: }
@@ -119,11 +142,26 @@ type
     wmin: tempTyp; {min. temperature}
     wmax: tempTyp; {max. temperature}
     wsum: longint; {sums all temperatures}
-    wcount: longint; {number of all temperatures}
+    wcount: word;    {number of all temperatures}
   end; {record}
   pWeatherRec = ^weatherRec;
 
   weatherArray = array[0..MaxCities - 1] of weatherRec; {weather data for all cities}
+
+  hashTyp = dword;    {my hash type}
+  dataTyp = pointer;  {data type, returned by myHL_find_and_add()}
+  nextTyp = ^hashRec; {pointer to next hash entry in array HX[]}
+
+  hashRec = packed record {an entry in the hash list: }
+    hhash: hashTyp;  {the hash code}
+    hdata: dataTyp;  {pointer to corresponding array WA[]}
+    hnext: nextTyp;  {pointer to next hash entry in array HX[]}
+  end;
+
+var
+  WA: weatherArray;            {weather data for all cities}
+  HL: packed array of hashRec; {stores all primary entries of the hash list}
+  HX: packed array[1..MaxHX] of hashRec; {extended hash list for doublettes}
 
 {--------------------------------- quicksort: ---------------------------------}
 
@@ -152,9 +190,9 @@ begin
 end; {strcmp}
 
 type
-  QS_item = weatherRec;   {quicksort item type}
+  QS_item = weatherRec;    {quicksort item type}
   QS_array = weatherArray; {quicksort array type}
-  QS_idx = longint;      {quicksort index type}
+  QS_idx = longint;        {quicksort index type}
 
 function QS_less(var x, y: QS_item): boolean;
    {checks the sort order of 'x' and 'y';
@@ -164,7 +202,7 @@ begin
 end;
 
 procedure quicksort(var A: QS_array; l, r: QS_idx);
-{sorts A[l..r]}
+  {sorts A[l..r]}
 
   procedure sort(l, r: QS_idx);
   var
@@ -198,19 +236,22 @@ end; {quicksort}
 
 type
   weatherClass = class(TObject)
-    WA: weatherArray;    {weather data for all cities}
-    HLC: TFPHashList;    {hash list for city names}
-
     fspecIn: ansistring; {file to read}
     buflen: longint;     {buffer size}
     cntWA: word;         {number of valid entries in WA[]}
     cntMulti: longint;   {counts cities when they occur a 2nd time}
     wsum_min, wsum_max: longint; {only for testing}
 
-    constructor Create(fspec: ansistring; bufsize: longint);
+    NumHash: longint;    {number of hashes in hash array HL[]}
+    AndHash: longint;    {AND-mask for all hash codes}
+    cntHX: word;         {number of used records in HX[]}
+
+    constructor Create(fspec: ansistring; bufsize: longint; hashBits: integer);
     destructor Destroy; override;
-    procedure addCityTemp(var s: cityStr; t: tempTyp);
- {$IFDEF XINLINE} inline; {$ENDIF}
+    procedure myHL_init(hashBits: integer);
+    function myHL_find_and_add(out new: boolean): dataTyp; {$IFDEF XINLINE} inline; {$ENDIF}
+    procedure myHL_addCityTemp; {$IFDEF XINLINE} inline; {$ENDIF}
+
     procedure sort_WA;
     function RoundExString(x: double): NumStr; {$IFDEF XINLINE} inline; {$ENDIF}
     function myRound(sum, Count: longint): NumStr; {$IFDEF XINLINE} inline; {$ENDIF}
@@ -219,55 +260,128 @@ type
     procedure process_measurements;
   end; {Class}
 
-constructor weatherClass.Create(fspec: ansistring; bufsize: longint);
+constructor weatherClass.Create(fspec: ansistring; bufsize: longint;
+                                hashBits: integer);
+   {I: - fspec: filespec to read.
+       - bufsize: buffer size for above file.
+       - hashBits: bit-width for the hash-array HL[]}
 begin
   inherited Create;
   fspecIn := fspec;
   buflen := bufsize;
 
-  HLC := TFPHashList.Create;
-  HLC.Capacity := HL_Capacity; {set initial capacity for the hash list}
-
-  cntWA := 0;                  {number of valid entries in WA[]}
-  cntMulti := 0;               {counts cities when they occur a 2nd time}
+  cntWA := 0;            {number of valid entries in WA[]}
+  cntMulti := 0;         {counts cities when they occur a 2nd time}
   wsum_min := High(wsum_min);
   wsum_max := Low(wsum_max);
 
-  debug('sizeof=' + IntToStr(sizeof(WA[0])));
+  myHL_init(hashBits); {initializes my hash list}
+
+  debug('sizeof(weatherRec)=' + IntToStr(sizeof(WA[0])));
 end; {Create}
 
 destructor weatherClass.Destroy;
 begin
-  HLC.Free;
   inherited Destroy;
 end;
 
-procedure weatherClass.addCityTemp(var s: cityStr; t: tempTyp);
+procedure weatherClass.myHL_init(hashBits: integer);
+   {initializes my hash list.
+    I: hashBits: bit-width for the hash-array HL[]}
+begin
+  NumHash := 1 shl hashBits; {max. number of hashes in array HL[]}
+  AndHash := NumHash - 1;    {AND-mask for all hash codes}
+  SetLength(HL, NumHash);
+  fillchar(HL[0], sizeof(HL[0]) * NumHash, 0); {fills fields 'hdata' and 'hnext'}
+
+  cntHX := 0; {array HX[] is empty}
+
+  debug('NumHash=' + IntToStr3(NumHash));
+  debug('sizeof(HL) = ' + IntToStr3(sizeof(HL[0]) * NumHash));
+  debug('sizeof(HX) = ' + IntToStr3(sizeof(HX)));
+end; {myHL_init}
+
+var
+  city: cityStr; {global variables for use in myHL_find_and_add() and}
+  tmp: tempTyp;  {in process_measurements() are faster than parameters}
+
+function weatherClass.myHL_find_and_add(out new: boolean): dataTyp;
 {$IFDEF XINLINE} inline; {$ENDIF}
-{stores city 's' with temperature 't' to array WA[], using a hash list}
+   {searches for city 'city' in the hash list HL[] and returns access to it's
+    data in array WA[]. If the city is not found, it is added to the hash list.
+    O: new: was a new entry in array WA[] added?
+    ex I: WA[cntWA++];
+    ATTENTION: this hash list requires, that all hash codes from function
+               FPHashX_ASM() are UNIQUE for all city names!}
+var
+  p, p2: ^hashRec;
+  h: hashTyp;
+begin
+  h := FPHashX_ASM(city[1], length(city)); {compute unique hash code for 'city'}
+  p := @HL[h and AndHash];                 {get Index in HL[0..AndHash]}
+
+  if not Assigned(p^.hdata) then {if this entry in HL[] is still free: }
+  begin
+    new := True;
+    p^.hhash := h;
+    p^.hdata := @WA[cntWA]; {allocate a new entry in WA[]: }
+    Inc(cntWA);
+    exit(p^.hdata);         {return the new entry in WA[]}
+  end;
+
+  repeat                            {if this entry in HL[] is valid: }
+    if p^.hhash = h then {if hash matches: }
+    begin
+      new := False;
+      exit(p^.hdata);
+    end;
+                         {if hash not matches: }
+    if not Assigned(p^.hnext) then {if no matching entry in HX[] exists: }
+    begin
+      new := True;
+      Inc(cntHX);        {allocate a new entry in HX[]: }
+{$IFDEF XTEST}
+      if cntHX > MaxHX then error_halt('Internal Error: cntHX > MaxHX');
+{$ENDIF}
+      p2 := @HX[cntHX];
+      p^.hnext := p2;    {create chain from HL[] to HX[]}
+
+      p2^.hhash := h;          {fill new entry in HX[]: }
+      p2^.hnext := nil;
+      p2^.hdata := @WA[cntWA]; {allocate a new entry in WA[]: }
+      Inc(cntWA);
+      exit(p2^.hdata);
+    end;
+
+    p := p^.hnext;       {check next entry in HX[]}
+  until False;
+end; {myHL_find_and_add}
+
+procedure weatherClass.myHL_addCityTemp;
+  {$IFDEF XINLINE} inline; {$ENDIF}
+  {stores city 'city' with temperature 'tmp' to array WA[] using my hash list}
 var
   pWR: pWeatherRec;
+  new: boolean;
 begin
-  pWR := HLC.Find(s); {returns a pointer to the city data}
+  pWR := myHL_find_and_add(new); {returns a pointer to 'city' data in WA[]}
 
-  if pWR = nil then with WA[cntWA] do                         {if a new city: }
+  if new then with pWR^ do                              {if it's a new city: }
     begin
-      wcity := s;
-      wmin := t;
-      wmax := t;
-      wsum := t;
+      wcity := city;
+      wmin := tmp;
+      wmax := tmp;
+      wsum := tmp;
       wcount := 1;
-      HLC.Add(s, @WA[cntWA]); {adds a city with its data to the hash list}
-      Inc(cntWA);
       exit;
     end;
 
-  with pWR^ do                                      {if city already existed: }
+  with pWR^ do                                     {if city already existed: }
   begin
-    if t < wmin then wmin := t
+    if tmp < wmin then wmin := tmp
     else
-    if t > wmax then wmax := t;
-    Inc(wsum, t);
+    if tmp > wmax then wmax := tmp;
+    Inc(wsum, tmp);
 {$IFDEF XTEST}
     if wsum < wsum_min then wsum_min := wsum;
     if wsum > wsum_max then wsum_max := wsum;
@@ -275,10 +389,10 @@ begin
     Inc(wcount);
     Inc(cntMulti); {counts cities when they occur a 2nd time}
   end;
-end; {addCityTemp}
+end; {myHL_addCityTemp}
 
 procedure weatherClass.sort_WA;
-{sorts WA[0..cntWA-1] by city names}
+  {sorts WA[0..cntWA-1] by city names}
 var
   start: int64;
 begin
@@ -322,7 +436,7 @@ procedure weatherClass.save_WA;
    {only for testing: saves the results in array WA[] into a textfile with 1
     line per city}
 const
-  FspecOut = '/media/H/tmp/xx.txt';
+  FspecOut = '/media/H/tmp/1brc/xx.txt';
 var
   fo: Text;
   start: int64;
@@ -341,7 +455,7 @@ begin
 end; {save_WA}
 
 procedure weatherClass.write_WA_STDOUT;
-{writes the results in array WA[] via STDOUT to the console}
+  {writes the results in array WA[] via STDOUT to the console}
 var
   fo: Text;
   s: string;
@@ -367,17 +481,15 @@ begin
 end; {write_WA_STDOUT}
 
 procedure weatherClass.process_measurements;
-{reads input file 'fspecIn' and processes all measurements}
+  {reads input file 'fspecIn' and processes all measurements}
 const
   LF = #10; {line separator}
 var
   fi: file;
   s: ansistring;
-  city: cityStr;
-  temp: tempStr;
   size, fpos: int64;
-  take, p1, p2, p, len: longint;
-  i, t: integer;
+  take, p1, p2, len: longint;
+  p, i: integer;
   neg: boolean;
 begin
   Assign(fi, fspecIn);
@@ -390,7 +502,7 @@ begin
   take := buflen; {number of bytes to read}
 
   while size > 0 do
-  begin                                                    {if last turn: }
+  begin                                                        {if last turn: }
     if size < buflen then
     begin
       take := size;
@@ -400,52 +512,46 @@ begin
 
     p1 := 1; {parse 's': }
     repeat
-      p2 := posEx(LF, s, p1);
+      p2 := succ(IndexByte(s[p1], succ(take - p1), byte(LF))); {seeks for 'LF'}
       if p2 > 0 then
-      begin                  {get cityname and temperature, without CR: }
-        //          city:=copy(s,p1,p2-p1-1):
-        len := p2 - p1 - 1;
+      begin
+        Inc(p2, pred(p1)); {p2:=position of 'LF'}
+
+        len := p2 - p1 - 1;        {get cityname and temperature, without CR: }
         city[0] := chr(len);
         move(s[p1], city[1], len);
-
-        p := pos(';', city);                           {extract temperature: }
-        //          temp:=copy(city,p+1):
-        len := length(city) - p;
-        temp[0] := chr(len);
-        move(city[p + 1], temp[1], len);
-        {get numeric temperature: }
-        if temp[1] = '-' then
-        begin
-          i := 2;
-          neg := True;
-        end
-        else
-        begin
-          i := 1;
-          neg := False;
-        end;
-        t := 0;
-        temp[length(temp) - 1] := temp[length(temp)]; {skip the '.': }
-        Dec(temp[0]);
-
-        while i <= length(temp) do
-        begin
-          t := 10 * t + Ord(temp[i]) - $30;
-          Inc(i);
-        end;
-        if neg then t := -t;
-
+        {extract temperature: }
+        p := 1 + IndexByte(city[1], length(city), Ord(';')); {seeks for ';'}
 {$IFDEF XTEST}
         if p = 0 then error_halt('Internal Error: p=0');
 {$ENDIF}
-        city[0] := chr(p - 1);   {delete temperature from city name}
-        addCityTemp(city, t); {stores city + temperature in array WA[]}
+        i := succ(p);                               {get numeric temperature: }
+        if city[i] = '-' then
+        begin
+          Inc(i);
+          neg := True;
+        end
+        else
+          neg := False;
+        city[length(city) - 1] := city[length(city)]; {skip the '.': }
+        Dec(city[0]);
+        tmp := 0;
+
+        while i <= length(city) do
+        begin
+          tmp := 10 * tmp + Ord(city[i]) - $30;
+          Inc(i);
+        end;
+        if neg then tmp := -tmp;
+
+        city[0] := chr(p - 1); {delete temperature from city name}
+        myHL_addCityTemp;      {adds 'city' and 'tmp' to array WA[]}
 
         p1 := p2 + 1;
       end;
     until p2 = 0;
 
-    Dec(size, pred(p1));                {sub only really processed bytes}
+    Dec(size, pred(p1));                   {sub only really processed bytes}
     fpos := filepos(fi) - succ(take - p1); {adjust new filepos to 'p1': }
     seek(fi, fpos);
   end; {while}
@@ -466,39 +572,42 @@ end; {process_measurements}
 
 {------------------------- End of Class 'weatherClass' ------------------------}
 
+const
+  HashBitsMin = 14; {Min. bit-width for the hash-array HL[]}
+  HashBitsMax = 28; {Max. bit-width for the hash-array HL[]}
+
 procedure syntax_halt;
-{shows allowed syntax and halt's the program}
+  {shows allowed syntax and halt's the program}
 begin
   writeln('Purpose: 1 billion row Challenge program by Hartmut Grosser, version ',
     M_version);
-  writeln('Usage:   <path to input file> [buffer size in kb (Default=',
-    IntToStr(BufLenDefault_KB), ' kb)]');
+  writeln('Usage:   <path to input file> <bit-width for hash-list (',
+    IntToStr(HashBitsMin), '..', IntToStr(HashBitsMax), ')>');
   writeln('Example: ', SysUtils.ExtractFileName(ParamStr(0)),
-    ' ./measurements.txt 128');
+    ' measurements.txt 15');
+  writeln(' - bit-width for hash-list: sets the size of the hash list, e.g. ''16'' => 65536 entries');
   halt(1);
 end;
 
 var
   fspecInp: ansistring; {filespec of input file}
   buflen: longint;      {buffer size to read file 'fspecInp'}
+  hashBits: integer;    {bit-width for the hash-array HL[]}
 
 procedure take_command_line_parameters;
-{checks command line parameters. Errors => show message and halt}
+  {checks command line parameters. Errors => show message and halt}
 var
   p, code: integer;
 begin
   p := ParamCount;
-  if (p < 1) or (p > 2) then syntax_halt;
+  if p <> 2 then syntax_halt;
 
   fspecInp := ParamStr(1);
   buflen := BufLenDefault_KB * 1024;
 
-  if p = 2 then
-  begin
-    val(ParamStr(2), buflen, code);
-    if code <> 0 then syntax_halt;
-    buflen := buflen * 1024;
-  end;
+  val(ParamStr(2), hashBits, code);
+  if code <> 0 then syntax_halt;
+  if (hashBits < HashBitsMin) or (hashBits > HashBitsMax) then syntax_halt;
 
   if FileExists(fspecInp) then exit;
 
@@ -524,12 +633,13 @@ begin {main}
   debug('without INLINE');
 {$ENDIF}
 
-  // fspecInp:='/media/H/tmp/measurements.txt';
+  // fspecInp:='/media/H/tmp/1brc/measurements.txt';
   // buflen:=BufLenDefault_KB * 1024;
+  // hashBits:=15;
 
   start := GetTickCount64;
 
-  WC := weatherClass.Create(fspecInp, buflen);
+  WC := weatherClass.Create(fspecInp, buflen, hashBits);
   try
     WC.process_measurements;
   finally
