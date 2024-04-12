@@ -171,15 +171,24 @@ begin
 end;
 
 function TBuilder.GetFunctionCompileBash(const AEntry: TEntry): String;
+{$IFDEF UNIX}
+var
+  lazbuild: String;
+{$ENDIF}
 begin
   Result:= 'function ' + AEntry.EntryBinary + '() {' + LineEnding;
   Result:= Result + '  echo "===== '+ UTF8Encode(AEntry.Name) +' ======"' + LineEnding;
   {$IFDEF UNIX}
+  if AEntry.UseTrunk then
+   lazbuild:= FConfig.LazbuildTrunk
+  else
+    lazbuild:= FConfig.Lazbuild;
+
   if AEntry.HasRelease then
   begin
    Result:= Result + '  ' +
    Format(cLazbuildRelease, [
-     FConfig.Lazbuild,
+     lazbuild,
      '${ENTRIES}/' + AEntry.EntryFolder + '/' + AEntry.LPI
    ] ) +
    LineEnding;
@@ -188,7 +197,7 @@ begin
   begin
     Result:= Result + '  ' +
     Format(cLazbuildDefault, [
-      FConfig.Lazbuild,
+      lazbuild,
       '${ENTRIES}/' + AEntry.EntryFolder + '/' + AEntry.LPI
     ] ) +
     LineEnding;
@@ -233,6 +242,14 @@ begin
   Result:= ':' + AEntry.EntryBinary + LineEnding;
   Result:= Result + 'echo ===== '+ UTF8Encode(AEntry.Name) +' ======' + LineEnding;
   Result:= Result +
+  'del ' +
+    ExpandFileName(
+      ConcatPaths([
+            FConfig.BinWindows,
+            AEntry.EntryBinary
+          ])
+    ) + LineEnding;
+  Result:= Result +
   'msbuild /t:Build /p:Config=Release /p:platform=Linux64 ' +
     ExpandFileName(
       ConcatPaths([
@@ -241,7 +258,13 @@ begin
             AEntry.DPROJ
           ])
     ) + LineEnding;
-  Result:= Result + 'if ERRORLEVEL 0 (' + LineEnding;
+  Result:= Result + 'if EXIST ' +
+    ExpandFileName(
+    ConcatPaths([
+          FConfig.BinWindows,
+          AEntry.EntryBinary
+        ])
+    )+ ' (' + LineEnding;
   Result:= Result + '  echo -- Transfering --' + LineEnding;
   Result:= Result + '  scp ' +
     ExpandFileName(ConcatPaths([

@@ -154,13 +154,16 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
-| 1 | 0:1.971   | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez    | Using `mORMot2`, 32 threads | |
-| 2 | 0:20.960  | lazarus-3.0, fpc-3.2.2 | Székely Balázs    | Using 32 threads | |
-| 3 | 0:23.158  | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen | Using 32 threads **(failed hash)** | |
-| 4 | 1:23.684  | lazarus-3.0, fpc-3.2.2 | Richard Lawson    | Using a single thread | |
-| 5 | 5:2.512   | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah      | Using a single thread | |
-| 6 | 7:54.606  | delphi 12.1            | David Cornelius   | Using 1 threads **(failed hash)** | |
-| 7 | 10:55.724 | delphi 12.1            | Brian Fire        | Using 1 threads | |
+| 1  | 0:1.784  | lazarus-3.0, fpc-3.2.2  | Arnaud Bouchez    | Using `mORMot2`, 32 threads | |
+| 2  | 0:9.817  | lazarus-3.99, fpc-3.3.1 | G Klark           | Using 32 threads | |
+| 3  | 0:21.463 | lazarus-3.0, fpc-3.2.2  | Székely Balázs    | Using 32 threads | |
+| 4  | 1:13.492 | lazarus-3.0, fpc-3.2.2  | Hartmut Grosser   | Using 1 threads | |
+| 5  | 1:16.844 | lazarus-3.0, fpc-3.2.2  | Richard Lawson    | Using 1 thread | |
+| 6  | 3:59.917 | lazarus-3.0, fpc-3.2.2  | Iwan Kelaiah      | Using 1 thread | |
+| 7  | 7:2.726  | delphi 12.1             | David Cornelius   | Using 1 threads | |
+| 8  | 7:9.974  | delphi 12.1             | Brian Fire        | Using 1 threads | |
+| -  | 0:1.697  | lazarus-3.99, fpc-3.3.1 | O Coddo           | Now good. New results next run | |
+| 🟠 | 0:19.699 | lazarus-3.0, fpc-3.2.2  | Lurendrejer Aksen | Using 32 threads **(failed hash)** | |
 
 > **NOTE**
 >

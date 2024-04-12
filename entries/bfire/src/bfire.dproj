@@ -170,7 +170,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win64)'!=''">
         <AppDPIAwarenessMode>PerMonitorV2</AppDPIAwarenessMode>
-        <Debugger_RunParams>-i challenge_1E7.csv -o result_1E7.txt</Debugger_RunParams>
+        <Debugger_RunParams>-i challenge_1E7.csv -o crap.txt</Debugger_RunParams>
         <Debugger_CWD>D:\OneBRC_Arena</Debugger_CWD>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
@@ -181,7 +181,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2_Linux64)'!=''">
         <DCC_ExeOutput>..\..\..\bin</DCC_ExeOutput>
-        <DCC_Define>LINUX;$(DCC_Define)</DCC_Define>
+        <DCC_DcuOutput>..\..\..\bin\$(Platform)\$(Config)</DCC_DcuOutput>
         <Debugger_Launcher>/usr/bin/gnome-terminal -- &quot;%debuggee%&quot;</Debugger_Launcher>
         <Manifest_File>(None)</Manifest_File>
         <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
@@ -196,7 +196,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="ConsoleUnit.pas"/>
-        <DCCReference Include="ProcessUnit.pas"/>
+        <DCCReference Include="ProcessByHashUnit.pas"/>
         <None Include="version.inc"/>
         <None Include="README.md"/>
         <BuildConfiguration Include="Base">
@@ -248,21 +248,15 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="1brc-ObjectPascal-main\entries\EagleAglow\src\README.md" Configuration="Debug" Class="ProjectFile">
-                    <Platform Name="Win64">
-                        <RemoteDir>.\</RemoteDir>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
-                <DeployFile LocalName="1brc-ObjectPascal-main\entries\EagleAglow\src\version.inc" Configuration="Debug" Class="ProjectFile">
-                    <Platform Name="Win64">
-                        <RemoteDir>.\</RemoteDir>
-                        <Overwrite>true</Overwrite>
-                    </Platform>
-                </DeployFile>
                 <DeployFile LocalName="Linux64\Debug\generator" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Linux64">
                         <RemoteName>generator</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="README.md" Configuration="Debug" Class="ProjectFile">
+                    <Platform Name="Win64">
+                        <RemoteDir>.\</RemoteDir>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -281,6 +275,12 @@
                 <DeployFile LocalName="Win64\Debug\bfire.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win64">
                         <RemoteName>bfire.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win64\Debug\bfire.rsm" Configuration="Debug" Class="DebugSymbols">
+                    <Platform Name="Win64">
+                        <RemoteName>bfire.rsm</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
