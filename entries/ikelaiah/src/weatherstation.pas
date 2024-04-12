@@ -391,17 +391,17 @@ begin
           Ref: https://www.freepascal.org/docs-html/rtl/classes/tstream.seek.html}
         if lineBreakPos < bytesRead then
           fileStream.Seek(-(bytesRead - lineBreakPos), soCurrent);
-        //{$IFDEF DEBUG}
+        {$IFDEF DEBUG}
         // Do something with the chunk here
         // Like counting line
         for index := 0 to lineBreakPos - 1 do
           if buffer[index] = Ord(#10) then
             lineCount := lineCount + 1;
-        //{$ENDIF DEBUG}
+        {$ENDIF DEBUG}
 
         // Use memory stream & stream reader
         memStream.Write(buffer[0], lineBreakPos - 1);
-        memStream.Position:=0;
+        memStream.Position := 0;
         streamReader := TStreamReader.Create(memStream);
         try
           while not streamReader.EOF do
@@ -412,16 +412,16 @@ begin
         finally
           streamReader.Free;
         end;
-        //{$IFDEF DEBUG}
+        {$IFDEF DEBUG}
         // Display user feedback
         WriteLn('Line count: ', IntToStr(lineCount));
         WriteLn('Chunk ', chunkIndex, ', Total bytes read:', IntToStr(totalBytesRead));
-        //{$ENDIF DEBUG}
+        {$ENDIF DEBUG}
 
-        //{$IFDEF DEBUG}
+        {$IFDEF DEBUG}
         // Increase chunk index - a counter
         Inc(chunkIndex);
-        //{$ENDIF DEBUG}
+        {$ENDIF DEBUG}
       end;
     finally
       memStream.Free;

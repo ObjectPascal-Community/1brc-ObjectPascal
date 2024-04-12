@@ -123,13 +123,13 @@ Iwan Kelaiah
   * Introduced a pointer to the weather record, `PStat = ^TStat`. This saves approx. 30 - 60 seconds.
 
 * 1.7
-  * Revision release - Sequential approach. 4-6 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
+  * Revision release - Sequential approach. 4-6 mins on my Inspiron 15 7510 laptop, around 4m50s (a little improvement on speed).
   * Converting Float as String to Int was a bit slow, so resorted to a lookup instead. This saves 30-45 seconds.
-  * Re-arranged `if` statements in two places. This saves 10-15 seconds x 2 = ~ 30 seconds saving.
+  * Re-arranged `if` statements in two places. This saves 10-15 seconds x 2 = ~ 30 seconds.
 
 * 1.8
-  * Revision release - Sequential approach. 4-6 mins on my Inspiron 15 7510 laptop (a little improvement on speed).
-  * Removed double lookup on dictionaries.
+  * Revision release - Sequential approach. 3-5 mins on my Inspiron 15 7510 laptop, around 3m50s (a little improvement on speed).
+  * Removed double lookup on dictionaries; removed `.Contains` and used `TryGetValue` instead. This saves approx 60 seconds.
 
 ## License
 
