@@ -11,7 +11,6 @@ uses
   , streamex
   , bufstream
   , lgHashMap
-  , StrUtils
   {$IFDEF DEBUG}
   , Stopwatch
   {$ENDIF}
@@ -52,8 +51,6 @@ type
     lookupStrFloatToIntList: TValidTemperatureDictionary;
     procedure CreateLookupTemp;
     procedure ReadMeasurements;
-    procedure ReadMeasurementsBuf;
-    procedure ReadMeasurementsBufSL;
     procedure ParseStationAndTemp(const line: string);
     procedure AddCityTemperatureLG(const cityName: string; const newTemp: int64);
     procedure SortWeatherStationAndStats;
@@ -243,9 +240,6 @@ begin
   // If city name esxists, modify temp as needed
   if self.weatherDictionary.TryGetValue(cityName, stat) then
   begin
-    // Get the temp record
-    // stat := self.weatherDictionary[cityName];
-
     // Update min and max temps if needed
     // Re-arranged the if statement, to achieve minimal if checks.
     // This saves approx 15 seconds when processing 1 billion row.
@@ -303,7 +297,7 @@ begin
   if delimiterPos > 0 then
   begin
     // Get the weather station name
-    // Using Copy and POS - as suggested by Gemini AI.
+    // Using Copy and POS instead of SplitString - as suggested by Gemini AI.
     // This part saves 3 mins faster when processing 1 billion rows.
 
     // No need to create a string
@@ -321,15 +315,13 @@ end;
 procedure TWeatherStation.ReadMeasurements;
 var
   fileStream: TFileStream;
-  bufStream: TReadBufStream;
   streamReader: TStreamReader;
-  line: string;
 begin
 
   // Open the file for reading
   fileStream := TFileStream.Create(self.fname, fmOpenRead);
   try
-    streamReader := TStreamReader.Create(fileStream, 65536 * 16, False);
+    streamReader := TStreamReader.Create(fileStream, 65536 * 32, False);
     try
       // Read and parse chunks of data until EOF -------------------------------
       while not streamReader.EOF do
@@ -346,183 +338,11 @@ begin
   end;
 end;
 
-procedure TWeatherStation.ReadMeasurementsBuf;
-var
-  fileStream: TFileStream;
-  memStream: TMemoryStream;
-  streamReader: TStreamReader;
-  buffer: TBytes;
-  bytesRead, totalBytesRead, chunkSize, lineBreakPos, chunkIndex,
-  index, lineCount: int64;
-begin
-
-  chunksize := 4194304 * 1;
-
-  // Open the file for reading
-  fileStream := TFileStream.Create(self.fname, fmOpenRead);
-  SetLength(buffer, chunkSize);
-  try
-    memStream := TMemoryStream.Create;
-    try
-      totalBytesRead := 0;
-      chunkIndex := 0;
-      lineCount := 0;
-
-      // Read and parse chunks of data until EOF
-      while totalBytesRead < fileStream.Size do
-      begin
-        // Read more bytes and keep track on bytes read
-        bytesRead := fileStream.Read(buffer[0], chunkSize);
-        Inc(totalBytesRead, bytesRead);
-
-        // Find the position of the last newline character in the chunk
-        lineBreakPos := BytesRead;
-        while (lineBreakPos > 0) and (Buffer[lineBreakPos - 1] <> Ord(#10)) do
-          Dec(lineBreakPos);
-
-        { Now, must ensure that if the last byte read in the current chunk
-          is not a newline character, the file pointer is moved back to include
-          that byte and any preceding bytes of the partial line in the next
-          chunk's read operation.
-
-          Also, no need to update the BytesRead variable in this context because
-          it represents the actual number of bytes read from the file, including
-          any partial line that may have been included due to moving the file
-          pointer back.
-          Ref: https://www.freepascal.org/docs-html/rtl/classes/tstream.seek.html}
-        if lineBreakPos < bytesRead then
-          fileStream.Seek(-(bytesRead - lineBreakPos), soCurrent);
-        {$IFDEF DEBUG}
-        // Do something with the chunk here
-        // Like counting line
-        for index := 0 to lineBreakPos - 1 do
-          if buffer[index] = Ord(#10) then
-            lineCount := lineCount + 1;
-        {$ENDIF DEBUG}
-
-        // Use memory stream & stream reader
-        memStream.Write(buffer[0], lineBreakPos - 1);
-        memStream.Position := 0;
-        streamReader := TStreamReader.Create(memStream);
-        try
-          while not streamReader.EOF do
-          begin
-            // WriteLn(streamReader.ReadLine);
-            self.ParseStationAndTemp(streamReader.ReadLine);
-          end;
-        finally
-          streamReader.Free;
-        end;
-        {$IFDEF DEBUG}
-        // Display user feedback
-        WriteLn('Line count: ', IntToStr(lineCount));
-        WriteLn('Chunk ', chunkIndex, ', Total bytes read:', IntToStr(totalBytesRead));
-        {$ENDIF DEBUG}
-
-        {$IFDEF DEBUG}
-        // Increase chunk index - a counter
-        Inc(chunkIndex);
-        {$ENDIF DEBUG}
-      end;
-    finally
-      memStream.Free;
-    end;
-  finally
-    // Close the file
-    fileStream.Free;
-  end;
-end;
-
-procedure TWeatherStation.ReadMeasurementsBufSL;
-var
-  fileStream: TFileStream;
-  strList: TStringList;
-  streamReader: TStreamReader;
-  buffer, trimmedBuffer: TBytes;
-  bytesRead, totalBytesRead, chunkSize, lineBreakPos, chunkIndex,
-  slIndex, lineCount: int64;
-begin
-
-  chunksize := 8192 * 1;
-
-  // Open the file for reading
-  fileStream := TFileStream.Create(self.fname, fmOpenRead);
-  SetLength(buffer, chunkSize);
-  try
-    strList := TStringList.Create;
-    try
-      totalBytesRead := 0;
-      chunkIndex := 0;
-      lineCount := 0;
-
-      // Read and parse chunks of data until EOF
-      while totalBytesRead < fileStream.Size do
-      begin
-        // Read more bytes and keep track on bytes read
-        bytesRead := fileStream.Read(buffer[0], chunkSize);
-        Inc(totalBytesRead, bytesRead);
-
-        // Find the position of the last newline character in the chunk
-        lineBreakPos := BytesRead;
-        while (lineBreakPos > 0) and (Buffer[lineBreakPos - 1] <> Ord(#10)) do
-          Dec(lineBreakPos);
-
-        { Now, must ensure that if the last byte read in the current chunk
-          is not a newline character, the file pointer is moved back to include
-          that byte and any preceding bytes of the partial line in the next
-          chunk's read operation.
-
-          Also, no need to update the BytesRead variable in this context because
-          it represents the actual number of bytes read from the file, including
-          any partial line that may have been included due to moving the file
-          pointer back.
-          Ref: https://www.freepascal.org/docs-html/rtl/classes/tstream.seek.html}
-        if lineBreakPos < bytesRead then
-          fileStream.Seek(-(bytesRead - lineBreakPos), soCurrent);
-        {$IFDEF DEBUG}
-        // Do something with the chunk here
-        // Like counting line
-        for index := 0 to lineBreakPos - 1 do
-          if buffer[index] = Ord(#10) then
-            lineCount := lineCount + 1;
-        {$ENDIF DEBUG}
-
-        // Use TStringList and a sub-TBytes array up to lineBreakPos
-        SetLength(trimmedBuffer, lineBreakPos);
-        // Index 'n' is inclusive, so add 1 to the length
-        Move(buffer[0], trimmedBuffer[0], Length(trimmedBuffer)); // Copy the bytes
-        strList.Clear;
-        strList.Text := ansistring(trimmedBuffer);
-        for slIndex := 0 to strList.Count - 1 do
-          self.ParseStationAndTemp(strList[slIndex]);
-
-        {$IFDEF DEBUG}
-        // Display user feedback
-        WriteLn('Line count: ', IntToStr(lineCount));
-        WriteLn('Chunk ', chunkIndex, ', Total bytes read:', IntToStr(totalBytesRead));
-        {$ENDIF DEBUG}
-
-        {$IFDEF DEBUG}
-        // Increase chunk index - a counter
-        Inc(chunkIndex);
-        {$ENDIF DEBUG}
-      end;
-    finally
-      strList.Free;
-    end;
-  finally
-    // Close the file
-    fileStream.Free;
-  end;
-end;
-
 // The main algorithm
 procedure TWeatherStation.ProcessMeasurements;
 begin
   self.CreateLookupTemp;
   self.ReadMeasurements;
-  // self.ReadMeasurementsBuf;
-  //self.ReadMeasurementsBufSL;
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
 end;
