@@ -307,7 +307,7 @@ begin
     ],
     [rfReplaceAll]
   );
-  tmpStr:= Format('  %s > %s/%s.output', [
+  tmpStr:= Format('  time %s > %s/%s.output', [
     tmpStr,
     '${RESULTS}',
     AEntry.EntryBinary
