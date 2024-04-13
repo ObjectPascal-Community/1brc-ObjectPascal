@@ -534,7 +534,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      if LowerCase(FConfig.Entries[index].EntryBinary) = cBaselineBinary then continue;
       line:= line + '  ' + FConfig.Entries[index].EntryBinary + LineEnding;
     end;
     line:= line + 'else'  + LineEnding;
@@ -542,7 +542,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      if LowerCase(FConfig.Entries[index].EntryBinary) = cBaselineBinary then continue;
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;
