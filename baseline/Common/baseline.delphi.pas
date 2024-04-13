@@ -207,7 +207,7 @@ begin
   end;
 {$ENDIF}
 {$IFDEF RELEASE}
-  WriteLn ('{' + strTemp + '}' + #10);
+  Write ('{' + strTemp + '}' + #10);
 {$ENDIF}
 end;
 
