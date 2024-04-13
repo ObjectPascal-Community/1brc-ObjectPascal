@@ -164,8 +164,8 @@ These are the results from running all entries into the challenge on my personal
 | 8  | 02:48.079 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah        | Using 1 thread | |
 | 9  | 06:49.661 | delphi 12.1            | Brian Fire          | Using 1 thread | |
 | 10 | 06:58.535 | delphi 12.1            | David Cornelius     | Using 1 thread | |
-| 11 | 14:36.808 | delphi 12.1            | Daniel Töpfl        | Using 1 thread | |
 | 🟠 | 00:19.699 | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen   | Using 32 threads **(failed hash)** | |
+| 🟠 | 14:36.808 | delphi 12.1            | Daniel Töpfl        | Using 1 thread **(failed hash)** | |
 
 > **NOTE**
 >
