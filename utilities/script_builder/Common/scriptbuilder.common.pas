@@ -527,7 +527,7 @@ begin
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      if LowerCase(FConfig.Entries[index].EntryBinary) = cBaselineBinary then continue;
       line:= line + GetFunctionRunBash(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
