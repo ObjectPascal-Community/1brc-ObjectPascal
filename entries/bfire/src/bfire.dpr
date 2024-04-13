@@ -39,6 +39,9 @@ begin
       // With TFileStream: 6 seconds for 1E7 records,
       // 1 min 1 sec for 1E8 records,  10 min 17 sec for 1E9 records
 
+      // using global variables for arrays and lengths: 5 seconds for 1E7 records,
+      // 56 sec for 1E8 records,  9 min 25 sec for 1E9 records
+
       FileToArrays(inputFilename, UseStdOut); // read
       SortArrays; // sort
       ArrayToFile(outputFilename, UseStdOut); // output
