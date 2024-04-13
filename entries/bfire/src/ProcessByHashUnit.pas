@@ -60,16 +60,18 @@ var
   // size entry_temp_array to hold -9999
   entry_name_array: array [0 .. 255] of Byte; // will hold place name
   entry_temp_array: array [0 .. 15] of Byte; // will hold place temperature
+  entry_name_array_length: Integer;
+  entry_temp_array_length: Integer;
 
   // prepare empty arrays to initialize before each entry read
   empty_entry_name_array: array [0 .. 255] of Byte;
   empty_entry_temp_array: array [0 .. 15] of Byte;
 
 procedure FileToArrays(inFile: String; UseStdOut: Boolean);
-procedure HashAndSave(K: Integer; J: Integer);
-function BytesToTemp(count: Integer): Integer;
-function StaticBytesToString(K: Integer): String;
-function BytesToIndexHash(count: Integer): Integer;
+procedure HashAndSave;
+function BytesToTemp: Integer;
+function StaticBytesToString: String;
+function BytesToIndexHash: Integer;
 procedure SortArrays;
 procedure ArrayToFile(outFile: String; UseStdOut: Boolean);
 
@@ -144,8 +146,7 @@ begin
   MeanFixup := temp; // was temp;
 end;
 
-function BytesToTemp(count: Integer): Integer; inline;
-// entry_temp_array   is global, only pass length
+function BytesToTemp: Integer;
 // convert entry_chars_temp to signed integer, '0' is ascii 48 decimal
 // note: we always have at least two bytes
 // temperatures range from -99.9 to 99.8
@@ -158,9 +159,9 @@ begin
     // BTT :=  -(entry_temp_array[count -1] -48) - 10 * (entry_temp_array[count -2] - 48);
     // BTT :=  48 - entry_temp_array[count -1] - 10 * (entry_temp_array[count -2] - 48);
     // BTT :=  48 + 480 - entry_temp_array[count -1] - 10 * (entry_temp_array[count -2]);
-    BTT := 528 - entry_temp_array[count - 1] - 10 *
-      (entry_temp_array[count - 2]);
-    if count = 4 then // do one more digit
+    BTT := 528 - entry_temp_array[entry_temp_array_length - 1] - 10 *
+      (entry_temp_array[entry_temp_array_length - 2]);
+    if entry_temp_array_length = 4 then // do one more digit
     begin
       BTT := BTT - 100 * (entry_temp_array[1] - 48);
     end;
@@ -170,9 +171,9 @@ begin
     // BTT :=  (entry_temp_array[count -1] -48) + 10 * (entry_temp_array[count -2] - 48);
     // BTT :=  entry_temp_array[count -1] -48 + 10 * (entry_temp_array[count -2] - 48);
     // BTT :=  entry_temp_array[count -1] -48 - 480 + 10 * (entry_temp_array[count -2]);
-    BTT := -528 + (entry_temp_array[count - 1]) + 10 *
-      (entry_temp_array[count - 2]);
-    if count = 3 then // do one more digit
+    BTT := -528 + (entry_temp_array[entry_temp_array_length - 1]) + 10 *
+      (entry_temp_array[entry_temp_array_length - 2]);
+    if entry_temp_array_length = 3 then // do one more digit
     begin
       BTT := BTT + 100 * (entry_temp_array[0] - 48);
     end;
@@ -186,8 +187,7 @@ end;
 (* ------------------------------------------------------------------ *)
 (* function TDPJWHash *)
 (* ****************************************************************** *)
-function BytesToIndexHash(count: Integer): Integer; inline;
-// entry_name_array is global, only pass length
+function BytesToIndexHash;
 // convert entry_chars to hash
 // use   Prime: Integer = 75013;
 var
@@ -196,7 +196,7 @@ var
   Hash: Integer;
 begin
   Hash := 0;
-  for i := 0 to count - 1 do
+  for i := 0 to entry_name_array_length - 1 do
   begin
     Hash := (Hash shl 4) + entry_name_array[i];
     G := Hash and $F0000000;
@@ -233,23 +233,21 @@ begin
   StationsForSort.Sorted := False; // sort later
 end;
 
-function StaticBytesToString(K: Integer): String; inline;
-// entry_name_array is global, only pass length
+function StaticBytesToString;
 var
   ugly: TArray<Byte>; // prefer not to use TArray, but for now...
   i: Integer;
 begin
-  SetLength(ugly, K);
-  for i := 0 to K - 1 do
+  SetLength(ugly, entry_name_array_length);
+  for i := 0 to entry_name_array_length - 1 do
   begin
     ugly[i] := entry_name_array[i];
   end;
   StaticBytesToString := TEncoding.UTF8.GetString(ugly);
 end;
 
-// entry_name_array is global, only pass length (K)
-// entry_temp_array is global, only pass length (J)
-procedure HashAndSave(K: Integer; J: Integer); inline;
+
+procedure HashAndSave;
 var
   entry_integer: Integer;
   entry_Unicode: String;
@@ -259,12 +257,12 @@ var
   PlaceIndex: Integer; // location in index array
 
 begin
-  entry_integer := BytesToTemp(J); // only pass J
+  entry_integer := BytesToTemp; // only pass J
 
-  entry_Unicode := StaticBytesToString(K);
+  entry_Unicode := StaticBytesToString;
   // entry_name_array is global, only pass length
 
-  entry_hash := BytesToIndexHash(K);
+  entry_hash := BytesToIndexHash;
   // entry_name_array is global, only pass length
 
   while True do // success is handled by breaking out of while loop
@@ -325,11 +323,8 @@ procedure FileToArrays(inFile: String; UseStdOut: Boolean); inline;
 var
   PlaceIndex: Integer; // location in index array
   i: Integer; // used for temporary purposes
-  J: Integer; // used for temporary purposes
-  K: Integer; // used for temporary purposes
 
   LF: Boolean; // True after finding  #10
-  C: Byte;
   SC: Boolean; // True after finding semi-colon
 
   iFileHandle: Integer;
@@ -359,8 +354,8 @@ begin
       // Buffer := System.AllocMem(myBufferSize +1);   // why +1 ??
       Buffer := System.AllocMem(myBufferSize); // seems OK
       i := 0;
-      J := 0;
-      K := 0;
+      entry_temp_array_length := 0;
+      entry_name_array_length := 0;
       LF := False;
       SC := False;
       move(empty_entry_name_array[0], entry_name_array[0], 256);
@@ -373,31 +368,30 @@ begin
       begin
         while Not LF do // read byte by byte
         begin
-          C := (Buffer + i)^; // get a byte
-          if (C = 10) then
+          if ((Buffer + i)^ = 10) then
           begin
             LF := True; // and done collecting bytes
           end
           else // accumulate bytes
           begin
-            if (C = 59) then
+            if ((Buffer + i)^ = 59) then
               SC := True;
             // skip line feed, carriage return and semi-colon
-            if Not((C = 10) or (C = 13) or (C = 59)) then
+            if Not(((Buffer + i)^ = 13) or ((Buffer + i)^ = 59)) then
             begin
               if SC then
               begin
                 // skip decimal in number
-                if Not(C = 46) then
+                if Not((Buffer + i)^ = 46) then
                 begin
-                  entry_temp_array[J] := C;
-                  Inc(J);
+                  entry_temp_array[entry_temp_array_length] := (Buffer + i)^;
+                  Inc(entry_temp_array_length);
                 end;
               end
               else
               begin
-                entry_name_array[K] := C; // don't skip period in name
-                Inc(K);
+                entry_name_array[entry_name_array_length] := (Buffer + i)^; // don't skip period in name
+                Inc(entry_name_array_length);
               end;
             end;
           end;
@@ -410,10 +404,7 @@ begin
 
           if LF then // convert to something usable and process it
           begin
-            // entry_name_array and entry_temp_array are static global,
-            // lengths, i.e. k and j, respectively
-            // HashAndSave(entry_name_array, k, entry_temp_array, j);
-            HashAndSave(K, J);
+            HashAndSave;
           end;
 
         end; // of: if LF then
@@ -421,8 +412,8 @@ begin
         // reset to get next line
         LF := False;
         SC := False;
-        J := 0;
-        K := 0;
+        entry_temp_array_length := 0;
+        entry_name_array_length := 0;
         move(empty_entry_name_array[0], entry_name_array[0], 256);
         // will hold place name
         move(empty_entry_temp_array[0], entry_temp_array[0], 16);
