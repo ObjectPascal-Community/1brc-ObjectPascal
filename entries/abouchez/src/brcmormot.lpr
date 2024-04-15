@@ -193,13 +193,14 @@ begin
       if p[2] = ord('.') then // xx.x
       begin
         v := (p[0] * 100 + p[1] * 10 + p[3] - (ord('0') * 111)) * neg;
-        inc(PByte(p), 6);
+        inc(PByte(p), 8);
       end
       else
       begin
         v := (p[0] * 10 + p[2] - (ord('0') * 11)) * neg; // x.x
-        inc(PByte(p), 5);
+        inc(PByte(p), 7);
       end;
+      start := PUtf8Char(p) - 2;
       // store the value
       inc(s^.Sum, v);
       inc(s^.Count);
@@ -207,8 +208,6 @@ begin
         s^.Min := v; // branchless cmovg/cmovl is not better
       if v > s^.Max then
         s^.Max := v;
-      start := pointer(p);
-      p := @p[2];
     until PUtf8Char(p) >= stop;
   end;
   // aggregate this thread values into the main list
