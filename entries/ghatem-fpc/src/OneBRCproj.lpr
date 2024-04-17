@@ -17,6 +17,7 @@ type
   TOneBRCApp = class(TCustomApplication)
   private
     FFileName: string;
+    FThreadCount: Integer;
     procedure RunOneBRC;
   protected
     procedure DoRun; override;
@@ -34,7 +35,7 @@ var
   vStart: Int64;
   vTime: Int64;
 begin
-  vOneBRC := TOneBRC.Create (32);
+  vOneBRC := TOneBRC.Create (FThreadCount);
   try
     try
       vOneBRC.mORMotMMF(FFileName);
@@ -89,13 +90,15 @@ var
   ErrorMsg: String;
 begin
   // quick check parameters
-  ErrorMsg:= CheckOptions(Format('%s%s%s:',[
+  ErrorMsg:= CheckOptions(Format('%s%s%s%s:',[
       cShortOptHelp,
+      cShortOptThread,
       cShortOptVersion,
       cShortOptInput
     ]),
     [
       cLongOptHelp,
+      cLongOptThread+':',
       cLongOptVersion,
       cLongOptInput+':'
     ]
@@ -118,6 +121,11 @@ begin
     WriteLn(Format(rsGeneratorVersion, [ cVersion ]));
     Terminate;
     Exit;
+  end;
+
+  FThreadCount := 32;
+  if HasOption(cShortOptThread, cLongOptThread) then begin
+    FThreadCount := StrToInt (GetOptionValue(cShortOptThread, cLongOptThread));
   end;
 
   if HasOption(cShortOptInput, cLongOptInput) then begin
