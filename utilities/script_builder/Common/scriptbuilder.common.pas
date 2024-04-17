@@ -307,7 +307,7 @@ begin
     ],
     [rfReplaceAll]
   );
-  tmpStr:= Format('  %s > %s/%s.output', [
+  tmpStr:= Format('  time %s > %s/%s.output', [
     tmpStr,
     '${RESULTS}',
     AEntry.EntryBinary
@@ -527,14 +527,14 @@ begin
     begin
       Write(GenerateProgressBar(index+1, FConfig.Entries.Count, 50), lineBreak);
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      if LowerCase(FConfig.Entries[index].EntryBinary) = cBaselineBinary then continue;
       line:= line + GetFunctionRunBash(FConfig.Entries[index]);
     end;
     line:= line + 'if [ "$1" == "" ];then'  + LineEnding;
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      if LowerCase(FConfig.Entries[index].EntryBinary) = cBaselineBinary then continue;
       line:= line + '  ' + FConfig.Entries[index].EntryBinary + LineEnding;
     end;
     line:= line + 'else'  + LineEnding;
@@ -542,7 +542,7 @@ begin
     for index:= 0 to Pred(FConfig.Entries.Count) do
     begin
       if not FConfig.Entries[index].Active then continue;
-      if FConfig.Entries[index].EntryBinary = cBaselineBinary then continue;
+      if LowerCase(FConfig.Entries[index].EntryBinary) = cBaselineBinary then continue;
       line:= line + '    ' + FConfig.Entries[index].EntryBinary + ')' + LineEnding;
       line:= line + '      ' + FConfig.Entries[index].EntryBinary + LineEnding;
       line:= line + '      ;;'  + LineEnding;

@@ -62,6 +62,7 @@
           </SearchPaths>
           <CodeGeneration>
             <SmartLinkUnit Value="True"/>
+            <TargetProcessor Value="COREAVX2"/>
             <Optimizations>
               <OptimizationLevel Value="3"/>
             </Optimizations>
@@ -89,7 +90,7 @@
     </RequiredPackages>
     <Units Count="1">
       <Unit0>
-        <Filename Value="brcmormot.lpr"/>
+        <Filename Value="brcmormotsharedht.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
     </Units>

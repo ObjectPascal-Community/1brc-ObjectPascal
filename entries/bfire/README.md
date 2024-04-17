@@ -55,3 +55,4 @@ Finally, the TStringList is sorted and used to output sorted data.
 - Version 1.0: first working version, based on TStringList.
 - Version 1.1: modified rounding to new baseline.
 - Version 2.0: use hashing, sort later.
+- Version 2.1: minor speed tweaks.

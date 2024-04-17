@@ -11,7 +11,6 @@ uses
   , streamex
   , bufstream
   , lgHashMap
-  , StrUtils
   {$IFDEF DEBUG}
   , Stopwatch
   {$ENDIF}
@@ -29,8 +28,6 @@ type
     sum: int64;
     cnt: int64;
   public
-    constructor Create(const newMin: int64; const newMax: int64;
-      const newSum: int64; const newCount: int64);
     function ToString: string;
   end;
   {Using pointer to TStat saves approx. 30-60 seconds for processing 1 billion rows}
@@ -38,11 +35,11 @@ type
 
 type
   // Using this dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
-  TWeatherDictionaryLG = specialize TGHashMapQP<string, PStat>;
+  TWeatherDictionaryLG = specialize TGHashMapLP<string, PStat>;
 
 type
   // a type for storing valid lookup temperature
-  TValidTemperatureDictionary = specialize TGHashMapQP<string, int64>;
+  TValidTemperatureDictionary = specialize TGHashMapLP<string, int64>;
 
 type
   // Create a class to encapsulate the temperature observations of each weather station.
@@ -104,15 +101,6 @@ begin
     if Result[index] = '.' then
       Delete(Result, index, 1);
   end;
-end;
-
-constructor TStat.Create(const newMin: int64; const newMax: int64;
-  const newSum: int64; const newCount: int64);
-begin
-  self.min := newMin;
-  self.max := newMax;
-  self.sum := newSum;
-  self.cnt := newCount;
 end;
 
 function TStat.ToString: string;
@@ -250,11 +238,8 @@ var
   stat: PStat;
 begin
   // If city name esxists, modify temp as needed
-  if self.weatherDictionary.Contains(cityName) then
+  if self.weatherDictionary.TryGetValue(cityName, stat) then
   begin
-    // Get the temp record
-    stat := self.weatherDictionary[cityName];
-
     // Update min and max temps if needed
     // Re-arranged the if statement, to achieve minimal if checks.
     // This saves approx 15 seconds when processing 1 billion row.
@@ -312,63 +297,31 @@ begin
   if delimiterPos > 0 then
   begin
     // Get the weather station name
-    // Using Copy and POS - as suggested by Gemini AI.
+    // Using Copy and POS instead of SplitString - as suggested by Gemini AI.
     // This part saves 3 mins faster when processing 1 billion rows.
-    //parsedStation := Copy(line, 1, delimiterPos - 1);
+
+    // No need to create a string
+    // parsedStation := Copy(line, 1, delimiterPos - 1);
     strFloatTemp := Copy(line, delimiterPos + 1, Length(line));
 
     // Using a lookup value speeds up 30-45 seconds
-    if self.lookupStrFloatToIntList.Contains(strFloatTemp) then
+    if self.lookupStrFloatToIntList.TryGetValue(strFloatTemp, parsedTemp) then
     begin
-      parsedTemp := self.lookupStrFloatToIntList[strFloatTemp];
-      self.AddCityTemperatureLG(Copy(line, 1, delimiterPos - 1),
-        parsedTemp);
+      self.AddCityTemperatureLG(Copy(line, 1, delimiterPos - 1), parsedTemp);
     end;
-
   end;
-
-  {// Get position of the delimiter
-  delimiterPos := Pos(';', line);
-  if delimiterPos > 0 then
-  begin
-    // Get the weather station name
-    // Using Copy and POS - as suggested by Gemini AI.
-    // This part saves 3 mins faster when processing 1 billion rows.
-    parsedStation := Copy(line, 1, delimiterPos - 1);
-
-    // Get the temperature recorded, as string, remove '.' from string float
-    // because we want to save it as int64.
-    strFloatTemp := Copy(line, delimiterPos + 1, Length(line));
-
-    // strFloatTemp := StringReplace(strFloatTemp, '.', '', [rfReplaceAll]);
-    // The above operation is a bit expensive.
-    // Rewrote a simple function which prevents creation of new string
-    // in each iteration. Saved approx 20-30 seconds for 1 billion row.
-    // Remove dots turns a float into an int.
-    strFloatTemp := RemoveDots(strFloatTemp);
-
-    // Add the weather station and the recorded temp (as int64) in the TDictionary
-    Val(strFloatTemp,
-      parsedTemp,
-      valCode);
-    if valCode <> 0 then Exit;
-
-    // Add a record in TWeatherDictionary
-    self.AddCityTemperatureLG(parsedStation, parsedTemp);
-  end;}
 end;
 
 procedure TWeatherStation.ReadMeasurements;
 var
   fileStream: TFileStream;
   streamReader: TStreamReader;
-  line: string;
 begin
 
   // Open the file for reading
-  fileStream := TFileStream.Create(self.fname, fmOpenRead or fmShareDenyNone);
+  fileStream := TFileStream.Create(self.fname, fmOpenRead);
   try
-    streamReader := TStreamReader.Create(fileStream, 65536 * 2, False);
+    streamReader := TStreamReader.Create(fileStream, 65536 * 32, False);
     try
       // Read and parse chunks of data until EOF -------------------------------
       while not streamReader.EOF do
@@ -390,11 +343,6 @@ procedure TWeatherStation.ProcessMeasurements;
 begin
   self.CreateLookupTemp;
   self.ReadMeasurements;
-  // self.ReadMeasurementsBuf;
-  // self.ReadMeasurementsClassic;
-  {This chunking method cuts ~ 30 - 40 seconds of processing time from ~6.45 to 6.00
-   But the SHA256 at the end is incorrect}
-  // self.ReadMeasurementsInChunks(self.fname);
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
 end;
