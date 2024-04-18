@@ -131,6 +131,11 @@ Iwan Kelaiah
   * Revision release - Sequential approach. 3-5 mins on my Inspiron 15 7510 laptop, around 3m50s (a little improvement on speed).
   * Removed double lookup on dictionaries; removed `.Contains` and used `TryGetValue` instead. This saves approx 60 seconds.
 
+* 1.9
+  * Revision release - Sequential approach. 3-5 mins on my Inspiron 15 7510 laptop, around 3m8s (a little improvement on speed).
+  * Use `ShortString` whenever possible. This saves approx 20 seconds.
+  * Pre-allocate initial size for dictionaries. saves approx 20 seconds.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details

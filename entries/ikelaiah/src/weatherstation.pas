@@ -28,18 +28,18 @@ type
     sum: int64;
     cnt: int64;
   public
-    function ToString: string;
+    function ToString: ShortString;
   end;
   {Using pointer to TStat saves approx. 30-60 seconds for processing 1 billion rows}
   PStat = ^TStat;
 
 type
   // Using this dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
-  TWeatherDictionaryLG = specialize TGHashMapLP<string, PStat>;
+  TWeatherDictionaryLG = specialize TGHashMapLP<ShortString, PStat>;
 
 type
   // a type for storing valid lookup temperature
-  TValidTemperatureDictionary = specialize TGHashMapLP<string, int64>;
+  TValidTemperatureDictionary = specialize TGHashMapLP<ShortString, int64>;
 
 type
   // Create a class to encapsulate the temperature observations of each weather station.
@@ -51,8 +51,8 @@ type
     lookupStrFloatToIntList: TValidTemperatureDictionary;
     procedure CreateLookupTemp;
     procedure ReadMeasurements;
-    procedure ParseStationAndTemp(const line: string);
-    procedure AddCityTemperatureLG(const cityName: string; const newTemp: int64);
+    procedure ParseStationAndTemp(const line: ShortString);
+    procedure AddCityTemperatureLG(const cityName: ShortString; const newTemp: int64);
     procedure SortWeatherStationAndStats;
     procedure PrintSortedWeatherStationAndStats;
   public
@@ -91,7 +91,7 @@ begin
 end;
 
 // Remove dots from a string
-function RemoveDots(const line: string): string;
+function RemoveDots(const line: ShortString): ShortString;
 var
   index: integer;
 begin
@@ -103,7 +103,7 @@ begin
   end;
 end;
 
-function TStat.ToString: string;
+function TStat.ToString: ShortString;
 var
   minR, meanR, maxR: double; // Store the rounded values prior saving to TStringList.
 begin
@@ -120,15 +120,18 @@ begin
   fname := filename;
   // Create a lookup
   self.lookupStrFloatToIntList := TValidTemperatureDictionary.Create;
+  // Set expected capacity - saves 10 seconds.
+  self.lookupStrFloatToIntList.EnsureCapacity(44691);
   // Create a dictionary
   weatherDictionary := TWeatherDictionaryLG.Create;
+  weatherDictionary.EnsureCapacity(44691);
   // Create a TStringList for sorting
   weatherStationList := TStringList.Create;
 end;
 
 destructor TWeatherStation.Destroy;
 var
-  stationName: string;
+  stationName: ShortString;
 begin
 
   // Free the lookup dictionary
@@ -150,7 +153,6 @@ var
   startTemp: int64 = -1000;
   finishTemp: int64 = 1000;
   currentTemp: int64;
-  numStr: string;
 begin
 
   currentTemp := startTemp;
@@ -203,7 +205,7 @@ end;
 
 procedure TWeatherStation.SortWeatherStationAndStats;
 var
-  wsKey: string;
+  wsKey: ShortString;
 begin
 
   {$IFDEF DEBUG}
@@ -232,7 +234,7 @@ begin
   {$ENDIF DEBUG}
 end;
 
-procedure TWeatherStation.AddCityTemperatureLG(const cityName: string;
+procedure TWeatherStation.AddCityTemperatureLG(const cityName: ShortString;
   const newTemp: int64);
 var
   stat: PStat;
@@ -285,11 +287,10 @@ begin
   end;
 end;
 
-procedure TWeatherStation.ParseStationAndTemp(const line: string);
+procedure TWeatherStation.ParseStationAndTemp(const line: ShortString);
 var
   delimiterPos: integer;
-  parsedStation, strFloatTemp: string;
-  results: array of string;
+  parsedStation, strFloatTemp: ShortString;
   parsedTemp, valCode: int64;
 begin
   // Get position of the delimiter
