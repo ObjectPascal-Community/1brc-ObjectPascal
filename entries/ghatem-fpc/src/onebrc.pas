@@ -135,7 +135,7 @@ begin
   aTemp :=     (Ord(FData[aEnd])   - c0ascii)
          + 10 *(Ord(FData[aEnd-2]) - c0ascii);
   vDigit := Ord(FData[aEnd-3]);
-  if vDigit >= c0ascii then begin
+  if (vDigit >= c0ascii) and (vDigit <= c9ascii) then begin
     aTemp := aTemp + 100*(Ord(FData[aEnd-3]) - c0ascii);
     vDigit := Ord(FData[aEnd-4]);
     if vDigit = cNegAscii then
