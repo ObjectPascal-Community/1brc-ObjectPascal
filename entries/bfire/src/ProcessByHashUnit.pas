@@ -191,15 +191,17 @@ function BytesToIndexHash;
 // convert entry_chars to hash
 // use   Prime: Integer = 75013;
 var
-  G: Integer;
+  G: Cardinal;
   i: Integer;
-  Hash: Integer;
+  Hash: Cardinal;
 begin
   Hash := 0;
-  for i := 0 to entry_name_array_length - 1 do
+//  for i := 0 to entry_name_array_length - 1 do
+  for i := entry_name_array_length - 1 downto 0 do
   begin
     Hash := (Hash shl 4) + entry_name_array[i];
     G := Hash and $F0000000;
+//    G := Hash and $F000000;
     if (G <> 0) then
       Hash := (Hash xor (G shr 24)) xor G;
   end;
@@ -310,9 +312,9 @@ begin
       end
       else // collision, try next spot in HashMap array
       begin
-        Inc(entry_hash);
-        if entry_hash >= Prime then
-          entry_hash := 0; // wrap around
+        entry_hash := entry_hash + 19;
+        if entry_hash >= Prime then // wrap around
+          entry_hash := entry_hash - Prime;
       end;
     end;
   end; // of: while True do
@@ -321,13 +323,11 @@ end;
 
 procedure FileToArrays(inFile: String; UseStdOut: Boolean); inline;
 var
-  PlaceIndex: Integer; // location in index array
   i: Integer; // used for temporary purposes
 
   LF: Boolean; // True after finding  #10
   SC: Boolean; // True after finding semi-colon
 
-  iFileHandle: Integer;
   iBytesRead: Integer;
   Buffer: PByte;
 
@@ -342,7 +342,6 @@ begin
 
   // Load the data
   PlaceCount := 0;
-  PlaceIndex := 0;
   InitializeThings;
 
   if FileExists(inFile) then
