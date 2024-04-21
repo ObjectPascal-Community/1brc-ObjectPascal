@@ -131,6 +131,7 @@ end;
 
 procedure TMyDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
 var vIdx: Integer;
+    vOffset: Integer;
 begin
   vIdx := aKey mod cDictSize;
   aFound := False;
@@ -140,16 +141,24 @@ begin
     aFound := True;
   end
   else begin
+    vOffset := 1;
     while True do begin
-      Inc (vIdx);
+      // quadratic probing, by incrementing vOffset
+      Inc (vIdx, vOffset);
+      Inc (vOffset);
+
+      // exceeded boundary, loop back
       if vIdx >= cDictSize then
         Dec (vIdx, cDictSize);
+
       if FHashes[vIdx] = aKey then begin
+        // found match
         aIndex := vIdx;
         aFound := True;
         break;
       end
       else if FHashes[vIdx] = 0 then begin
+        // found empty bucket to use
         aIndex := vIdx;
         aFound := False;
         break;
@@ -364,7 +373,10 @@ var iHash: Cardinal;
     vDataL: PStationData;
 begin
   for iHash in FStationsDicts[aRight].Keys do begin
-    if iHash = 0 then continue;
+    // zero means empty slot: skip
+    if iHash = 0 then
+      continue;
+
     FStationsDicts[aRight].TryGetValue(iHash, vDataR);
 
     if FStationsDicts[aLeft].TryGetValue(iHash, vDataL) then begin
@@ -407,6 +419,7 @@ begin
   try
     vStations.BeginUpdate;
     for vData in FStationsDicts[0].Values do begin
+      // nil value means empty slot: skip
       if vData <> nil then
         vStations.Add(vData^.Name);
     end;
