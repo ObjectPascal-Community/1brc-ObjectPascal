@@ -1,5 +1,5 @@
 /// MIT code (c) Arnaud Bouchez, using the mORMot 2 framework
-// - initial revision with full hashing and transient storage of the names
+// - initial version, with full name comparison
 program brcmormotold;
 
 {$define CUSTOMHASH}
@@ -30,7 +30,7 @@ type
   // a weather station info, using a whole CPU L1 cache line (64 bytes)
   TBrcStation = packed record
     NameLen: byte; // name as first "shortstring" field for TDynArray
-    NameText: array[1 .. 64 - 1 - 2 * 4 - 2 * 2] of byte;
+    NameText: array[1 .. 64 - 1 - 2 * 4 - 2 * 2] of byte; // maxlen = 51
     Sum, Count: integer;  // we ensured no overflow occurs with 32-bit range
     Min, Max: SmallInt;   // 16-bit (-32767..+32768) temperatures * 10
   end;
@@ -469,21 +469,9 @@ begin
     result := sa.NameLen - sb.NameLen;
 end;
 
-function Average(sum, count: PtrInt): PtrInt;
-// sum and result are temperature * 10 (one fixed decimal)
-var
-  x, t: PtrInt; // temperature * 100 (two fixed decimals)
+function ceil(x: double): PtrInt; // "official" rounding method
 begin
-  x := (sum * 10) div count; // average
-  // this weird algo follows the "official" PascalRound() implementation
-  t := (x div 10) * 10; // truncate
-  if abs(x - t) >= 5 then
-    if x < 0 then
-      dec(t, 10)
-    else
-      inc(t, 10);
-  result := t div 10; // truncate back to one decimal (temperature * 10)
-  //ConsoleWrite([sum / (count * 10), ' ', result / 10]);
+  result := trunc(x) + ord(frac(x) > 0);  // using FPU is fast enough here
 end;
 
 function TBrcMain.SortedText: RawUtf8;
@@ -513,7 +501,7 @@ begin
           assert(s^.Count <> 0);
           w.AddNoJsonEscape(@s^.NameText, s^.NameLen);
           AddTemp(w, '=', s^.Min);
-          AddTemp(w, '/', Average(s^.Sum, s^.Count));
+          AddTemp(w, '/', ceil(s^.Sum / s^.Count)); // average
           AddTemp(w, '/', s^.Max);
           dec(n);
           if n = 0 then
