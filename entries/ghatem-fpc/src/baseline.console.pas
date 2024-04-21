@@ -19,6 +19,8 @@ const
   cLongOptVersion        = 'version';
   cShortOptInput: Char   = 'i';
   cLongOptInput          = 'input-file';
+  cShortOptThread: Char  = 't';
+  cLongOptThread         = 'threads';
   {$ELSE}
   cOptionHelp:    array of string = ['-h', '--help'];
   cOptionVersion: array of string = ['-v', '--version'];
@@ -63,6 +65,7 @@ begin
   WriteLn('  -h|--help                      Writes this help message and exits');
   WriteLn('  -v|--version                   Writes the version and exits');
   WriteLn('  -i|--input-file <filename>     The file containing the Weather Stations');
+  WriteLn('  -t|--threads <threadcount>     The number of threads to be used, default 32');
 end;
 
 {$IFNDEF FPC}

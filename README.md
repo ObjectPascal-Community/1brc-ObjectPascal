@@ -154,18 +154,19 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
-| 1  | 00:01.718 | lazarus-3.0, fpc-3.2.2 | Arnaud Bouchez      | Using `mORMot2`, 32 threads | |
-| 2  | 00:02.355 | lazarus-3.0, fpc-3.2.2 | O Coddo             | Using `SCL`, 32 threads | |
-| 3  | 00:05.998 | lazarus-3.0, fpc-3.2.2 | Georges Hatem - FPC | Free Pascal: Using 32 thread | |
-| 4  | 00:09.974 | lazarus-3.0, fpc-3.2.2 | G Klark             | Using 32 threads | |
-| 5  | 00:15.873 | lazarus-3.0, fpc-3.2.2 | Székely Balázs      | Using 32 threads | |
-| 6  | 00:53.131 | lazarus-3.0, fpc-3.2.2 | Hartmut Grosser     | Using 1 thread | |
-| 7  | 01:15.640 | lazarus-3.0, fpc-3.2.2 | Richard Lawson      | Using 1 thread | |
-| 8  | 02:48.079 | lazarus-3.0, fpc-3.2.2 | Iwan Kelaiah        | Using 1 thread | |
-| 9  | 06:49.661 | delphi 12.1            | Brian Fire          | Using 1 thread | |
-| 10 | 06:58.535 | delphi 12.1            | David Cornelius     | Using 1 thread | |
-| 🟠 | 00:19.699 | lazarus-3.0, fpc-3.2.2 | Lurendrejer Aksen   | Using 32 threads **(failed hash)** | |
-| 🟠 | 14:36.808 | delphi 12.1            | Daniel Töpfl        | Using 1 thread **(failed hash)** | |
+|  1 |   0:1.651 | lazarus-3.0, fpc-3.2.2  | Arnaud Bouchez         | Using `mORMot2`, 32 threads        | |
+|  2 |   0:2.606 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
+|  3 |   0:5.884 | lazarus-3.0, fpc-3.2.2  | Georges Hatem - FPC    | Free Pascal: Using 32 thread       | |
+|  4 |   0:9.808 | lazarus-3.99, fpc-3.3.1 | G Klark                | Using 32 threads                   | |
+|  5 |  0:15.059 | lazarus-3.0, fpc-3.2.2  | Székely Balázs         | Using 32 threads                   | |
+|  6 |  0:53.488 | lazarus-3.0, fpc-3.2.2  | Hartmut Grosser        | Using 1 thread                     | |
+|  7 |  1:15.706 | lazarus-3.0, fpc-3.2.2  | Richard Lawson         | Using 1 thread                     | |
+|  8 |  2:27.407 | lazarus-3.0, fpc-3.2.2  | Iwan Kelaiah           | Using 1 thread                     | |
+|  9 |  6:55.406 | delphi 12.1             | David Cornelius        | Using 1 thread                     | |
+| 10 |   7:4.147 | delphi 12.1             | Brian Fire             | Using 1 thread                     | |
+| 🟠 |  0:19.460 | lazarus-3.0, fpc-3.2.2  | Lurendrejer Aksen      | Using 32 threads **(failed hash)** | |
+| 🟠 |  15:4.100 | delphi 12.1             | Daniel Töpfl           | Using 1 thread **(failed hash)**   | |
+
 
 > **NOTE**
 >

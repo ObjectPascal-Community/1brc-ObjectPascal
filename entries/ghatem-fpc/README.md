@@ -132,8 +132,9 @@ Instead of extracting the station name as a string 1B times, and use it as a dic
 This requires us to migrate from TFPHashList to the generic TDictionary. Even though TDictionary is slower than TFPHashList, the overall improvements yielded a significant performance gain.
 Using TDictionary, the code is more similar to my Delphi version, in case we get to run those tests on a Windows PC.
 
-* expected timing: ~60 seconds, single-threaded*
-** ACTUAL TIMING: 58 seconds as per gcarreno **
+*expected timing: ~60 seconds, single-threaded*
+
+**ACTUAL TIMING: 58 seconds as per gcarreno**
 
 
 ## Multi-Threaded Attempt (2024-04-10)
@@ -184,7 +185,39 @@ Better wait and see the results on the real environment, before judging.
 
 ### results
 
-** ACTUAL TIMING: 6.042 seconds as per gcarreno **
+**ACTUAL TIMING: 6.042 seconds as per gcarreno**
 
 Due to the unexpectedly slow performance on Craig Chapman's powerful computer, and since the results above intrigued me, I have ported my FPC code onto Delphi to be able to compare the output of both compilers on Windows x64.
 Hopefully, it will help identify is the issue stems from Windows x64 or FPC, in multi-threaded implementations.
+
+## Multi-Threaded attempt v.2 (2024-04-16)
+
+On my Linux setup (FPC, no VM), I realize that as the number of cores increases, the performance improvement is far from linear:
+
+- 1 core: 77 seconds
+- 2 cores: 50 seconds
+- 4 cores: 35 seconds
+
+In order to identify the source of the problem, I ﬁrst forced all threads to write to un-protected shared-memory (the results are wrong, of course). The idea is to try to understand if the source of the problem stems from ~45k records being created for each thread, and if the retrieval of those records are causing too many cache misses.
+
+with 4 cores, we're now at ~21 seconds, which is much closer to linear performance. In order to make sure the threads are approximately getting a balanced load, each thread is initially assigned a range of data, and as soon as they are done with their given range, they request the next available range. I've tried with varying range sizes, but the result was always slower than just a plain `N / K` distribution.
+
+So the problem (on my computer at least) does not seem to be related to the load imbalance between threads, but rather having to swap all those records from the cache.
+
+As a last attempt, I tried again accumulating data in a shared memory, protecting all data accumulation with `InterlockedInc`, `InterlockedExchangeAdd`, and `TCriticalSection`. In order to avoid too many contentions on the critical section, I also tried to maintain a large array of critical sections, acquiring only the index for which we are accumulating data. All of these attempts under-performed on 4 threads, and likely will perform even worse as thread-count increases. The only way this would work is by having ﬁner-grained control over the locking, such that a thread would only be blocked if it tried to write into a record that is already locked.
+
+Lastly, the `TDictionary.TryGetValue` has shown to be quite costly, around `1/4th` of the total cost. And although it is currently so much better than when using the station name as key, evaluating the `mod` of all those hashes, there is a lot of collisions. So if the dictionary key-storage is implemented as an array, and `mod` is used to transform those `CRC32` into indexes ranging in `[0, 45k]`, those collisions will be the cause of slowness. If there is a way to reduce the number of collisions, then maybe a custom dictionary implementation might help.
+
+
+## Multi-Threaded attempt v.3 (2024-04-21)
+
+Using performance profiler ValGrind, it identified that:
+ - 30% of the time was spent on `TryGetValue` of the generic `TDictionary`.
+ - 14% of the time is on computing the crc32 hash
+ - 15% of the time on extracting the line data
+ - surprisingly, 9% of the time is spent on looking for the #13 (new-line) character
+
+I implemented my own Dictionary class consisting of two arrays. We compute the modulus of the incoming key (Cardinal) to fit it in the correct bucket. A first attempt at collision resolution was to store as values a TList, but performance was worse than the generic TDictionary.  Next attempt was a linear probing, with circular indexing in case the index goes out of bounds. Performance improved from 35s to 30s.  Will later try quadratic probing, as it apparently reduces clustering.
+
+edit:
+quadratic probing improved performance even further. we could probably do better with 2-level hashing, but finding such a hash function is going to take a lot of trials, this is probably acceptable results
