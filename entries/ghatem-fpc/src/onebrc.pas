@@ -10,6 +10,9 @@ uses
 
 function RoundExDouble(const ATemp: Double): Double; inline;
 
+const
+  cDictSize: Integer = 45000;
+
 type
 
   // record is packed to minimize its size
@@ -24,6 +27,24 @@ type
   PStationData = ^TStationData;
   TStationsDict = specialize TDictionary<Cardinal, PStationData>;
 
+  TKeys = array of Cardinal;
+  TValues = array of PStationData;
+
+  { TMyDictionary }
+
+  TMyDictionary = class
+  private
+    FHashes: TKeys;
+    FData  : TValues;
+    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer); inline;
+  public
+    constructor Create;
+    property Keys: TKeys read FHashes;
+    property Values: TValues read FData;
+    function TryGetValue (const aKey: Cardinal; out aValue: PStationData): Boolean; inline;
+    procedure Add (const aKey: Cardinal; const aValue: PStationData); inline;
+  end;
+
   { TOneBRC }
 
   TOneBRC = class
@@ -36,7 +57,7 @@ type
 
     FThreadCount: UInt16;
     FThreads: array of TThread;
-    FStationsDicts: array of TStationsDict;
+    FStationsDicts: array of TMyDictionary;
 
     procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
 
@@ -106,6 +127,69 @@ begin
   Result := CompareStr(Str1, Str2);
 end;
 
+{ TMyDictionary }
+
+procedure TMyDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
+var vIdx: Integer;
+begin
+  vIdx := aKey mod cDictSize;
+  aFound := False;
+
+  if FHashes[vIdx] = aKey then begin
+    aIndex := vIdx;
+    aFound := True;
+  end
+  else begin
+    while True do begin
+      Inc (vIdx);
+      if vIdx >= cDictSize then
+        Dec (vIdx, cDictSize);
+      if FHashes[vIdx] = aKey then begin
+        aIndex := vIdx;
+        aFound := True;
+        break;
+      end
+      else if FHashes[vIdx] = 0 then begin
+        aIndex := vIdx;
+        aFound := False;
+        break;
+      end;
+    end;
+  end;
+end;
+
+constructor TMyDictionary.Create;
+begin
+  SetLength (FHashes, cDictSize);
+  SetLength (FData, cDictSize);
+end;
+
+function TMyDictionary.TryGetValue(const aKey: Cardinal; out aValue: PStationData): Boolean;
+var
+  vIdx: Integer;
+begin
+  InternalFind (aKey, Result, vIdx);
+
+  if Result then
+    aValue := FData[vIdx]
+  else
+    aValue := nil;
+end;
+
+procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData);
+var
+  vIdx: Integer;
+  vFound: Boolean;
+begin
+  InternalFind (aKey, vFound, vIdx);
+  if not vFound then begin
+    FHashes[vIdx] := aKey;
+    FData[vIdx] := aValue;
+  end
+  else
+    raise Exception.Create ('TMyDict: cannot add, duplicate key');
+end;
+
 procedure TOneBRC.ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt);
 // given a line of data, extract the length of station name, and temperature as Integer.
 var
@@ -155,8 +239,8 @@ begin
   SetLength (FThreads, aThreadCount);
 
   for I := 0 to aThreadCount - 1 do begin
-    FStationsDicts[I] := TStationsDict.Create;
-    FStationsDicts[I].Capacity := 45000;
+    FStationsDicts[I] := TMyDictionary.Create;
+    //FStationsDicts[I].Capacity := 45000;
   end;
 end;
 
@@ -280,6 +364,7 @@ var iHash: Cardinal;
     vDataL: PStationData;
 begin
   for iHash in FStationsDicts[aRight].Keys do begin
+    if iHash = 0 then continue;
     FStationsDicts[aRight].TryGetValue(iHash, vDataR);
 
     if FStationsDicts[aLeft].TryGetValue(iHash, vDataL) then begin
@@ -322,7 +407,8 @@ begin
   try
     vStations.BeginUpdate;
     for vData in FStationsDicts[0].Values do begin
-      vStations.Add(vData^.Name);
+      if vData <> nil then
+        vStations.Add(vData^.Name);
     end;
     vStations.EndUpdate;
 
