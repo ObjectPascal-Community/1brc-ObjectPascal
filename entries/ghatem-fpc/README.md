@@ -218,3 +218,6 @@ Using performance profiler ValGrind, it identified that:
  - surprisingly, 9% of the time is spent on looking for the #13 (new-line) character
 
 I implemented my own Dictionary class consisting of two arrays. We compute the modulus of the incoming key (Cardinal) to fit it in the correct bucket. A first attempt at collision resolution was to store as values a TList, but performance was worse than the generic TDictionary.  Next attempt was a linear probing, with circular indexing in case the index goes out of bounds. Performance improved from 35s to 30s.  Will later try quadratic probing, as it apparently reduces clustering.
+
+edit:
+quadratic probing improved performance even further. we could probably do better with 2-level hashing, but finding such a hash function is going to take a lot of trials, this is probably acceptable results
