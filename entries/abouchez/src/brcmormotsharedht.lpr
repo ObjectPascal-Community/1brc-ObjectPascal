@@ -1,5 +1,6 @@
 /// MIT code (c) Arnaud Bouchez, using the mORMot 2 framework
-program brcmormot;
+// - shared hash table version, potentially with "perfect hash" trick
+program brcmormotsharedht;
 
 {.$define NOPERFECTHASH}
 // you can define this conditional to force name comparison (slower)
