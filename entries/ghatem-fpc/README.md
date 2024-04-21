@@ -207,3 +207,14 @@ So the problem (on my computer at least) does not seem to be related to the load
 As a last attempt, I tried again accumulating data in a shared memory, protecting all data accumulation with `InterlockedInc`, `InterlockedExchangeAdd`, and `TCriticalSection`. In order to avoid too many contentions on the critical section, I also tried to maintain a large array of critical sections, acquiring only the index for which we are accumulating data. All of these attempts under-performed on 4 threads, and likely will perform even worse as thread-count increases. The only way this would work is by having ﬁner-grained control over the locking, such that a thread would only be blocked if it tried to write into a record that is already locked.
 
 Lastly, the `TDictionary.TryGetValue` has shown to be quite costly, around `1/4th` of the total cost. And although it is currently so much better than when using the station name as key, evaluating the `mod` of all those hashes, there is a lot of collisions. So if the dictionary key-storage is implemented as an array, and `mod` is used to transform those `CRC32` into indexes ranging in `[0, 45k]`, those collisions will be the cause of slowness. If there is a way to reduce the number of collisions, then maybe a custom dictionary implementation might help.
+
+
+## Multi-Threaded attempt v.3 (2024-04-21)
+
+Using performance profiler ValGrind, it identified that:
+ - 30% of the time was spent on `TryGetValue` of the generic `TDictionary`.
+ - 14% of the time is on computing the crc32 hash
+ - 15% of the time on extracting the line data
+ - surprisingly, 9% of the time is spent on looking for the #13 (new-line) character
+
+I implemented my own Dictionary class consisting of two arrays. We compute the modulus of the incoming key (Cardinal) to fit it in the correct bucket. A first attempt at collision resolution was to store as values a TList, but performance was worse than the generic TDictionary.  Next attempt was a linear probing, with circular indexing in case the index goes out of bounds. Performance improved from 35s to 30s.  Will later try quadratic probing, as it apparently reduces clustering.
