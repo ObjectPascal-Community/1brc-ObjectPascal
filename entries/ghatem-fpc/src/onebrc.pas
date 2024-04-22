@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, Generics.Collections,
-  mormot.core.os;
+  mormot.core.os, mormot.core.base;
 
 function RoundExDouble(const ATemp: Double): Double; inline;
 
@@ -96,6 +96,7 @@ implementation
 
 uses
   CRC;
+
 
 const
   c0ascii: ShortInt = 48;
@@ -331,7 +332,8 @@ begin
       ExtractLineData (vLineStart, i - 1, vLenStationName, vTemp);
 
       // compute the hash starting at the station's first char, and its length
-      vHash := crc32(0, @FData[vLineStart], vLenStationName);
+      // mORMot's crc32c is ~33% faster than the built-in one
+      vHash := crc32c(0, @FData[vLineStart], vLenStationName);
 
       if FstationsDicts[aThreadNb].TryGetValue(vHash, vData) then begin
         if vTemp < vData^.Min then
@@ -434,7 +436,7 @@ begin
       // the stations are now sorted, but we need to locate the data: recompute hash
       // would it be more efficient to store the hash as well?
       // debatable, and the whole output generation is < 0.3 seconds, so not exactly worth it
-      vHash := crc32(0, @vStations[i][1], Length (vStations[i]));
+      vHash := crc32c(0, @vStations[i][1], Length (vStations[i]));
       FStationsDicts[0].TryGetValue(vHash, vData);
       vMin := vData^.Min/10;
       vMax := vData^.Max/10;

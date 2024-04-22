@@ -1,7 +1,7 @@
 # Georges Hatem
 
 ## Requirements
- - mORMot2 library
+ - mORMot2 library (for the `MemMap` and `crc32c` functions)
  - 64-bit compilation
 
 ## Usage
