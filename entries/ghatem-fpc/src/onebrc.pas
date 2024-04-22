@@ -36,7 +36,7 @@ type
   private
     FHashes: TKeys;
     FData  : TValues;
-    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer); inline;
+    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
   public
     constructor Create;
     property Keys: TKeys read FHashes;
@@ -249,7 +249,6 @@ begin
 
   for I := 0 to aThreadCount - 1 do begin
     FStationsDicts[I] := TMyDictionary.Create;
-    //FStationsDicts[I].Capacity := 45000;
   end;
 end;
 
