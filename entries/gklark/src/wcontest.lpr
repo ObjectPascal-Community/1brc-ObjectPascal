@@ -200,6 +200,7 @@ var
     it: pdataitem;
   begin
     pool := TFPSimpleThreadPool.Create;
+    pool.MinThreads:=1;
     if threadc > 0 then pool.MaxThreads := threadc;
     bc := 256;
     i := 0;
@@ -263,7 +264,7 @@ begin
       infile := ParamStr(1);
       if not FileExists(infile) then
       begin
-        writeln('Invalid filename', ParamStr(1));
+        writeln('Invalid filename ', ParamStr(1));
         break;
       end;
     end
