@@ -6,7 +6,7 @@ uses
   {$IFDEF UNIX}
   cthreads,
   {$ENDIF}
-  Classes, SysUtils, CustApp, Lclintf,
+  Classes, SysUtils, CustApp, Lclintf, UTF8Process,
   Baseline.Console,
   OneBRC;
 
@@ -32,8 +32,6 @@ type
 procedure TOneBRCApp.RunOneBRC;
 var
   vOneBRC: TOneBRC;
-  vStart: Int64;
-  vTime: Int64;
 begin
   vOneBRC := TOneBRC.Create (FThreadCount);
   try
@@ -123,7 +121,7 @@ begin
     Exit;
   end;
 
-  FThreadCount := 32;
+  FThreadCount := GetSystemThreadCount;
   if HasOption(cShortOptThread, cLongOptThread) then begin
     FThreadCount := StrToInt (GetOptionValue(cShortOptThread, cLongOptThread));
   end;

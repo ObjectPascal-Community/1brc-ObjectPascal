@@ -3,6 +3,9 @@
 ## Requirements
  - mORMot2 library
  - 64-bit compilation
+
+## Usage
+ - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
  
 ## Hardware + Environment
 host: 
