@@ -24,10 +24,12 @@ const
   cLongOptNumber          = 'line-count';
   cShortOptStations: Char = '4';
   cLongOptStations        = '400stations';
+  cShortOptLineEnd: Char  = 'b';
+  cLongOptLineEnd         = 'line-ending';
   {$IFNDEF FPC}
-  cShortOptions: array of char = ['h', 'v', 'i', 'o', 'n', '4'];
+  cShortOptions: array of char = ['h', 'v', 'i', 'o', 'n', '4', 'b'];
   cLongOptions: array of string = ['help', 'version', 'input-file', 'output-file',
-                                   'line-count', '400stations'];
+                                   'line-count', '400stations', 'line-ending'];
   {$ENDIF}
 
 resourcestring
@@ -42,12 +44,14 @@ resourcestring
   rsInputFile = 'Input Filename: "%s"';
   rsOutputFile = 'Output Filename: "%s"';
   rsLineCount = 'Line Count: %.n';
+  rsInvalidLineEnd = 'Line ending should be a CRLF or LF';
 
 var
   inputFilename: String = '';
   outputFilename: String = '';
   lineCount: Integer = 0;  
   only400Stations: Boolean = False;
+  lineEnding: String = '';
 
 procedure WriteHelp;
 
@@ -68,6 +72,7 @@ begin
   WriteLn('  -o|--output-file <filename>    The file that will contain the generated lines');
   WriteLn('  -n|--line-count <number>       The amount of lines to be generated ( Can use 1_000_000_000 )');
   WriteLn('  -4|--400stations               Only 400 weather stations in output file');
+  WriteLn('  -b|--line-ending               Line ending: CRLF (default) or LF');
 end;
 
 end.
