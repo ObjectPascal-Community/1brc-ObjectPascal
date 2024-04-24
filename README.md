@@ -17,7 +17,7 @@ Grab all your threads, reach out to SIMD,  or pull any other trick, and create t
 <img src="img/1brc.png" alt="1BRC" style="display: block; margin-left: auto; margin-right: auto; margin-bottom:1em; width: 50%;">
 </p>
 
-The text file contains temperature values for a range of weather stations. Each row is one measurement in the format `<string: station name>;<double: measurement>`, with the measurement value having exactly one fractional digit.
+The text file contains temperature values for a range of weather stations. Each row is one measurement in the format `<string: station name>;<double: measurement>`, with the measurement value having exactly one fractional digit. Rows are separated by a single line feed equal of LF (ascii 10) for consistency with the original challenge - and not CR+LF (ascii 13+10) any more.
 The following shows ten rows as an example:
 
 ```
@@ -119,7 +119,7 @@ C:> CertUtil -hashfile .\data\measurements.txt SHA256
 Get-FileHash .\data\measurements.txt -Algorithm SHA256
 ```
 Expected `SHA256` hash:
-`ebad17b266ee9f5cb3d118531f197e6f68c9ab988abc5cb9506e6257e1a52ce6`
+`2b48bc2fa0b82d748925a820f43f75df01cc06df7447c7571e52d3962e675960`
 
 ## Verify Output File
 

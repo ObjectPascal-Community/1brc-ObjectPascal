@@ -111,7 +111,7 @@ asm
          setne    dl
          mov      eax, dword ptr [r8 + 1]   // eax = xx.x or x.x
          shl      cl, 3
-         lea      r8, [r8 + rdx + 6]        // r8 = next line
+         lea      r8, [r8 + rdx + 5]        // r8 = next line (LF only)
          shl      eax, cl                   // normalized as xx.x
          and      eax, $0f000f0f            // from ascii to digit
          imul     rax, rax, 1 + 10 shl 16 + 100 shl 24
@@ -156,14 +156,14 @@ asm
         cmp     rax, rdx
         jl      @by1
         align   8
-@by8:   mov     rcx, qword ptr [rdi + rdx] // branchless for l>=8
+@by8:   mov     rcx, qword ptr [rdi + rdx] // branchless for 8..16 bytes
         cmp     rcx, qword ptr [rsi + rdx]
         jne     @set
         sub     rdx, rax
         jz      @ok
         cmp     rax, rdx
-        jge     @by8
-        mov     rcx, qword ptr [rdi + rax] // may overlap
+        jg      @by8
+        mov     rcx, qword ptr [rdi + rax] // compare last 8 bytes - may overlap
         cmp     rcx, qword ptr [rsi + rax]
 @set:   sete    al
         ret
@@ -194,7 +194,7 @@ begin
   // branchless parsing of the temperature
   neg := ord(p[1] <> '-') * 2 - 1;         // neg = +1 or -1
   inc(p, ord(p[1] = '-'));                 // ignore '-' sign
-  chunk.Start := @p[ord(p[2] <> '.') + 6]; // next line
+  chunk.Start := @p[ord(p[2] <> '.') + 5]; // next line (LF only)
   chunk.Value := PtrInt(cardinal((QWord((PCardinal(p + 1)^ shl
                    (byte(ord(p[2] = '.') shl 3))) and $0f000f0f) *
          (1 + 10 shl 16 + 100 shl 24)) shr 24) and cardinal(1023)) * neg;
@@ -216,7 +216,7 @@ begin
       dec(l, ptrsiz);
       if l = 0 then
         exit
-      else if l <= ptrsiz then
+      else if l < ptrsiz then
         continue;
       result := PPtrUInt(@a[ptrsiz])^ = PPtrUInt(@b[ptrsiz])^; // may overlap
       exit;
@@ -246,7 +246,7 @@ begin
   FreeOnTerminate := true;
   SetLength(fStation, fOwner.fMax);
   InterlockedIncrement(fOwner.fRunning);
-  inherited Create({suspended=}false);
+  inherited Create({suspended=}false, {stacksize=}16384);
 end;
 
 
@@ -274,7 +274,7 @@ begin
   if not fullsearch then
     SetLength(fNameHash, fMax);
   SetLength(fNameLine, fMax);
-  // we tried pre-loading a first chunk here but it was not faster
+  // (we tried pre-loading a first chunk here but it was not faster)
   // run the thread workers
   core := 0;
   cores := SystemInfo.dwNumberOfProcessors;
