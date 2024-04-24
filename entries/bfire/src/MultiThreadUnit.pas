@@ -394,7 +394,8 @@ begin
           begin
             if ((ReadBuffer + BufferIndex)^ = 10) then // line feed
             begin
-              // and done collecting bytes, move to one of the stacks
+              // done collecting bytes, tack on carriage return as data end flag
+              DataStackItem.RawData[DataIndex] := 13;
 
               // send to the appropriate stack
               // ABCD EFGHIJKL MNOPQR STUVWXYZ (and extended)
