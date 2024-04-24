@@ -22,13 +22,14 @@ type
     FOutPutFile: String;
     FLineCount: Int64;
     FStationNames: TStringList;
+    FLineEnding: String;
 
     procedure BuildStationNames;
     function GenerateProgressBar(APBPosition, APBMax, APBWIdth: Integer;
       AFileSize: Int64; ATimeElapsed: TDateTime): String;
     function Rng1brc(Range: Integer): Integer;
   public
-    constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64; AOnly400Stations: Boolean = False);
+    constructor Create(AInputFile, AOutputFile: String; ALineCount: Int64; AOnly400Stations: Boolean; ALineEnding: String);
     destructor Destroy; override;
 
     procedure Generate;
@@ -57,17 +58,17 @@ const
   stationsCapacity = 50000;
   chunkBatch = 10000;
   chunkCapacity = 20 * 1024 * 1024;
-  lineEnding = #13#10;
   lineBreak = #13;
 
 { TGenerator }
 
-constructor TGenerator.Create(AInputFile, AOutputFile: String; ALineCount: Int64; AOnly400Stations: Boolean);
+constructor TGenerator.Create(AInputFile, AOutputFile: String; ALineCount: Int64; AOnly400Stations: Boolean; ALineEnding: String);
 begin
   FInputFile := AInputFile;
   FOutPutFile := AOutputFile;
   FLineCount := ALineCount;
   FOnly400Stations := AOnly400Stations;
+  FLineEnding := ALineEnding;
 
   FStationNames := TStringList.Create;
   FStationNames.Capacity := stationsCapacity;
@@ -193,6 +194,10 @@ begin
   // Build list of station names
   BuildStationNames;
 
+  //initialize line ending if not corrected
+  if FLineEnding <> #13#10 then
+    FLineEnding := #10;
+
   outputFileStream := TFileStream.Create(FOutPutFile, fmCreate);
 
   progressBatch := floor(FLineCount * (linesPercent / 100));
@@ -228,7 +233,7 @@ begin
   for index := 0 to High(temperatureArray) do
   begin
     randomTempFinal := FormatFloat('0"."0', index - 999);
-    temperatureArray[index] := randomTempFinal + lineEnding;
+    temperatureArray[index] := randomTempFinal + FLineEnding;
     LenTemperatureArray[index] := Length(temperatureArray[index]);
   end;
 

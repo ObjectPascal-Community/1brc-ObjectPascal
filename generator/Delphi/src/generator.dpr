@@ -42,7 +42,7 @@ begin
     WriteLn(Format(rsLineCount, [Double(lineCount)]));
     WriteLn;
 
-    FGenerator := TGenerator.Create(inputFilename, outputFilename, lineCount, only400Stations);
+    FGenerator := TGenerator.Create(inputFilename, outputFilename, lineCount, only400Stations, lineEnding);
     try
       try
         FGenerator.generate;
@@ -100,7 +100,7 @@ end;
 function TOneBRCGenerator.ParseConsoleParams: boolean;
 var
   I, J, invalid, valid: Integer;
-  tmpLineCount: String;
+  tmpLineCount, tmpLineEnd: String;
   ParamOK: Boolean;
   SkipNext: Boolean;
 begin
@@ -241,6 +241,27 @@ begin
   end;
 
   only400Stations := (FParams.IndexOf(cShortOptStations) >= 0) or (FParams.IndexOf(cLongOptStations) >= 0);
+  
+  // check line ending
+  J := FParams.IndexOfName(cShortOptLineEnd);
+  if J = -1 then
+    J := FParams.IndexOfName(cLongOptLineEnd);
+  if J >= 0 then
+  begin
+    tmpLineCount := FParams.ValueFromIndex[J];
+    
+    if (UpperCase(tmpLineEnd) <> 'CRLF') and (UpperCase(tmpLineEnd) <> 'LF') then
+    begin
+      WriteLn(rsInvalidLineEnd);
+      inc(invalid);
+    end
+    else 
+    begin
+      if UpperCase(tmpLineEnd) = 'CRLF' then
+        lineEnding := #13#10;  
+      inc(valid);
+    end;    
+  end;
 
   writeln(only400Stations);
   writeln(fparams.Text);
