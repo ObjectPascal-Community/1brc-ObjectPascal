@@ -257,8 +257,8 @@ begin
     end
     else 
     begin
-      if UpperCase(tmpLineEnd) = 'LF' then
-        lineEnding := #10;  
+      if UpperCase(tmpLineEnd) = 'CRLF' then
+        lineEnding := #13#10;  
       inc(valid);
     end;    
   end;

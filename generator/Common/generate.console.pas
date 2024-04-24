@@ -72,7 +72,7 @@ begin
   WriteLn('  -o|--output-file <filename>    The file that will contain the generated lines');
   WriteLn('  -n|--line-count <number>       The amount of lines to be generated ( Can use 1_000_000_000 )');
   WriteLn('  -4|--400stations               Only 400 weather stations in output file');
-  WriteLn('  -b|--line-ending               Line ending: CRLF (default) or LF');
+  WriteLn('  -b|--line-ending               Line ending: LF (default) or CRLF');
 end;
 
 end.

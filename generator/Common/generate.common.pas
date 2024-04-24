@@ -195,8 +195,8 @@ begin
   BuildStationNames;
 
   //initialize line ending if not corrected
-  if FLineEnding <> #10 then
-    FLineEnding := #13#10;
+  if FLineEnding <> #13#10 then
+    FLineEnding := #10;
 
   outputFileStream := TFileStream.Create(FOutPutFile, fmCreate);
 

@@ -148,8 +148,8 @@ begin
       Terminate;
       Exit;
     end
-    else if UpperCase(tmpLineEnd) = 'LF' then
-      lineEnding := #10;
+    else if UpperCase(tmpLineEnd) = 'CRLF' then
+      lineEnding := #13#10;
   end;
 
   inputFilename:= ExpandFileName(inputFilename);
