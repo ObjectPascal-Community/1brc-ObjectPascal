@@ -318,7 +318,7 @@ begin
   // the given ending point might be in the middle of a line:
   // find the beginning of that line (the last block works well)
   while True do begin
-    if FData[aEndIdx] <> #13 then
+    if FData[aEndIdx] <> #10 then
       Dec (aEndIdx)
     else
       break;
@@ -328,7 +328,7 @@ begin
   vLineStart := i;
 
   while i < aEndIdx do begin
-    if FData[i] = #13 then begin
+    if FData[i] = #10 then begin
       // new line parsed, process its contents
       ExtractLineData (vLineStart, i - 1, vLenStationName, vTemp);
 
@@ -360,8 +360,18 @@ begin
         FStationsDicts[aThreadNb].Add (vHash, vData);
       end;
 
-      // next char is #10, so we can skip 2 instead of 1
-      vLineStart := i+2;
+      // we're at a #10: next line starts at the next index
+      vLineStart := i+1;
+
+      // we're at a #10:
+      // until the next #10 char, there will be:
+      // - 1 semicolon
+      // - 3 chars for the temp (min)
+      // - 2 chars for the name (min)
+      // - the usual Inc (I)
+      // so we should be able to skip 7 chars until another #10 may appear
+      Inc (i, 7);
+      continue;
     end;
 
     Inc (i);
