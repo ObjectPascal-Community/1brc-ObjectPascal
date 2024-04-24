@@ -52,7 +52,7 @@ begin
       cLongOptInput+':',
       cLongOptOutput+':',
       cLongOptNumber+':',
-      cLongOptStations+':',
+      cLongOptStations,
       cLongOptLineEnd+':'
     ]
   );
