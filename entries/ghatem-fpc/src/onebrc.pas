@@ -35,12 +35,13 @@ type
   TMyDictionary = class
   private
     FHashes: TKeys;
-    FData  : TValues;
+    FValues: TValues;
+    FRecords: array of TStationData;
     procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
   public
     constructor Create;
     property Keys: TKeys read FHashes;
-    property Values: TValues read FData;
+    property Values: TValues read FValues;
     function TryGetValue (const aKey: Cardinal; out aValue: PStationData): Boolean; inline;
     procedure Add (const aKey: Cardinal; const aValue: PStationData); inline;
   end;
@@ -169,9 +170,16 @@ begin
 end;
 
 constructor TMyDictionary.Create;
+var
+  I: Integer;
 begin
   SetLength (FHashes, cDictSize);
-  SetLength (FData, cDictSize);
+  SetLength (FValues, cDictSize);
+  SetLength (FRecords, cDictSize);
+
+  for I := 0 to cDictSize - 1 do begin
+    FValues[I] := @FRecords[I];
+  end;
 end;
 
 function TMyDictionary.TryGetValue(const aKey: Cardinal; out aValue: PStationData): Boolean;
@@ -179,11 +187,7 @@ var
   vIdx: Integer;
 begin
   InternalFind (aKey, Result, vIdx);
-
-  if Result then
-    aValue := FData[vIdx]
-  else
-    aValue := nil;
+  aValue := FValues[vIdx];
 end;
 
 procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData);
@@ -194,7 +198,7 @@ begin
   InternalFind (aKey, vFound, vIdx);
   if not vFound then begin
     FHashes[vIdx] := aKey;
-    FData[vIdx] := aValue;
+    FValues[vIdx] := aValue;
   end
   else
     raise Exception.Create ('TMyDict: cannot add, duplicate key');
@@ -351,7 +355,6 @@ begin
         SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
 
         // pre-allocated array of records instead of on-the-go allocation
-        new(vData);
         vData^.Min := vTemp;
         vData^.Max := vTemp;
         vData^.Sum := vTemp;
@@ -421,7 +424,7 @@ begin
     vStations.BeginUpdate;
     for vData in FStationsDicts[0].Values do begin
       // nil value means empty slot: skip
-      if vData <> nil then
+      if vData^.Count <> 0 then
         vStations.Add(vData^.Name);
     end;
     vStations.EndUpdate;
