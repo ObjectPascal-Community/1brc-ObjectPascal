@@ -117,7 +117,7 @@ asm
          setne    dl
          mov      eax, dword ptr [r8 + 1]   // eax = xx.x or x.x
          shl      cl, 3
-         lea      r8, [r8 + rdx + 6]        // r8 = next line
+         lea      r8, [r8 + rdx + 5]        // r8 = next line
          shl      eax, cl                   // normalized as xx.x
          and      eax, $0f000f0f            // from ascii to digit
          imul     rax, rax, 1 + 10 shl 16 + 100 shl 24
@@ -208,7 +208,7 @@ begin
   // branchless parsing of the temperature
   neg := ord(p[1] <> '-') * 2 - 1;         // neg = +1 or -1
   inc(p, ord(p[1] = '-'));                 // ignore '-' sign
-  chunk.Start := @p[ord(p[2] <> '.') + 6]; // next line
+  chunk.Start := @p[ord(p[2] <> '.') + 5]; // next line
   chunk.Value := PtrInt(cardinal((QWord((PCardinal(p + 1)^ shl
                    (byte(ord(p[2] = '.') shl 3))) and $0f000f0f) *
          (1 + 10 shl 16 + 100 shl 24)) shr 24) and cardinal(1023)) * neg;
