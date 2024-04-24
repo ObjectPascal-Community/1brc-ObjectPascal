@@ -224,3 +224,12 @@ I implemented my own Dictionary class consisting of two arrays. We compute the m
 
 edit:
 quadratic probing improved performance even further. we could probably do better with 2-level hashing, but finding such a hash function is going to take a lot of trials, this is probably acceptable results
+
+**ACTUAL TIMING (busy machine): ~4 seconds as per gcarreno**
+
+## v.4 (2024-04-24)
+
+a few performance improvements, and measurements as per gcarreno on a busy machine:
+ - using mORMot's `crc32c` function instead of the native `crc32`, time dropped to 3.8 seconds
+ - I had removed my pre-allocated records implementation. restored it in the custom dictionary class, time dropped to 3.2 seconds
+ - skipping a few chars that we don't need to bother with, no timing yet
