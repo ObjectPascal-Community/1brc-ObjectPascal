@@ -37,7 +37,7 @@ var
   tmpLineCount, tmpLineEnd: String;
 begin
   // quick check parameters
-  ErrorMsg:= CheckOptions(Format('%s%s%s:%s:%s:%s:%s',[
+  ErrorMsg:= CheckOptions(Format('%s%s%s:%s:%s:%s%s:',[
       cShortOptHelp,
       cShortOptVersion,
       cShortOptInput,
