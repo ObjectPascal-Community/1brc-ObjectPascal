@@ -95,9 +95,6 @@ type
 
 implementation
 
-uses
-  CRC;
-
 
 const
   c0ascii: ShortInt = 48;
@@ -423,7 +420,7 @@ begin
   try
     vStations.BeginUpdate;
     for vData in FStationsDicts[0].Values do begin
-      // nil value means empty slot: skip
+      // count = 0 means empty slot: skip
       if vData^.Count <> 0 then
         vStations.Add(vData^.Name);
     end;
