@@ -4,7 +4,7 @@
 
 { $DEFINE XTEST}   {please keep this UNDEFINED / compile a safe or a fast program}
 { $DEFINE XINLINE} {please keep this UNDEFINED / use INLINE for routines or not}
-{ $DEFINE noCR}    {neccessary for input-files without CR's (only LF's)}
+{$DEFINE noCR}     {neccessary for input-files without CR's (only LF's)}
 
 {$IFDEF XTEST}
    {$R+} {$Q+} {$S+}                               {slow but safe}
@@ -21,7 +21,7 @@ uses
      sysutils, strutils, math;
 
 const
-  M_version = '1.60'; {version number}
+  M_version = '1.61'; {version number}
 
 {------------------------------ Common routines: ------------------------------}
 
@@ -520,10 +520,7 @@ begin
       begin
         Inc(p2, pred(p1)); {p2:=position of 'LF'}
                                    {get cityname and temperature, without CR: }
-        len := p2 - p1
-{$IFNDEF noCR}
-          - 1;
-{$ENDIF} {'-1' skips the CR}
+        len := p2 - p1 {$IFNDEF noCR} -1 {$ENDIF} ; {'-1' skips the CR}
         city[0] := chr(len);
         move(s[p1], city[1], len);
                                                         {extract temperature: }
