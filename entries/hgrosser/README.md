@@ -3,17 +3,16 @@
 **1 billion row Challenge entry**
 
 ## Version
-Version 1.60
+Version 1.61
 
 ## How to compile
 The program was developed with FPC 3.2.2 and Lazarus 2.2.4
-
-There is a new Conditional "noCR" which is neccessary, if the input file has no CR's
 
 ## How to start
 ```
 Usage:   <path to input file> <bit-width for hash-list (16..28)>
 Example: hgrosser measurements.txt 16
+ - input file: must NOT have CR's (only LF's)
  - bit-width for hash-list: sets the size of the hash list, e.g. '16' => 65536 entries
 ```
 There are no switches like `-i` etc, only 2 values.
@@ -40,3 +39,4 @@ To speed things up:
 - Version 1.50: hash-list optimized, small improvements in parsing the file
 - Version 1.51: small improvements in asm function
 - Version 1.60: hash-list optimized, some minor improvements, Conditional "noCR" added
+- Version 1.61: Conditional "noCR" constantely enabled => input files must NOT have CR's
