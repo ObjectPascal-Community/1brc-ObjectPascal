@@ -18,6 +18,7 @@ type
   private
     FFileName: string;
     FThreadCount: Integer;
+    FDictSize: Integer;
     procedure RunOneBRC;
   protected
     procedure DoRun; override;
@@ -33,7 +34,7 @@ procedure TOneBRCApp.RunOneBRC;
 var
   vOneBRC: TOneBRC;
 begin
-  vOneBRC := TOneBRC.Create (FThreadCount);
+  vOneBRC := TOneBRC.Create (FThreadCount, FDictSize);
   try
     try
       vOneBRC.mORMotMMF(FFileName);
@@ -88,15 +89,17 @@ var
   ErrorMsg: String;
 begin
   // quick check parameters
-  ErrorMsg:= CheckOptions(Format('%s%s%s%s:',[
+  ErrorMsg:= CheckOptions(Format('%s%s%s%s%s:',[
       cShortOptHelp,
       cShortOptThread,
+      cShortOptDictSize,
       cShortOptVersion,
       cShortOptInput
     ]),
     [
       cLongOptHelp,
       cLongOptThread+':',
+      cLongOptDictSize+':',
       cLongOptVersion,
       cLongOptInput+':'
     ]
@@ -124,6 +127,11 @@ begin
   FThreadCount := GetSystemThreadCount;
   if HasOption(cShortOptThread, cLongOptThread) then begin
     FThreadCount := StrToInt (GetOptionValue(cShortOptThread, cLongOptThread));
+  end;
+
+  FDictSize := 45003;
+  if HasOption(cShortOptDictSize, cLongOptDictSize) then begin
+    FDictSize := StrToInt (GetOptionValue(cShortOptDictSize, cLongOptDictSize));
   end;
 
   if HasOption(cShortOptInput, cLongOptInput) then begin
