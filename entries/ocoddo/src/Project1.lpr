@@ -200,12 +200,12 @@ type
       if P[C + 1] = '.' then //X.X
       begin
         T *= (U8(P[C]) - 48) * 10 + U8(P[C + 2]) - 48;
-        C += 5; //X.XCRLF
+        C += 4; //X.XLF
       end
       else //XX.X
       begin
         T *= (U8(P[C]) - 48) * 100 + (U8(P[C + 1]) - 48) * 10 + U8(P[C + 3]) - 48;
-        C += 6; //XX.XCRLF
+        C += 5; //XX.XLF
       end;
 
       Add(P, NS, NE, T, ATemperatures, ACoordinator);
