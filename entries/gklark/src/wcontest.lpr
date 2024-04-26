@@ -13,7 +13,7 @@ uses
   Generics.Defaults;
 
 const
-  lineendinglength = 2;
+  lineendinglength = 1;
 type
 
   { tdataitem }
