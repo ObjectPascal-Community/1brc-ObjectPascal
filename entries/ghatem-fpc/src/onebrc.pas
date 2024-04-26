@@ -10,8 +10,10 @@ uses
 
 function RoundExDouble(const ATemp: Double): Double; inline;
 
+{$WRITEABLECONST ON}
 const
   cDictSize: Integer = 45003;
+{$WRITEABLECONST OFF}
 
 type
 
@@ -63,7 +65,7 @@ type
     procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
 
   public
-    constructor Create (const aThreadCount: UInt16);
+    constructor Create (const aThreadCount: UInt16; const aDictSize: Integer);
     destructor Destroy; override;
     function mORMotMMF (const afilename: string): Boolean;
     procedure DispatchThreads;
@@ -249,9 +251,11 @@ end;
 
 //---------------------------------------------------
 
-constructor TOneBRC.Create (const aThreadCount: UInt16);
+constructor TOneBRC.Create (const aThreadCount: UInt16; const aDictSize: Integer);
 var I: UInt16;
 begin
+  cDictSize := aDictSize;
+
   FThreadCount := aThreadCount;
   SetLength (FStationsDicts, aThreadCount);
   SetLength (FThreads, aThreadCount);

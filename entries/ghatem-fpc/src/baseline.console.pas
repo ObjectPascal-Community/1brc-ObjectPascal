@@ -21,6 +21,8 @@ const
   cLongOptInput          = 'input-file';
   cShortOptThread: Char  = 't';
   cLongOptThread         = 'threads';
+  cShortOptDictSize: Char = 's';
+  cLongOptDictSize        = 'size';
   {$ELSE}
   cOptionHelp:    array of string = ['-h', '--help'];
   cOptionVersion: array of string = ['-v', '--version'];
