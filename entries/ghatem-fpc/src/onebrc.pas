@@ -11,7 +11,7 @@ uses
 function RoundExDouble(const ATemp: Double): Double; inline;
 
 const
-  cDictSize: Integer = 45000;
+  cDictSize: Integer = 45003;
 
 type
 
@@ -128,11 +128,18 @@ end;
 
 { TMyDictionary }
 
+const
+  cHashConst: Double = (Sqrt(5) - 1) / 2;
+
 procedure TMyDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
 var vIdx: Integer;
+    vDbl: Double;
     vOffset: Integer;
 begin
-  vIdx := aKey mod cDictSize;
+  vDbl := aKey * cHashConst;
+  vDbl := vDbl - Trunc (vDbl);
+  vIdx := Trunc (vDbl * cDictSize);
+
   aFound := False;
 
   if FHashes[vIdx] = aKey then begin
