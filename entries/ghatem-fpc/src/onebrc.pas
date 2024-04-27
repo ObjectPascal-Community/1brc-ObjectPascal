@@ -136,9 +136,13 @@ var vIdx: Integer;
     vDbl: Double;
     vOffset: Integer;
 begin
+{$IFDEF HASHMULT}
   vDbl := aKey * cHashConst;
   vDbl := vDbl - Trunc (vDbl);
   vIdx := Trunc (vDbl * cDictSize);
+{$ELSE}
+  vIdx := aKey mod cDictSize;
+{$ENDIF}
 
   aFound := False;
 
