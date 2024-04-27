@@ -10,10 +10,8 @@ uses
 
 function RoundExDouble(const ATemp: Double): Double; inline;
 
-{$WRITEABLECONST ON}
 const
-  cDictSize: Integer = 45003;
-{$WRITEABLECONST OFF}
+  cDictSize: Integer = 45007;
 
 type
 
@@ -62,10 +60,10 @@ type
     FThreads: array of TThread;
     FStationsDicts: array of TMyDictionary;
 
-    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
+    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt);
 
   public
-    constructor Create (const aThreadCount: UInt16; const aDictSize: Integer);
+    constructor Create (const aThreadCount: UInt16);
     destructor Destroy; override;
     function mORMotMMF (const afilename: string): Boolean;
     procedure DispatchThreads;
@@ -138,9 +136,13 @@ var vIdx: Integer;
     vDbl: Double;
     vOffset: Integer;
 begin
+{$IFDEF HASHMULT}
   vDbl := aKey * cHashConst;
   vDbl := vDbl - Trunc (vDbl);
   vIdx := Trunc (vDbl * cDictSize);
+{$ELSE}
+  vIdx := aKey mod cDictSize;
+{$ENDIF}
 
   aFound := False;
 
@@ -251,11 +253,9 @@ end;
 
 //---------------------------------------------------
 
-constructor TOneBRC.Create (const aThreadCount: UInt16; const aDictSize: Integer);
+constructor TOneBRC.Create (const aThreadCount: UInt16);
 var I: UInt16;
 begin
-  cDictSize := aDictSize;
-
   FThreadCount := aThreadCount;
   SetLength (FStationsDicts, aThreadCount);
   SetLength (FThreads, aThreadCount);
