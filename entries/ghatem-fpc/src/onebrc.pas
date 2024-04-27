@@ -140,7 +140,11 @@ begin
   vDbl := aKey * cHashConst;
   vDbl := vDbl - Trunc (vDbl);
   vIdx := Trunc (vDbl * cDictSize);
-{$ELSE}
+{$ENDIF}
+{$IFDEF LEMIRE}
+  vIdx := aKey * cDictSize shr 32;
+{$ENDIF}
+{$IFDEF HASHMOD}
   vIdx := aKey mod cDictSize;
 {$ENDIF}
 
