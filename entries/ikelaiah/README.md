@@ -136,6 +136,11 @@ Iwan Kelaiah
   * Use `ShortString` whenever possible. This saves approx 20 seconds.
   * Pre-allocate initial size for dictionaries. saves approx 20 seconds.
 
+* 1.10
+  * Revision release - Sequential approach. 3-5 mins on my Inspiron 15 7510 laptop, around 2m55s (a little improvement on speed).
+  * Reduced buffer for `TStreamReader` to `65536 * 2`. This saves approx 5 seconds.
+  * Changed hashmap from `TGHashMapLP` (linear probing) to `TGHashMapQP` (quadratic probing). This saves approx 5 seconds.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details
