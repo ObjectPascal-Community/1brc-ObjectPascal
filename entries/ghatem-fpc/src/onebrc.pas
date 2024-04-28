@@ -11,7 +11,7 @@ uses
 function RoundExDouble(const ATemp: Double): Double; inline;
 
 const
-  cDictSize: Integer = 45000;
+  cDictSize: Integer = 45007;
 
 type
 
@@ -60,7 +60,7 @@ type
     FThreads: array of TThread;
     FStationsDicts: array of TMyDictionary;
 
-    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
+    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt);
 
   public
     constructor Create (const aThreadCount: UInt16);
@@ -128,11 +128,26 @@ end;
 
 { TMyDictionary }
 
+const
+  cHashConst: Double = (Sqrt(5) - 1) / 2;
+
 procedure TMyDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
 var vIdx: Integer;
+    vDbl: Double;
     vOffset: Integer;
 begin
+{$IFDEF HASHMULT}
+  vDbl := aKey * cHashConst;
+  vDbl := vDbl - Trunc (vDbl);
+  vIdx := Trunc (vDbl * cDictSize);
+{$ENDIF}
+{$IFDEF LEMIRE}
+  vIdx := aKey * cDictSize shr 32;
+{$ENDIF}
+{$IFDEF HASHMOD}
   vIdx := aKey mod cDictSize;
+{$ENDIF}
+
   aFound := False;
 
   if FHashes[vIdx] = aKey then begin

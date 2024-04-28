@@ -6,6 +6,11 @@
 
 ## Usage
  - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
+
+currently there are 3 configurations that can be compiled / run:
+ - `HASHMOD`: uses modulus for hashing, least collisions
+ - `HASHMULT`: alternative hashing, more collisions, faster on my PC, but seemingly slower on test PCs
+ - `LEMIRE`: faster hash function calculation, most collisions it seems, yet the fastest on my PC
  
 ## Hardware + Environment
 host: 
@@ -233,3 +238,12 @@ a few performance improvements, and measurements as per gcarreno on a busy machi
  - using mORMot's `crc32c` function instead of the native `crc32`, time dropped to 3.8 seconds
  - I had removed my pre-allocated records implementation. restored it in the custom dictionary class, time dropped to 3.2 seconds
  - skipping a few chars that we don't need to bother with, no timing yet
+
+## v.5 (2024-04-27)
+
+Various attempts at dictionary sizes, ranging from 45k to 95k. Even though larger dictionaries reduce collision tremendously, a dictionary of size 45k was still optimal.
+
+Another trial with various hash functions, a simple modulus vs. a slightly more complex one: modulus is slower on my PC, remains to try on the test env.
+Can be tested with the HASHMULT build option
+
+Finally, it seems choosing a dictionary size that is a prime number is also recommended: shaves 1 second out of 20 on my PC.
