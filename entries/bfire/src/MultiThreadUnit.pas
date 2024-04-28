@@ -3,7 +3,6 @@ unit MultiThreadUnit;
 interface
 
 uses
-  WinApi.Windows,
   System.Diagnostics,
   System.Threading,
   System.SyncObjs,
