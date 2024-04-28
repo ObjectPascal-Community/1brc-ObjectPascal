@@ -6,6 +6,11 @@
 
 ## Usage
  - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
+
+currently there are 3 configurations that can be compiled / run:
+ - `HASHMOD`: uses modulus for hashing, least collisions
+ - `HASHMULT`: alternative hashing, more collisions, faster on my PC, but seemingly slower on test PCs
+ - `LEMIRE`: faster hash function calculation, most collisions it seems, yet the fastest on my PC
  
 ## Hardware + Environment
 host: 
