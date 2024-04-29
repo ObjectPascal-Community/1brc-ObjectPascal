@@ -156,7 +156,7 @@ These are the results from running all entries into the challenge on my personal
 |--:|----------------:|---------:|:----------|:------|:-------------|
 |  1 |   0:1.651 | lazarus-3.0, fpc-3.2.2  | Arnaud Bouchez         | Using `mORMot2`, 32 threads        | |
 |  2 |   0:2.606 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
-|  3 |   0:5.884 | lazarus-3.0, fpc-3.2.2  | Georges Hatem - FPC    | Free Pascal: Using 32 thread       | |
+|  3 |   0:5.884 | lazarus-3.0, fpc-3.2.2  | Georges Hatem          | Free Pascal: Using 32 thread       | |
 |  4 |   0:9.808 | lazarus-3.99, fpc-3.3.1 | G Klark                | Using 32 threads                   | |
 |  5 |  0:15.059 | lazarus-3.0, fpc-3.2.2  | Székely Balázs         | Using 32 threads                   | |
 |  6 |  0:53.488 | lazarus-3.0, fpc-3.2.2  | Hartmut Grosser        | Using 1 thread                     | |
