@@ -26,8 +26,8 @@ type
   end;
   PStationData = ^TStationData;
 
-  TKeys = array [0..45007] of Cardinal;
-  TValues = array [0..45007] of PStationData;
+  TKeys = array [0..45006] of Cardinal;
+  TValues = array [0..45006] of PStationData;
 
   { TMyDictionary }
 
@@ -35,7 +35,7 @@ type
   private
     FHashes: TKeys;
     FValues: TValues;
-    FRecords: array [0..45007] of TStationData;
+    FRecords: array [0..45006] of TStationData;
     procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
   public
     constructor Create;
