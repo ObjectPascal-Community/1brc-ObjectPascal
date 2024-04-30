@@ -5,7 +5,7 @@ unit OneBRC;
 interface
 
 uses
-  Classes, SysUtils, Generics.Collections,
+  Classes, SysUtils,
   mormot.core.os, mormot.core.base;
 
 function RoundExDouble(const ATemp: Double): Double; inline;
@@ -25,7 +25,6 @@ type
     Name: AnsiString;
   end;
   PStationData = ^TStationData;
-  TStationsDict = specialize TDictionary<Cardinal, PStationData>;
 
   TKeys = array of Cardinal;
   TValues = array of PStationData;
@@ -127,9 +126,6 @@ begin
 end;
 
 { TMyDictionary }
-
-const
-  cHashConst: Double = (Sqrt(5) - 1) / 2;
 
 procedure TMyDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
 var vIdx: Integer;
