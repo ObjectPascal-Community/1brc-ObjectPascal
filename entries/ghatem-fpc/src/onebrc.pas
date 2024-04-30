@@ -26,8 +26,8 @@ type
   end;
   PStationData = ^TStationData;
 
-  TKeys = array of Cardinal;
-  TValues = array of PStationData;
+  TKeys = array [0..45007] of Cardinal;
+  TValues = array [0..45007] of PStationData;
 
   { TMyDictionary }
 
@@ -35,7 +35,7 @@ type
   private
     FHashes: TKeys;
     FValues: TValues;
-    FRecords: array of TStationData;
+    FRecords: array [0..45007] of TStationData;
     procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
   public
     constructor Create;
@@ -168,10 +168,6 @@ constructor TMyDictionary.Create;
 var
   I: Integer;
 begin
-  SetLength (FHashes, cDictSize);
-  SetLength (FValues, cDictSize);
-  SetLength (FRecords, cDictSize);
-
   for I := 0 to cDictSize - 1 do begin
     FValues[I] := @FRecords[I];
   end;
