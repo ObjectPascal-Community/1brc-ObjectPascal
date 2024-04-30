@@ -133,22 +133,9 @@ const
 
 procedure TMyDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
 var vIdx: Integer;
-    vDbl: Double;
     vOffset: Integer;
 begin
-{$IFDEF HASHMULT}
-  vDbl := aKey * cHashConst;
-  vDbl := vDbl - Trunc (vDbl);
-  vIdx := Trunc (vDbl * cDictSize);
-{$ENDIF}
-{$IFDEF LEMIRE}
   vIdx := aKey * cDictSize shr 32;
-{$ENDIF}
-{$IFDEF HASHMOD}
-  vIdx := aKey mod cDictSize;
-{$ENDIF}
-
-  aFound := False;
 
   if FHashes[vIdx] = aKey then begin
     aIndex := vIdx;
@@ -170,8 +157,8 @@ begin
         aIndex := vIdx;
         aFound := True;
         break;
-      end
-      else if FHashes[vIdx] = 0 then begin
+      end;
+      if FHashes[vIdx] = 0 then begin
         // found empty bucket to use
         aIndex := vIdx;
         aFound := False;
