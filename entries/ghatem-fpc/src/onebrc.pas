@@ -60,7 +60,7 @@ type
     FThreads: array of TThread;
     FStationsDicts: array of TMyDictionary;
 
-    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt);
+    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
 
   public
     constructor Create (const aThreadCount: UInt16);
