@@ -5,7 +5,7 @@ unit OneBRC;
 interface
 
 uses
-  Classes, SysUtils, Generics.Collections,
+  Classes, SysUtils,
   mormot.core.os, mormot.core.base;
 
 function RoundExDouble(const ATemp: Double): Double; inline;
@@ -25,10 +25,9 @@ type
     Name: AnsiString;
   end;
   PStationData = ^TStationData;
-  TStationsDict = specialize TDictionary<Cardinal, PStationData>;
 
-  TKeys = array of Cardinal;
-  TValues = array of PStationData;
+  TKeys = array [0..45006] of Cardinal;
+  TValues = array [0..45006] of PStationData;
 
   { TMyDictionary }
 
@@ -36,7 +35,7 @@ type
   private
     FHashes: TKeys;
     FValues: TValues;
-    FRecords: array of TStationData;
+    FRecords: array [0..45006] of TStationData;
     procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
   public
     constructor Create;
@@ -128,27 +127,11 @@ end;
 
 { TMyDictionary }
 
-const
-  cHashConst: Double = (Sqrt(5) - 1) / 2;
-
 procedure TMyDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
 var vIdx: Integer;
-    vDbl: Double;
     vOffset: Integer;
 begin
-{$IFDEF HASHMULT}
-  vDbl := aKey * cHashConst;
-  vDbl := vDbl - Trunc (vDbl);
-  vIdx := Trunc (vDbl * cDictSize);
-{$ENDIF}
-{$IFDEF LEMIRE}
   vIdx := aKey * cDictSize shr 32;
-{$ENDIF}
-{$IFDEF HASHMOD}
-  vIdx := aKey mod cDictSize;
-{$ENDIF}
-
-  aFound := False;
 
   if FHashes[vIdx] = aKey then begin
     aIndex := vIdx;
@@ -170,8 +153,8 @@ begin
         aIndex := vIdx;
         aFound := True;
         break;
-      end
-      else if FHashes[vIdx] = 0 then begin
+      end;
+      if FHashes[vIdx] = 0 then begin
         // found empty bucket to use
         aIndex := vIdx;
         aFound := False;
@@ -185,10 +168,6 @@ constructor TMyDictionary.Create;
 var
   I: Integer;
 begin
-  SetLength (FHashes, cDictSize);
-  SetLength (FValues, cDictSize);
-  SetLength (FRecords, cDictSize);
-
   for I := 0 to cDictSize - 1 do begin
     FValues[I] := @FRecords[I];
   end;
