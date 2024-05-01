@@ -42,7 +42,7 @@ const
   DataBufferSize2: Integer = 1000001;
   DataBufferSize3: Integer = 1000001;
   DataBufferSize4: Integer = 1000001;
-  DataBufferCushion: Integer = 100000;
+  DataBufferCushion: Integer = 10000;
 
   // split points for stacks
   // ABCDE FGHIJK LMNOPQR STUVWXYZ (and extended)
@@ -91,11 +91,10 @@ var
   ParseDataQ_Done3: Boolean;
   ParseDataQ_Done4: Boolean;
 
-  StackMax1: Integer;  // sample stack count for peak value (approx.)
+  StackMax1: Integer; // sample stack count for peak value (approx.)
   StackMax2: Integer;
   StackMax3: Integer;
   StackMax4: Integer;
-
 
 procedure FileToArrays(inputFilename: String; UseStdOut: Boolean); // read
 procedure LaunchReadingThread(inputFilename: String);
@@ -108,7 +107,6 @@ procedure SortArrays;
 procedure ArrayToFile(outFile: String; UseStdOut: Boolean);
 
 implementation
-
 
 function IntegerFixup(something: Integer): String; inline;
 // fixup to adjust for storing tenths of degrees as integer
@@ -123,7 +121,6 @@ begin
     thing := '0' + thing;
   IntegerFixup := thing.Replace('-.', '-0.');
 end;
-
 
 function MeanFixup(total: Integer; count: Integer): String; inline;
 // fixup to adjust for storing tenths of degrees as integer
@@ -179,7 +176,6 @@ begin
   end;
   MeanFixup := temp; // was temp;
 end;
-
 
 procedure SortArrays; inline;
 var
@@ -297,7 +293,6 @@ begin
 
 end;
 
-
 procedure FileToArrays(inputFilename: String; UseStdOut: Boolean);
 var
   i: Integer;
@@ -362,7 +357,6 @@ begin
 
 end;
 
-
 procedure LaunchReadingThread(inputFilename: String);
 var
   ReadingThread: TThread;
@@ -409,46 +403,54 @@ begin
                 if Choice <= SplitPoint1 then // A thru E
                 begin
                   while True do // break on success
+                  begin
+                    DataStackLock1.Acquire;
                     if (DataStackCount1 < DataBufferSize1 - 1) then
                     // there is room
                     begin
-                      DataStackLock1.Acquire;
                       DataStack1[DataStackCount1] := DataStackItem;
                       inc(DataStackCount1);
                       DataStackLock1.Release;
                       Break;
                     end
-                    else // need to waste a few cycles
+                    else // need to wait, hope for room later
                     begin
+                      DataStackLock1.Release;
                       while (DataStackCount1 > DataBufferSize1 -
                         DataBufferCushion) do
                       begin
                         // nothing real
-                        TimeOut := DataStackCount1 mod 16001;
+//                        TimeOut := DataStackCount1 mod 16001;
+//                        TimeOut := DataStackCount1 +1;
                       end;
                     end;
+                  end;
                 end
                 else // F thru K
                 begin
                   while True do // break on success
+                  begin
+                    DataStackLock2.Acquire;
                     if (DataStackCount2 < DataBufferSize2 - 1) then
                     // there is room
                     begin
-                      DataStackLock2.Acquire;
                       DataStack2[DataStackCount2] := DataStackItem;
                       inc(DataStackCount2);
                       DataStackLock2.Release;
                       Break;
                     end
-                    else // need to waste a few cycles
+                    else // need to wait, hope for room later
                     begin
+                      DataStackLock2.Release;
                       while (DataStackCount2 > DataBufferSize2 -
                         DataBufferCushion) do
                       begin
                         // nothing real
-                        TimeOut := DataStackCount2 mod 16001;
+//                        TimeOut := DataStackCount2 mod 16001;
+//                        TimeOut := DataStackCount2 +1;
                       end;
                     end;
+                  end;
                 end;
               end
               else // K and beyond
@@ -456,46 +458,54 @@ begin
                 if Choice <= SplitPoint3 then // L thru R
                 begin
                   while True do // break on success
+                  begin
+                    DataStackLock3.Acquire;
                     if (DataStackCount3 < DataBufferSize3 - 1) then
                     // there is room
                     begin
-                      DataStackLock3.Acquire;
                       DataStack3[DataStackCount3] := DataStackItem;
                       inc(DataStackCount3);
                       DataStackLock3.Release;
                       Break;
                     end
-                    else // need to waste a few cycles
+                    else // need to wait, hope for room later
                     begin
+                      DataStackLock3.Release;
                       while (DataStackCount3 > DataBufferSize3 -
                         DataBufferCushion) do
                       begin
                         // nothing real
-                        TimeOut := DataStackCount3 mod 16001;
+//                        TimeOut := DataStackCount3 mod 16001;
+//                        TimeOut := DataStackCount3 +1;
                       end;
                     end;
+                  end;
                 end
                 else // S and beyond
                 begin
                   while True do // break on success
+                  begin
+                    DataStackLock4.Acquire;
                     if (DataStackCount4 < DataBufferSize4 - 1) then
                     // there is room
                     begin
-                      DataStackLock4.Acquire;
                       DataStack4[DataStackCount4] := DataStackItem;
                       inc(DataStackCount4);
                       DataStackLock4.Release;
                       Break;
                     end
-                    else // need to waste a few cycles
+                    else // need to wait, hope for room later
                     begin
+                      DataStackLock4.Release;
                       while (DataStackCount4 > DataBufferSize4 -
                         DataBufferCushion) do
                       begin
                         // nothing real
-                        TimeOut := DataStackCount4 mod 16001;
+//                        TimeOut := DataStackCount4 mod 16001;
+//                        TimeOut := DataStackCount4 +1;
                       end;
                     end;
+                  end;
                 end;
               end;
 
@@ -548,6 +558,7 @@ begin
       G: Cardinal;
       Hash: Cardinal;
       BTT: Integer; // temporary for bytes to temperature conversion
+      TimeOut: Integer;
 
     begin
       while True do
@@ -556,9 +567,9 @@ begin
         // get item from stack
         while True do // break on success
         begin
+          DataStackLock1.Acquire;
           if (DataStackCount1 > 0) then // there is data
           begin
-            DataStackLock1.Acquire;
             DataStackItem1 := DataStack1[DataStackCount1 - 1];
             dec(DataStackCount1);
             DataStackLock1.Release;
@@ -569,8 +580,12 @@ begin
             if ReadFile_Done then // no more data
             begin
               ParseDataQ_Done1 := True;
+              DataStackLock1.Release;
               Break;
             end;
+            DataStackLock1.Release;
+            // nothing real
+            TimeOut := DataStackCount1 mod 16001;
           end;
         end;
 
@@ -747,6 +762,7 @@ begin
       G: Cardinal;
       Hash: Cardinal;
       BTT: Integer; // temporary for bytes to temperature conversion
+      TimeOut: Integer;
 
     begin
       while True do
@@ -755,9 +771,9 @@ begin
         // get item from stack
         while True do // break on success
         begin
+          DataStackLock2.Acquire;
           if (DataStackCount2 > 0) then // there is data
           begin
-            DataStackLock2.Acquire;
             DataStackItem2 := DataStack2[DataStackCount2 - 1];
             dec(DataStackCount2);
             DataStackLock2.Release;
@@ -768,8 +784,12 @@ begin
             if ReadFile_Done then // no more data
             begin
               ParseDataQ_Done2 := True;
+              DataStackLock2.Release;
               Break;
             end;
+            DataStackLock2.Release;
+            // nothing real
+            TimeOut := DataStackCount2 mod 16001;
           end;
         end;
 
@@ -946,6 +966,7 @@ begin
       G: Cardinal;
       Hash: Cardinal;
       BTT: Integer; // temporary for bytes to temperature conversion
+      TimeOut: Integer;
 
     begin
       while True do
@@ -954,9 +975,9 @@ begin
         // get item from stack
         while True do // break on success
         begin
+          DataStackLock3.Acquire;
           if (DataStackCount3 > 0) then // there is data
           begin
-            DataStackLock3.Acquire;
             DataStackItem3 := DataStack3[DataStackCount3 - 1];
             dec(DataStackCount3);
             DataStackLock3.Release;
@@ -967,8 +988,12 @@ begin
             if ReadFile_Done then // no more data
             begin
               ParseDataQ_Done3 := True;
+              DataStackLock3.Release;
               Break;
             end;
+            DataStackLock3.Release;
+            // nothing real
+            TimeOut := DataStackCount3 mod 16001;
           end;
         end;
 
@@ -1147,6 +1172,7 @@ begin
       G: Cardinal;
       Hash: Cardinal;
       BTT: Integer; // temporary for bytes to temperature conversion
+      TimeOut: Integer;
 
     begin
       while True do
@@ -1155,9 +1181,9 @@ begin
         // get item from stack
         while True do // break on success
         begin
+          DataStackLock4.Acquire;
           if (DataStackCount4 > 0) then // there is data
           begin
-            DataStackLock4.Acquire;
             DataStackItem4 := DataStack4[DataStackCount4 - 1];
             dec(DataStackCount4);
             DataStackLock4.Release;
@@ -1168,8 +1194,12 @@ begin
             if ReadFile_Done then // no more data
             begin
               ParseDataQ_Done4 := True;
+              DataStackLock4.Release;
               Break;
             end;
+            DataStackLock4.Release;
+            // nothing real
+            TimeOut := DataStackCount4 mod 16001;
           end;
         end;
 

@@ -60,9 +60,10 @@ tabulated data for each station.  Finally, the TStringList is sorted, and the da
 
 ## History
 
-- Version 1.0: first working version, based on TStringList.
-- Version 1.1: modified rounding to new baseline.
-- Version 2.0: use hashing, sort later.
-- Version 2.1: minor speed tweaks.
-- Version 2.2: try hash functions modification.
+- Version 1.0: First working version, based on TStringList.
+- Version 1.1: Modified rounding to new baseline.
+- Version 2.0: Use hashing, sort later.
+- Version 2.1: Minor speed tweaks.
+- Version 2.2: Try hash functions modification.
 - Version 3.0: Six threads: one to read, four to tabulate, one (console) to rule them all...
+- Version 3.1: Safer locking strategy
