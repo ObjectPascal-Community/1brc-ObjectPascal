@@ -22,11 +22,11 @@ type
     Max: SmallInt;
     Count: UInt32;
     Sum: Integer;
-    Name: AnsiString;
   end;
   PStationData = ^TStationData;
 
   TKeys = array [0..45006] of Cardinal;
+  TStationNames = array [0..45006] of AnsiString;
   TValues = array [0..45006] of PStationData;
 
   { TMyDictionary }
@@ -36,13 +36,16 @@ type
     FHashes: TKeys;
     FValues: TValues;
     FRecords: array [0..45006] of TStationData;
+    // store the station names outside of the record as they are filled only upon first encounter
+    FStationNames: TStationNames;
     procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
   public
     constructor Create;
     property Keys: TKeys read FHashes;
+    property StationNames: TStationNames read FStationNames;
     property Values: TValues read FValues;
     function TryGetValue (const aKey: Cardinal; out aValue: PStationData): Boolean; inline;
-    procedure Add (const aKey: Cardinal; const aValue: PStationData); inline;
+    procedure Add (const aKey: Cardinal; const aValue: PStationData; const aStationName: AnsiString); inline;
   end;
 
   { TOneBRC }
@@ -139,6 +142,7 @@ begin
   end
   else begin
     vOffset := 1;
+
     while True do begin
       // quadratic probing, by incrementing vOffset
       Inc (vIdx, vOffset);
@@ -181,7 +185,7 @@ begin
   aValue := FValues[vIdx];
 end;
 
-procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData);
+procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData; const aStationName: AnsiString);
 var
   vIdx: Integer;
   vFound: Boolean;
@@ -190,6 +194,7 @@ begin
   if not vFound then begin
     FHashes[vIdx] := aKey;
     FValues[vIdx] := aValue;
+    FStationNames[vIdx] := aStationName;
   end
   else
     raise Exception.Create ('TMyDict: cannot add, duplicate key');
@@ -350,8 +355,7 @@ begin
         vData^.Max := vTemp;
         vData^.Sum := vTemp;
         vData^.Count := 1;
-        vData^.Name := vStation;
-        FStationsDicts[aThreadNb].Add (vHash, vData);
+        FStationsDicts[aThreadNb].Add (vHash, vData, vStation);
       end;
 
       // we're at a #10: next line starts at the next index
@@ -376,8 +380,10 @@ procedure TOneBRC.Merge(aLeft: UInt16; aRight: UInt16);
 var iHash: Cardinal;
     vDataR: PStationData;
     vDataL: PStationData;
+    I: Integer;
 begin
-  for iHash in FStationsDicts[aRight].Keys do begin
+  for I := 0 to cDictSize - 1 do begin
+    iHash := FStationsDicts[aRight].Keys[I];
     // zero means empty slot: skip
     if iHash = 0 then
       continue;
@@ -387,13 +393,14 @@ begin
     if FStationsDicts[aLeft].TryGetValue(iHash, vDataL) then begin
       vDataL^.Count := vDataL^.Count + vDataR^.Count;
       vDataL^.Sum   := vDataL^.Sum + vDataR^.Sum;
+
       if vDataR^.Max > vDataL^.Max then
         vDataL^.Max := vDataR^.Max;
       if vDataR^.Min < vDataL^.Min then
         vDataL^.Min := vDataR^.Min;
     end
     else begin
-      FStationsDicts[aLeft].Add (iHash, vDataR);
+      FStationsDicts[aLeft].Add (iHash, vDataR, FStationsDicts[aRight].StationNames[I]);
     end;
   end;
 end;
@@ -419,14 +426,16 @@ var vMin, vMean, vMax: Double;
 begin
   vStream := TStringStream.Create;
   vStations := TStringList.Create;
-  vStations.Capacity := 45000;
+  vStations.Capacity := cDictSize;
   vStations.UseLocale := False;
   try
     vStations.BeginUpdate;
-    for vData in FStationsDicts[0].Values do begin
+    for I := 0 to cDictSize - 1 do begin
+      vData := FStationsDicts[0].Values[I];
       // count = 0 means empty slot: skip
-      if vData^.Count <> 0 then
-        vStations.Add(vData^.Name);
+      if vData^.Count <> 0 then begin
+        vStations.Add(FStationsDicts[0].StationNames[I]);
+      end;
     end;
     vStations.EndUpdate;
 
