@@ -1,19 +1,40 @@
-unit OneBRC;
+program OneBRC;
 
-{$mode ObjFPC}{$H+}
-
-interface
+{$mode objfpc}{$H+}
 
 uses
-  Classes, SysUtils,
-  mormot.core.os, mormot.core.base;
-
-function RoundExDouble(const ATemp: Double): Double; inline;
+  {$IFDEF UNIX}
+  cthreads,
+  {$ENDIF}
+  Classes, SysUtils, CustApp, Lclintf, UTF8Process, syncobjs,
+  mormot.core.os, mormot.core.base,
+  Baseline.Console;
 
 const
   cDictSize: Integer = 45007;
 
+  c0ascii: ShortInt = 48;
+  c9ascii: ShortInt = 57;
+  cNegAscii: ShortInt = 45;
+
 type
+  //---------------------------------------
+  { TOneBRCApp }
+
+  TOneBRCApp = class(TCustomApplication)
+  private
+    FFileName: string;
+    FThreadCount: Integer;
+    procedure RunOneBRC;
+  protected
+    procedure DoRun; override;
+  public
+    constructor Create(aOwner: TComponent); override;
+    destructor Destroy; override;
+    procedure WriteHelp; virtual;
+  end;
+
+  //---------------------------------------
 
   // record is packed to minimize its size
   // use pointers to avoid passing entire records around
@@ -29,6 +50,7 @@ type
   TStationNames = array [0..45006] of AnsiString;
   TValues = array [0..45006] of PStationData;
 
+  //---------------------------------------
   { TMyDictionary }
 
   TMyDictionary = class
@@ -45,9 +67,11 @@ type
     property StationNames: TStationNames read FStationNames;
     property Values: TValues read FValues;
     function TryGetValue (const aKey: Cardinal; out aValue: PStationData): Boolean; inline;
-    procedure Add (const aKey: Cardinal; const aValue: PStationData; const aStationName: AnsiString); inline;
+    procedure Add (const aKey: Cardinal; const aValue: PStationData); inline;
+    procedure AddName (const aKey: Cardinal; const aStationName: AnsiString); inline;
   end;
 
+  //---------------------------------------
   { TOneBRC }
 
   TOneBRC = class
@@ -57,10 +81,13 @@ type
     FMemoryMap: TMemoryMap;
     FData: pAnsiChar;
     FDataSize: Int64;
+    FCS: TCriticalSection;
 
     FThreadCount: UInt16;
     FThreads: array of TThread;
     FStationsDicts: array of TMyDictionary;
+
+    FStationsNames: TMyDictionary;
 
     procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
 
@@ -77,7 +104,7 @@ type
     property DataSize: Int64 read FDataSize;
   end;
 
-
+  //---------------------------------------
   { TBRCThread }
 
   TThreadProc = procedure (aThreadNb: UInt16; aStartIdx: Int64; aEndIdx: Int64) of object;
@@ -94,14 +121,33 @@ type
     constructor Create (aProc: TThreadProc; aThreadNb: UInt16; aStart: Int64; aEnd: Int64);
   end;
 
+{ TOneBRCApp }
 
-implementation
+procedure TOneBRCApp.RunOneBRC;
+var
+  vOneBRC: TOneBRC;
+begin
+  vOneBRC := TOneBRC.Create (FThreadCount);
+  try
+    try
+      vOneBRC.mORMotMMF(FFileName);
+      vOneBRC.DispatchThreads;
+      vOneBRC.WaitAll;
+      vOneBRC.MergeAll;
+      vOneBRC.GenerateOutput;
+    except
+      on E: Exception do
+      begin
+        WriteLn(Format(rsErrorMessage, [ E.Message ]));
+        ReadLn;
+      end;
+    end;
+  finally
+    vOneBRC.Free;
+  end;
+end;
 
-
-const
-  c0ascii: ShortInt = 48;
-  c9ascii: ShortInt = 57;
-  cNegAscii: ShortInt = 45;
+//---------------------------------------------------
 
 function Ceiling (const ANumber: Double): Integer; inline;
 begin
@@ -185,7 +231,7 @@ begin
   aValue := FValues[vIdx];
 end;
 
-procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData; const aStationName: AnsiString);
+procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData);
 var
   vIdx: Integer;
   vFound: Boolean;
@@ -194,6 +240,19 @@ begin
   if not vFound then begin
     FHashes[vIdx] := aKey;
     FValues[vIdx] := aValue;
+  end
+  else
+    raise Exception.Create ('TMyDict: cannot add, duplicate key');
+end;
+
+procedure TMyDictionary.AddName (const aKey: Cardinal; const aStationName: AnsiString);
+var
+  vIdx: Integer;
+  vFound: Boolean;
+begin
+  InternalFind (aKey, vFound, vIdx);
+  if not vFound then begin
+    FHashes[vIdx] := aKey;
     FStationNames[vIdx] := aStationName;
   end
   else
@@ -251,11 +310,19 @@ begin
   for I := 0 to aThreadCount - 1 do begin
     FStationsDicts[I] := TMyDictionary.Create;
   end;
+
+  FStationsNames := TMyDictionary.Create;
+  FCS := TCriticalSection.Create;
 end;
 
 destructor TOneBRC.Destroy;
+var I: UInt16;
 begin
-  // TODO: free data structures
+  FCS.Free;
+  FStationsNames.Free;
+  for I := 0 to FThreadCount - 1 do begin
+    FStationsDicts[I].Free;
+  end;
   inherited Destroy;
 end;
 
@@ -344,18 +411,22 @@ begin
         Inc (vData^.Count);
       end
       else begin
-        // SetString done only once per station name (per thread), for later sorting
-        // for 1-thread, I had a separate list to store station names
-        // for N-threads, merging those lists became costly.
-        // store the name directly in the record, we'll generate a stringlist at the end
-        SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
-
         // pre-allocated array of records instead of on-the-go allocation
         vData^.Min := vTemp;
         vData^.Max := vTemp;
         vData^.Sum := vTemp;
         vData^.Count := 1;
-        FStationsDicts[aThreadNb].Add (vHash, vData, vStation);
+        FStationsDicts[aThreadNb].Add (vHash, vData);
+
+        // SetString done only once per station name, for later sorting
+        if not FStationsNames.TryGetValue (vHash, vData) then begin
+          FCS.Acquire;
+          if not FStationsNames.TryGetValue (vHash, vData) then begin
+            SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
+            FStationsNames.AddName (vHash, vStation);
+          end;
+          FCS.Release;
+        end;
       end;
 
       // we're at a #10: next line starts at the next index
@@ -400,7 +471,7 @@ begin
         vDataL^.Min := vDataR^.Min;
     end
     else begin
-      FStationsDicts[aLeft].Add (iHash, vDataR, FStationsDicts[aRight].StationNames[I]);
+      FStationsDicts[aLeft].Add (iHash, vDataR);
     end;
   end;
 end;
@@ -431,10 +502,9 @@ begin
   try
     vStations.BeginUpdate;
     for I := 0 to cDictSize - 1 do begin
-      vData := FStationsDicts[0].Values[I];
-      // count = 0 means empty slot: skip
-      if vData^.Count <> 0 then begin
-        vStations.Add(FStationsDicts[0].StationNames[I]);
+      if FStationsNames.Keys[I] <> 0 then begin
+        // count = 0 means empty slot: skip
+        vStations.Add(FStationsNames.StationNames[I]);
       end;
     end;
     vStations.EndUpdate;
@@ -498,6 +568,95 @@ end;
 
 
 
+{$REGION TOneBRCApp scaffolding}
 
+procedure TOneBRCApp.DoRun;
+var
+  ErrorMsg: String;
+begin
+  // quick check parameters
+  ErrorMsg:= CheckOptions(Format('%s%s%s%s:',[
+      cShortOptHelp,
+      cShortOptThread,
+      cShortOptVersion,
+      cShortOptInput
+    ]),
+    [
+      cLongOptHelp,
+      cLongOptThread+':',
+      cLongOptVersion,
+      cLongOptInput+':'
+    ]
+  );
+  if ErrorMsg<>'' then begin
+    WriteLn(Format(rsErrorMessage, [ ErrorMsg ]));
+    Terminate;
+    Exit;
+  end;
+
+  // parse parameters
+  if HasOption(cShortOptHelp, cLongOptHelp) then begin
+    WriteHelp;
+    Terminate;
+    Exit;
+  end;
+
+  if HasOption(cShortOptVersion, cLongOptVersion) then begin
+    WriteLn(Format(rsGeneratorVersion, [ 1.0 ]));
+    Terminate;
+    Exit;
+  end;
+
+  FThreadCount := GetSystemThreadCount;
+  if HasOption(cShortOptThread, cLongOptThread) then begin
+    FThreadCount := StrToInt (GetOptionValue(cShortOptThread, cLongOptThread));
+  end;
+
+  if HasOption(cShortOptInput, cLongOptInput) then begin
+    FFileName := GetOptionValue(
+      cShortOptInput,
+      cLongOptInput
+    );
+  end
+  else begin
+    WriteLn(Format(rsErrorMessage, [ rsMissingInputFlag ]));
+    Terminate;
+    Exit;
+  end;
+
+  FFileName := ExpandFileName(FFileName);
+
+  RunOneBRC;
+
+  // stop program loop
+  Terminate;
+end;
+
+constructor TOneBRCApp.Create(aOwner: TComponent);
+begin
+  inherited Create(aOwner);
+  StopOnException:=True;
+end;
+
+destructor TOneBRCApp.Destroy;
+begin
+  inherited Destroy;
+end;
+
+procedure TOneBRCApp.WriteHelp;
+begin
+  { add your help code here }
+  writeln('Usage: ', ExeName, ' -h');
+end;
+
+var
+  Application: TOneBRCApp;
+begin
+  Application:=TOneBRCApp.Create(nil);
+  Application.Title:='1 BRC';
+  Application.Run;
+  Application.Free;
 end.
+
+{$ENDREGION}
 

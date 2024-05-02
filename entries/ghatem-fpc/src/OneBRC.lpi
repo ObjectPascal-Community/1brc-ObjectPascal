@@ -124,16 +124,11 @@
         <PackageName Value="LCLBase"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="2">
+    <Units Count="1">
       <Unit0>
-        <Filename Value="OneBRCproj.lpr"/>
+        <Filename Value="OneBRC.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
-      <Unit1>
-        <Filename Value="onebrc.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UnitName Value="OneBRC"/>
-      </Unit1>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -27,7 +27,6 @@ const
   cOptionInput:   array of string = ['-i', '--input-file'];
   {$ENDIF}
 
-{$I version.inc}
 
 resourcestring
   rsAppTitle         = 'One Billion Row Challenge Baseline';

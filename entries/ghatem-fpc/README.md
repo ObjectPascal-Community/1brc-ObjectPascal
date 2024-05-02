@@ -7,10 +7,9 @@
 ## Usage
  - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
 
-currently there are 3 configurations that can be compiled / run:
- - `HASHMOD`: uses modulus for hashing, least collisions
- - `HASHMULT`: alternative hashing, more collisions, faster on my PC, but seemingly slower on test PCs
- - `LEMIRE`: faster hash function calculation, most collisions it seems, yet the fastest on my PC
+currently there are 2 versions that can be compiled / run:
+ - `OneBRC.lpr              -> ghatem             `: all threads share the station names - involves locking
+ - `OneBRC-nosharedname.lpr -> ghatem-nosharedname`: each thread maintains a copy of the station names - no locking involved
  
 ## Hardware + Environment
 host: 
