@@ -1,4 +1,4 @@
-program OneBRCproj;
+program OneBRC;
 
 {$mode objfpc}{$H+}
 
@@ -8,7 +8,7 @@ uses
   {$ENDIF}
   Classes, SysUtils, CustApp, Lclintf, UTF8Process,
   Baseline.Console,
-  OneBRC;
+  uonebrc;
 
 type
 

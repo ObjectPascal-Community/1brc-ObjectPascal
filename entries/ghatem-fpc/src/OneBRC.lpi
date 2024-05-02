@@ -22,7 +22,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\ghatem"/>
+            <Filename Value="..\..\..\bin\OneBRC"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -60,7 +60,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\ghatem"/>
+            <Filename Value="..\..\..\bin\OneBRC"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -89,7 +89,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\ghatem"/>
+            <Filename Value="..\..\..\bin\OneBRC"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -126,13 +126,12 @@
     </RequiredPackages>
     <Units Count="2">
       <Unit0>
-        <Filename Value="OneBRCproj.lpr"/>
+        <Filename Value="OneBRC.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
       <Unit1>
-        <Filename Value="onebrc.pas"/>
+        <Filename Value="uonebrc.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="OneBRC"/>
       </Unit1>
     </Units>
   </ProjectOptions>
@@ -140,7 +139,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\..\..\bin\ghatem"/>
+      <Filename Value="..\..\..\bin\OneBRC"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>

@@ -1,11 +1,11 @@
-unit OneBRC;
+unit uonebrc;
 
 {$mode ObjFPC}{$H+}
 
 interface
 
 uses
-  Classes, SysUtils,
+  Classes, SysUtils, syncobjs,
   mormot.core.os, mormot.core.base;
 
 function RoundExDouble(const ATemp: Double): Double; inline;
@@ -45,7 +45,8 @@ type
     property StationNames: TStationNames read FStationNames;
     property Values: TValues read FValues;
     function TryGetValue (const aKey: Cardinal; out aValue: PStationData): Boolean; inline;
-    procedure Add (const aKey: Cardinal; const aValue: PStationData; const aStationName: AnsiString); inline;
+    procedure Add (const aKey: Cardinal; const aValue: PStationData); inline;
+    procedure AddName (const aKey: Cardinal; const aStationName: AnsiString); inline;
   end;
 
   { TOneBRC }
@@ -57,10 +58,13 @@ type
     FMemoryMap: TMemoryMap;
     FData: pAnsiChar;
     FDataSize: Int64;
+    FCS: TCriticalSection;
 
     FThreadCount: UInt16;
     FThreads: array of TThread;
     FStationsDicts: array of TMyDictionary;
+
+    FStationsNames: TMyDictionary;
 
     procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
 
@@ -185,7 +189,7 @@ begin
   aValue := FValues[vIdx];
 end;
 
-procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData; const aStationName: AnsiString);
+procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData);
 var
   vIdx: Integer;
   vFound: Boolean;
@@ -194,6 +198,19 @@ begin
   if not vFound then begin
     FHashes[vIdx] := aKey;
     FValues[vIdx] := aValue;
+  end
+  else
+    raise Exception.Create ('TMyDict: cannot add, duplicate key');
+end;
+
+procedure TMyDictionary.AddName (const aKey: Cardinal; const aStationName: AnsiString);
+var
+  vIdx: Integer;
+  vFound: Boolean;
+begin
+  InternalFind (aKey, vFound, vIdx);
+  if not vFound then begin
+    FHashes[vIdx] := aKey;
     FStationNames[vIdx] := aStationName;
   end
   else
@@ -251,11 +268,19 @@ begin
   for I := 0 to aThreadCount - 1 do begin
     FStationsDicts[I] := TMyDictionary.Create;
   end;
+
+  FStationsNames := TMyDictionary.Create;
+  FCS := TCriticalSection.Create;
 end;
 
 destructor TOneBRC.Destroy;
+var I: UInt16;
 begin
-  // TODO: free data structures
+  FCS.Free;
+  FStationsNames.Free;
+  for I := 0 to FThreadCount - 1 do begin
+    FStationsDicts[I].Free;
+  end;
   inherited Destroy;
 end;
 
@@ -344,18 +369,22 @@ begin
         Inc (vData^.Count);
       end
       else begin
-        // SetString done only once per station name (per thread), for later sorting
-        // for 1-thread, I had a separate list to store station names
-        // for N-threads, merging those lists became costly.
-        // store the name directly in the record, we'll generate a stringlist at the end
-        SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
-
         // pre-allocated array of records instead of on-the-go allocation
         vData^.Min := vTemp;
         vData^.Max := vTemp;
         vData^.Sum := vTemp;
         vData^.Count := 1;
-        FStationsDicts[aThreadNb].Add (vHash, vData, vStation);
+        FStationsDicts[aThreadNb].Add (vHash, vData);
+
+        // SetString done only once per station name, for later sorting
+        if not FStationsNames.TryGetValue (vHash, vData) then begin
+          FCS.Acquire;
+          if not FStationsNames.TryGetValue (vHash, vData) then begin
+            SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
+            FStationsNames.AddName (vHash, vStation);
+          end;
+          FCS.Release;
+        end;
       end;
 
       // we're at a #10: next line starts at the next index
@@ -400,7 +429,7 @@ begin
         vDataL^.Min := vDataR^.Min;
     end
     else begin
-      FStationsDicts[aLeft].Add (iHash, vDataR, FStationsDicts[aRight].StationNames[I]);
+      FStationsDicts[aLeft].Add (iHash, vDataR);
     end;
   end;
 end;
@@ -431,10 +460,9 @@ begin
   try
     vStations.BeginUpdate;
     for I := 0 to cDictSize - 1 do begin
-      vData := FStationsDicts[0].Values[I];
-      // count = 0 means empty slot: skip
-      if vData^.Count <> 0 then begin
-        vStations.Add(FStationsDicts[0].StationNames[I]);
+      if FStationsNames.Keys[I] <> 0 then begin
+        // count = 0 means empty slot: skip
+        vStations.Add(FStationsNames.StationNames[I]);
       end;
     end;
     vStations.EndUpdate;
