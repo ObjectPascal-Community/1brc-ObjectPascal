@@ -97,7 +97,7 @@ Here are the columns meaning:
 - "full" indicates that the full station name is checked, byte-per-byte, to detect any hash collision (not required by our Pascal challenge, but required by the original Java challenge) - so no `X` here states that the ["perfect hash trick"](#perfect-hash-trick) is used by this solution;
 - "nobranch" indicates that the temperature parsing is using a branchless algorithm;
 - "submap" indicates that `mmap()` is not called for the whole 16GB input file, but for each chunk in its own worker thread;
-- "41K" and "400" are the time (in milliseconds) reported on OVH public cloud by `paweld` in [the "Alternative results" discussion thread](https://github.com/1brc-ObjectPascal/discussions/103#discussioncomment-9273061) for 41343 or 400 stations - so it is on AMD CPU, but not the "official" timing.
+- "41K" and "400" are the time (in milliseconds) reported on OVH public cloud by `paweld` in [the "Alternative results" discussion thread](https://github.com/gcarreno/1brc-ObjectPascal/discussions/103#discussioncomment-9273061) for 41343 or 400 stations - so it is on AMD CPU, but not the "official" timing.
 
 So we have a good coverage on what should be the best solution to propose.
 
@@ -211,7 +211,7 @@ We used a similar branchless approach in our [From Delphi to AVX2](https://blog.
 
 ## Perfect Hash Trick
 
-The "perfect hash" trick was not allowed in the original Java challenge, for good reasons. We have made some versions with full name comparison, but they are noticeably slower, and [the Pascal challenge does not make such requirement](https://github.com/1brc-ObjectPascal/issues/118).
+The "perfect hash" trick was not allowed in the original Java challenge, for good reasons. We have made some versions with full name comparison, but they are noticeably slower, and [the Pascal challenge does not make such requirement](https://github.com/gcarreno/1brc-ObjectPascal/issues/118).
 
 Our final implementation is safe with the official dataset, and gives the expected result - which was the goal of this challenge: compute the right data reduction with as little time as possible, with all possible hacks and tricks. A "perfect hash" is a well known hacking pattern, when the dataset is validated in advance. We can imagine that if a new weather station appear, we can check for any collision. And since our CPUs offers `crc32c` which is perfect for our dataset... let's use it! https://en.wikipedia.org/wiki/Perfect_hash_function ;)
 
