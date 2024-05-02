@@ -22,7 +22,7 @@ type
   protected
     procedure DoRun; override;
   public
-    constructor Create(TheOwner: TComponent); override;
+    constructor Create(aOwner: TComponent); override;
     destructor Destroy; override;
     procedure WriteHelp; virtual;
   end;
@@ -41,36 +41,6 @@ begin
       vOneBRC.WaitAll;
       vOneBRC.MergeAll;
       vOneBRC.GenerateOutput;
-
-      //vStart := GetTickCount;
-      //vOneBRC.mORMotMMF (FFileName);
-      //vTime := GetTickCount - vStart;
-      //WriteLn('read: ' + FloatToStr(vTime / 1000));
-      //WriteLn('-----------');
-      //WriteLn;
-      //
-      //vStart := GetTickCount;
-      //vOneBRC.DispatchThreads;
-      //vOneBRC.WaitAll;
-      //vTime := GetTickCount - vStart;
-      //WriteLn('process: ' + FloatToStr(vTime / 1000));
-      //WriteLn('-----------');
-      //WriteLn;
-      //
-      //vStart := GetTickCount;
-      //vOneBRC.MergeAll;
-      //vTime := GetTickCount - vStart;
-      //WriteLn('merge: ' + FloatToStr(vTime / 1000));
-      //WriteLn('-----------');
-      //WriteLn;
-      //
-      //vStart := GetTickCount;
-      //vOneBRC.GenerateOutput;
-      //vTime := GetTickCount - vStart;
-      //WriteLn('generate: ' + FloatToStr(vTime / 1000));
-      //WriteLn('-----------');
-      //WriteLn;
-      //ReadLn;
     except
       on E: Exception do
       begin
@@ -82,6 +52,8 @@ begin
     vOneBRC.Free;
   end;
 end;
+
+{$REGION TOneBRCApp scaffolding}
 
 procedure TOneBRCApp.DoRun;
 var
@@ -146,9 +118,9 @@ begin
   Terminate;
 end;
 
-constructor TOneBRCApp.Create(TheOwner: TComponent);
+constructor TOneBRCApp.Create(aOwner: TComponent);
 begin
-  inherited Create(TheOwner);
+  inherited Create(aOwner);
   StopOnException:=True;
 end;
 
@@ -171,4 +143,6 @@ begin
   Application.Run;
   Application.Free;
 end.
+
+{$ENDREGION}
 
