@@ -589,7 +589,6 @@ begin
     ]
   );
   if ErrorMsg<>'' then begin
-    //ShowException(Exception.Create(ErrorMsg));
     WriteLn(Format(rsErrorMessage, [ ErrorMsg ]));
     Terminate;
     Exit;
@@ -603,7 +602,7 @@ begin
   end;
 
   if HasOption(cShortOptVersion, cLongOptVersion) then begin
-    WriteLn(Format(rsGeneratorVersion, [ cVersion ]));
+    WriteLn(Format(rsGeneratorVersion, [ 1.0 ]));
     Terminate;
     Exit;
   end;
