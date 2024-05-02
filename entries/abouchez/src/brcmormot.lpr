@@ -254,6 +254,7 @@ end;
 
 const
   HASHSIZE = 1 shl 18; // slightly oversized to avoid most collisions
+  // we tried with a prime constant for fast modulo mult-by-reciprocal: slower
 
 constructor TBrcMain.Create(const fn: TFileName; threads, chunkmb, max: integer;
   affinity, fullsearch: boolean);
@@ -561,28 +562,25 @@ var
 begin
   assert(SizeOf(TBrcStation) <= 64 div 4); // 64 = CPU L1 cache line size
   // read command line parameters
-  Executable.Command.ExeDescription := 'The mORMot One Billion Row Challenge';
-  if Executable.Command.Arg(0, 'the data source #filename') then
-    Utf8ToFileName(Executable.Command.Args[0], fn{%H-});
-  verbose := Executable.Command.Option(
-    ['v', 'verbose'], 'generate verbose output with timing');
-  affinity := Executable.Command.Option(
-    ['a', 'affinity'], 'force thread affinity to a single CPU core');
-  full := Executable.Command.Option(
-    ['f', 'full'], 'force full name lookup (disable "perfect hash" trick)');
-  Executable.Command.Get(
-    ['t', 'threads'], threads, '#number of threads to run',
-      SystemInfo.dwNumberOfProcessors);
-  Executable.Command.Get(
-    ['c', 'chunk'], chunkmb, 'size in #megabytes used for per-thread chunking', 16);
-  help := Executable.Command.Option(['h', 'help'], 'display this help');
-  if Executable.Command.ConsoleWriteUnknown then
-    exit
-  else if help or
-     (fn = '') then
+  with Executable.Command do
   begin
-    ConsoleWrite(Executable.Command.FullDescription);
-    exit;
+    ExeDescription := 'The mORMot One Billion Row Challenge';
+    if Arg(0, 'the data source #filename') then
+      Utf8ToFileName(Executable.Command.Args[0], fn{%H-});
+    verbose := Option(['v', 'verbose'], 'generate verbose output with timing');
+    affinity := Option(['a', 'affinity'], 'force thread affinity to a single CPU core');
+    full := Option(['f', 'full'], 'force full name lookup (disable "perfect hash" trick)');
+    Get(['t', 'threads'], threads, '#number of thread workers', SystemInfo.dwNumberOfProcessors);
+    Get(['c', 'chunk'], chunkmb, 'size in #megabytes for per-thread chunking', 16);
+    help := Option(['h', 'help'], 'display this help');
+    if ConsoleWriteUnknown then
+      exit
+    else if help or
+       (fn = '') then
+    begin
+      ConsoleWrite(FullDescription);
+      exit;
+    end;
   end;
   // actual process
   if verbose then
