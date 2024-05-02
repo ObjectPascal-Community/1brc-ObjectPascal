@@ -8,8 +8,8 @@
  - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
 
 currently there are 2 versions that can be compiled / run:
- - `ghatem`: all threads share the station names - involves locking
- - `ghatem-nosharedname`: each thread maintains a copy of the station names - no locking involved
+ - `OneBRC.lpr              -> ghatem             `: all threads share the station names - involves locking
+ - `OneBRC-nosharedname.lpr -> ghatem-nosharedname`: each thread maintains a copy of the station names - no locking involved
  
 ## Hardware + Environment
 host: 
