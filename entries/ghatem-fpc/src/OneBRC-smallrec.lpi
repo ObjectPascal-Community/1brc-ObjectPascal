@@ -22,7 +22,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\ghatem-nosharedname"/>
+            <Filename Value="..\..\..\bin\ghatem-smallrec"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -60,7 +60,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\ghatem-nosharedname"/>
+            <Filename Value="..\..\..\bin\ghatem-smallrec"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -89,7 +89,7 @@
           <Version Value="11"/>
           <PathDelim Value="\"/>
           <Target>
-            <Filename Value="..\..\..\bin\ghatem-nosharedname"/>
+            <Filename Value="..\..\..\bin\ghatem-smallrec"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -126,7 +126,7 @@
     </RequiredPackages>
     <Units Count="1">
       <Unit0>
-        <Filename Value="OneBRC-nosharedname.lpr"/>
+        <Filename Value="OneBRC-smallrec.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
     </Units>
@@ -135,7 +135,7 @@
     <Version Value="11"/>
     <PathDelim Value="\"/>
     <Target>
-      <Filename Value="..\..\..\bin\ghatem-nosharedname"/>
+      <Filename Value="..\..\..\bin\ghatem-smallrec"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
