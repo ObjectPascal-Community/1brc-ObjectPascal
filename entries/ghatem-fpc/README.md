@@ -10,6 +10,7 @@
 currently there are 2 versions that can be compiled / run:
  - `OneBRC.lpr              -> ghatem             `: all threads share the station names - involves locking
  - `OneBRC-nosharedname.lpr -> ghatem-nosharedname`: each thread maintains a copy of the station names - no locking involved
+ - `OneBRC-smallrec.lpr     -> ghatem-smallrec    `: same as OneBRC, but the StationData's "count" is UInt16 instead of 32. Will likely fail to match hash on the 5B rows test
  
 ## Hardware + Environment
 host: 
