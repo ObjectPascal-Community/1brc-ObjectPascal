@@ -81,14 +81,14 @@ You will find in the [`src` sub-folder](./src) several implementations of the ch
 
 The following table gives you an overview of these versions, in time implementation order. The first column gives direct access to each project source code:
 
-project                                      | shared | full | nobranch | submap | 41K  | 400
--------------------------------------------- |:------:|:----:|:--------:|:------:| ----:| ----:
-[`old`](./src/brcmormotold.lpr)                 |     | `X`  |          |        | 1814 | 1127
-[`sharedht`](./src/brcmormotsharedht.lpr)       | `X` |      |          |        | 1169 |  976
-[`fullcheck`](./src/brcmormotfullcheck.lpr)     |     | `X`  | `X`      | `X`    | 1295 |  991
-[`perthreadht`](./src/brcmormotperthreadht.lpr) |     |      | `X`      | `X`    |  933 |  952
-[*final* `-a`](./src/brcmormot.lpr)             | `X` |      | `X`      | `X`    |  913 |  885
-[*final* `-f -a`](./src/brcmormot.lpr)          | `X` | `X`  | `X`      | `X`    |      | 
+project                                         | shared | full | nobranch | submap | 41K  | 400
+----------------------------------------------- |:------:|:----:|:--------:|:------:| ----:| ----:
+[`old`](./src/brcmormotold.lpr)                    |     | `X`  |          |        | 1350 | 1102
+[`sharedht`](./src/brcmormotsharedht.lpr)          | `X` |      |          |        | 1135 |  923
+[`fullcheck`](./src/brcmormotfullcheck.lpr)        |     | `X`  | `X`      | `X`    | 1261 |  760
+[`perthreadht -a`](./src/brcmormotperthreadht.lpr) |     |      | `X`      | `X`    |  779 |  745
+[*final* `-a`](./src/brcmormot.lpr)                | `X` |      | `X`      | `X`    |  817 |  738
+[*final* `-f -a`](./src/brcmormot.lpr)             | `X` | `X`  | `X`      | `X`    | 1424 |  759
 
 Here are the columns meaning:
 
@@ -97,11 +97,11 @@ Here are the columns meaning:
 - "full" indicates that the full station name is checked, byte-per-byte, to detect any hash collision (not required by our Pascal challenge, but required by the original Java challenge) - so no `X` here states that the ["perfect hash trick"](#perfect-hash-trick) is used by this solution;
 - "nobranch" indicates that the temperature parsing is using a branchless algorithm;
 - "submap" indicates that `mmap()` is not called for the whole 16GB input file, but for each chunk in its own worker thread;
-- "41K" and "400" are the time (in milliseconds) reported on OVH public cloud by `paweld` in [the "Alternative results" discussion thread](https://github.com/gcarreno/1brc-ObjectPascal/discussions/103#discussioncomment-9273061) for 41343 or 400 stations - so it is on AMD CPU, but not the "official" timing.
+- "41K" and "400" are the time (in milliseconds) reported on OVH public cloud by `paweld` in [the "Alternative results" discussion thread](https://github.com/gcarreno/1brc-ObjectPascal/discussions/103#discussioncomment-9307532) for 41343 or 400 stations - so it is on AMD CPU, but not the "official" timing.
 
 So we have a good coverage on what should be the best solution to propose.
 
-Note that those timings differs from what I got on my own Intel Core i5 computer, on which the 400 stations version is much faster than the 41K stations. Seems to be because of diverse CPU cache sizes - [see below](#analysis).
+Note that those timings differs from what I got on my own Intel Core i5 computer, on which the 400 stations version is much faster than the 41K stations, and the *final* project is always faster (by a noticeable margin). Seems to be because of diverse CPU cache sizes - [see below](#analysis).
 
 ## Why L1 Cache Matters
 
