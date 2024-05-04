@@ -10,7 +10,8 @@ uses
   , Math
   , streamex
   , bufstream
-  , lgHashMap
+  //, lgHashMap
+  , generics.Collections
   {$IFDEF DEBUG}
   , Stopwatch
   {$ENDIF}
@@ -35,11 +36,11 @@ type
 
 type
   // Using this dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
-  TWeatherDictionaryLG = specialize TGHashMapLP<ShortString, PStat>;
+  TWeatherDictionaryLG = specialize TFastHashMap<ShortString, PStat>;
 
 type
   // a type for storing valid lookup temperature
-  TValidTemperatureDictionary = specialize TGHashMapLP<ShortString, int64>;
+  TValidTemperatureDictionary = specialize TFastHashMap<ShortString, int64>;
 
 type
   // Create a class to encapsulate the temperature observations of each weather station.
@@ -121,10 +122,10 @@ begin
   // Create a lookup
   self.lookupStrFloatToIntList := TValidTemperatureDictionary.Create;
   // Set expected capacity - saves 10 seconds.
-  self.lookupStrFloatToIntList.EnsureCapacity(44691);
+  self.lookupStrFloatToIntList.Capacity := 44691;
   // Create a dictionary
   weatherDictionary := TWeatherDictionaryLG.Create;
-  weatherDictionary.EnsureCapacity(44691);
+  weatherDictionary.Capacity := 44691;
   // Create a TStringList for sorting
   weatherStationList := TStringList.Create;
 end;
