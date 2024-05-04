@@ -257,7 +257,21 @@ As of the latest results executed by Paweld, there are two main bottlenecks thro
 Currently, the hash lookup is done on an array of records. Increasing the array size causes slowness, and reducing it causes further collisions.
 Will try to see how to reduce collisions (increase array size), all while minimizing the cost of cache misses.
 
+Edit:
+The goal is to both:
+ - minimize collisions on the hashes (keys) by having a good hash function, but also increase the size of the keys storage
+ - minimize the size of the array of packed records
+
+The idea:
+ - the dictionary will no longer point to a PStationData pointer, but rather to an index between 0 and StationCount, where the record is stored in the array.
+ - -> data about the same station will be stored at the same index for all threads' data-arrays
+ - -> names will also be stored at that same index upon first encounter, and is common to all threads
+ - no locking needs to occur when the key is already found, since there is no multiple-write occurring
+ - the data-arrays are pre-allocated, and a atomic-counter will be incremented to know where the next element will be stored.
+
+Thinking again, this is likely similar to the approach mentioned by @synopse in one of his comments.
+
 For the ExtractLineData, three ideas to try implementing:
  - avoid using a function, to get rid of the cost of stack checking
- - reduce branching
+ - reduce branching, I think it should be possible to go from 3 if-statements, to only 1
  - unroll the loop (although I had tried this in the past, did not show any improvements)
