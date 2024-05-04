@@ -151,12 +151,12 @@ begin
   Result := Trunc(ANumber) + Ord(Frac(ANumber) > 0);
 end;
 
-function RoundExDouble (const aTemp: Double): Double; inline;
+function RoundExInteger (const aTemp: Double): Integer; inline;
 var
   vTmp: Double;
 begin
   vTmp := aTemp * 10;
-  Result := Ceiling (vTmp) / 10;
+  Result := Ceiling (vTmp);
 end;
 
 //---------------------------------------------------
@@ -473,8 +473,24 @@ end;
 
 //---------------------------------------------------
 
+function MyFormatInt (const aIn: SmallInt): AnsiString; inline;
+begin
+  Result := IntToStr(aIn);
+  Insert ('.', Result, Length(Result));
+
+  if Result[1] = '.' then begin
+    Insert ('0', Result, 1);
+    exit;
+  end;
+
+  if (Result[1] = '-') and (Result[2] = '.') then
+    Insert('0', Result, 2);
+end;
+
+//---------------------------------------------------
+
 procedure TOneBRC.GenerateOutput;
-var vMin, vMean, vMax: Double;
+var vMean: Integer;
     vStream: TStringStream;
     I, N: Int64;
     vData: PStationData;
@@ -507,14 +523,12 @@ begin
       // debatable, and the whole output generation is < 0.3 seconds, so not exactly worth it
       vHash := crc32c(0, @vStations[i][1], Length (vStations[i]));
       FStationsDicts[0].TryGetValue(vHash, vData);
-      vMin := vData^.Min/10;
-      vMax := vData^.Max/10;
-      vMean := RoundExDouble(vData^.Sum/vData^.Count/10);
+      vMean := RoundExInteger(vData^.Sum/vData^.Count/10);
 
       vStream.WriteString(
-        vStations[i] + '=' + FormatFloat('0.0', vMin)
-                     + '/' + FormatFloat('0.0', vMean)
-                     + '/' + FormatFloat('0.0', vMax) + ', '
+        vStations[i] + '=' + MyFormatInt(vData^.Min)
+                     + '/' + MyFormatInt(vMean)
+                     + '/' + MyFormatInt(vData^.Max) + ', '
       );
       Inc(I);
     end;
@@ -645,4 +659,3 @@ begin
 end.
 
 {$ENDREGION}
-
