@@ -247,3 +247,17 @@ Another trial with various hash functions, a simple modulus vs. a slightly more 
 Can be tested with the HASHMULT build option
 
 Finally, it seems choosing a dictionary size that is a prime number is also recommended: shaves 1 second out of 20 on my PC.
+
+## v.6 (2024-05-04)
+
+As of the latest results executed by Paweld, there are two main bottlenecks throttling the entire implementation, according to CallGrind and KCacheGrind:
+ - function ExtractLineData, 23% of total cost, of which 9% is due to `fpc_stackcheck`
+ - the hash lookup function, at 40% of total cost
+
+Currently, the hash lookup is done on an array of records. Increasing the array size causes slowness, and reducing it causes further collisions.
+Will try to see how to reduce collisions (increase array size), all while minimizing the cost of cache misses.
+
+For the ExtractLineData, three ideas to try implementing:
+ - avoid using a function, to get rid of the cost of stack checking
+ - reduce branching
+ - unroll the loop (although I had tried this in the past, did not show any improvements)
