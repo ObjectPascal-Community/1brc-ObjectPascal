@@ -10,7 +10,7 @@
         <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="brcmormot"/>
+      <Title Value="brcmormotfullcheck"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -20,7 +20,7 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/abouchez"/>
+            <Filename Value="../../../bin/abouchezfullcheck"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -43,6 +43,7 @@
           <Linking>
             <Debugging>
               <DebugInfoType Value="dsDwarf3"/>
+              <UseHeaptrc Value="True"/>
               <TrashVariables Value="True"/>
               <UseExternalDbgSyms Value="True"/>
             </Debugging>
@@ -53,7 +54,7 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/abouchez"/>
+            <Filename Value="../../../bin/abouchezfullcheck"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -88,7 +89,7 @@
     </RequiredPackages>
     <Units Count="1">
       <Unit0>
-        <Filename Value="brcmormot.lpr"/>
+        <Filename Value="brcmormotfullcheck.lpr"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
     </Units>
@@ -96,7 +97,7 @@
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../../bin/abouchez"/>
+      <Filename Value="../../../bin/abouchezfullcheck"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>

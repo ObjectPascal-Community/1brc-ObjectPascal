@@ -130,7 +130,7 @@ end;
 
 procedure TResults.Generate;
 var
-  index, index1, index2: Integer;
+  index, index2: Integer;
   content, hyperfineFile: String;
   resultitem: TResult;
   hyperfineStream: TFileStream;
@@ -140,6 +140,7 @@ begin
 
   for index:= 0 to Pred(FConfig.Entries.Count) do
   begin
+    if not FConfig.Entries[index].Active then continue;
     Write(GenerateProgressBar(Succ(index), FConfig.Entries.Count, 50), lineBreak);
     hyperfineFile:= ExpandFileName(
         IncludeTrailingPathDelimiter(FConfig.ResultsFolder)+
@@ -163,7 +164,14 @@ begin
         try
           if FConfig.Entries[index].Compiler = 'fpc' then
           begin
-            FList[index2].Compiler:= 'lazarus-3.0, fpc-3.2.2';
+            if FConfig.Entries[index].UseTrunk then
+            begin
+              FList[index2].Compiler:= 'lazarus-3.99, fpc-3.3.1';
+            end
+            else
+            begin
+              FList[index2].Compiler:= 'lazarus-3.0, fpc-3.2.2';
+            end;
           end;
           if FConfig.Entries[index].Compiler = 'delphi' then
           begin
@@ -195,7 +203,7 @@ begin
   for index:= 0 to FList.Count - 1 do
   begin
     if not FList[index].GoodHash then FList[index].Notes:= FList[index].Notes + ' **(failed hash)**';
-    content:= content + Format('| %d | %s | %s | %s | %s | |'+LineEnding, [
+    content:= content + Format('| %2d | %9s | %-23s | %-22s | %-34s | |'+LineEnding, [
       index + 1,
       FormatTime(FList[index].Result),
       FList[index].Compiler,

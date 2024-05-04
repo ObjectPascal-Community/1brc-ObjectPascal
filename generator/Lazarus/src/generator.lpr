@@ -34,16 +34,17 @@ type
 procedure TOneBRCGenerator.DoRun;
 var
   ErrorMsg: String;
-  tmpLineCount: String;
+  tmpLineCount, tmpLineEnd: String;
 begin
   // quick check parameters
-  ErrorMsg:= CheckOptions(Format('%s%s%s:%s:%s:%s',[
+  ErrorMsg:= CheckOptions(Format('%s%s%s:%s:%s:%s%s:',[
       cShortOptHelp,
       cShortOptVersion,
       cShortOptInput,
       cShortOptOutput,
       cShortOptNumber,
-      cShortOptStations
+      cShortOptStations,
+      cShortOptLineEnd
     ]),
     [
       cLongOptHelp,
@@ -51,7 +52,8 @@ begin
       cLongOptInput+':',
       cLongOptOutput+':',
       cLongOptNumber+':',
-      cLongOptStations+':'
+      cLongOptStations,
+      cLongOptLineEnd+':'
     ]
   );
   if ErrorMsg<>'' then
@@ -134,6 +136,22 @@ begin
 
   only400stations := HasOption(cShortOptStations, cLongOptStations);
 
+  if HasOption(cShortOptLineEnd, cLongOptLineEnd) then
+  begin
+    tmpLineEnd:=GetOptionValue(
+      cShortOptLineEnd,
+      cLongOptLineEnd
+    );
+    if (UpperCase(tmpLineEnd) <> 'CRLF') and (UpperCase(tmpLineEnd) <> 'LF') then
+    begin
+      WriteLn(rsInvalidLineEnd);
+      Terminate;
+      Exit;
+    end
+    else if UpperCase(tmpLineEnd) = 'CRLF' then
+      lineEnding := #13#10;
+  end;
+
   inputFilename:= ExpandFileName(inputFilename);
   outputFilename:= ExpandFileName(outputFilename);
 
@@ -142,7 +160,7 @@ begin
   WriteLn(Format(rsLineCount, [ Double(lineCount) ]));
   WriteLn;
 
-  FGenerator:= TGenerator.Create(inputFilename, outputFilename, lineCount, only400stations);
+  FGenerator:= TGenerator.Create(inputFilename, outputFilename, lineCount, only400stations, lineEnding);
   try
     try
       FGenerator.Generate;

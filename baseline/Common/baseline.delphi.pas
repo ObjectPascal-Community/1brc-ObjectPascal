@@ -5,6 +5,7 @@ interface
 uses
   System.Classes
 , System.Generics.Collections
+, System.SysUtils
 ;
 
 type
@@ -28,6 +29,7 @@ type
   private
     FInputFile: String;
     FStationNames: TStringList;
+    FFormatSettings: TFormatSettings;
     FHashStationList: TDictionary<string, PWeatherStation>;
     procedure AddToHashList (AStation: String; ATemp: TAmount);
     procedure BuildHashList;
@@ -43,8 +45,7 @@ end;
 implementation
 
 uses
-  System.SysUtils
-, System.StrUtils
+  System.StrUtils
 , System.Math
 , Baseline.Common
 ;
@@ -72,6 +73,8 @@ end;
 
 constructor TBaseline.Create (AInputFile: String);
 begin
+  FFormatSettings := TFormatSettings.Create;
+  FFormatSettings.DecimalSeparator := '.';
   FInputFile := AInputFile;
 
   FHashStationList := TDictionary<string, PWeatherStation>.Create;
@@ -182,7 +185,7 @@ begin
     Min := weatherStation^.FMin/10;
     Max := weatherStation^.FMax/10;
     Mean := RoundExDouble(weatherStation^.FTot/weatherStation^.FCnt/10);
-    strTemp := weatherStation^.FStation + '=' + FormatFloat('0.0', Min) + '/' + FormatFloat('0.0', Mean) + '/' + FormatFloat('0.0', Max) + ',';
+    strTemp := weatherStation^.FStation + '=' + FormatFloat('0.0', Min, FFormatSettings) + '/' + FormatFloat('0.0', Mean, FFormatSettings) + '/' + FormatFloat('0.0', Max, FFormatSettings) + ',';
     FStationNames.Add(strTemp);
   end;
   FStationNames.EndUpdate;

@@ -11,6 +11,7 @@ uses
   System.TimeSpan,
   System.Generics.Collections,
   System.Diagnostics,
+  Math,
   generate.console in '..\..\..\generator\Common\generate.console.pas',
   Baseline.Common in '..\..\..\Baseline\Common\Baseline.Common.pas';
 
@@ -23,7 +24,7 @@ const paramPrefix = '--';
 {$REGION 'v1'}
 
 type TStationEntry = record
-  min, max, sum: Double;
+  min, max, sum: Int64;
   count: Integer;
 end;
 
@@ -33,9 +34,10 @@ var FileStream: TFileStream;
     StreamReader: TStreamReader;
     CityTemperatures: TDictionary<String, TStationEntry>;  //Station, min, avrg, max
     Line: String;
-    Parts: TArray<String>;
+    Station: String;
     entry: TStationEntry;
-    value: Double;
+    valInt: Int64;
+    position: Int16;
 begin
   CityTemperatures := TDictionary<String, TStationEntry>.Create;
 
@@ -44,45 +46,39 @@ begin
     try
       StreamReader := TStreamReader.Create(FileStream, TEncoding.UTF8);
 
-      // Read the first three bytes to check for UTF-8 BOM
-//      var NumRead := FileStream.Read(BOM, Length(BOM));
-      // If the file starts with the UTF-8 BOM, continue as is, otherwise reset the stream position.
-//      if (NumRead <> Length(BOM)) or (BOM[0] <> $EF) or (BOM[1] <> $BB) or (BOM[2] <> $BF) then
-//      begin
-//        FileStream.Position := 0; // Reset the position if no BOM or not a UTF-8 BOM
-//      end;
-
       try
         while not StreamReader.EndOfStream do
         begin
           Line := StreamReader.ReadLine;
-          Parts := SplitString(Line, ';');
-          if (TryStrToFloat(Parts[1], value, FormatSettings)) then
+          position := Pos(';', Line);
+          Station := Copy(Line, 1, position - 1);
+
+          valInt := StringReplace(Copy(Line, position + 1, Length(Line)), '.', '', [rfReplaceAll]).ToInt64;
+
+          if (CityTemperatures.ContainsKey(Station)) then
           begin
-            if (CityTemperatures.ContainsKey(Parts[0])) then
-            begin
-              entry := CityTemperatures[Parts[0]];
+            entry := CityTemperatures[Station];
 
-              if (value < entry.min) then   //min
-                entry.min := value;
+            if (valInt < entry.min) then   //min
+              entry.min := valInt;
 
-              entry.sum := (entry.sum + value);  //average
-              entry.count := entry.count + 1;
+            entry.sum := (entry.sum + valInt);  //average
+            Inc(entry.count);
 
-              if (value > entry.max) then //max
-                entry.max := value;
+            if (valInt > entry.max) then //max
+              entry.max := valInt;
 
-              CityTemperatures[Parts[0]] := entry;
-            end
-            else
-            begin
-              entry.min := value;
-              entry.count := 1;
-              entry.sum := value;
-              entry.max := value;
-              CityTemperatures.Add(Parts[0], entry);
-            end;
+            CityTemperatures[Station] := entry;
+          end
+          else
+          begin
+            entry.min := valInt;
+            entry.count := 1;
+            entry.sum := valInt;
+            entry.max := valInt;
+            CityTemperatures.Add(Station, entry);
           end;
+
         end;
 
 
@@ -96,15 +92,11 @@ begin
         try
           for var Key in SortedKeys do
           begin
-
-             // Windows will mess up the characters when outputting to STDOUT.
-             // for debug purposes, we'll output it to a file instead.
-             //https://github.com/gcarreno/1brc-ObjectPascal/blob/main/baseline/Common/baseline.delphi.pas @https://github.com/georges-hatem
              {$IFDEF DEBUG}
                if (i = 0) then
                  vStream.WriteString('{');
 
-               vStream.WriteString(Format('%s=%.1f/%.1f/%.1f', [key, CityTemperatures[key].min, RoundExDouble(CityTemperatures[key].sum / CityTemperatures[key].count), CityTemperatures[key].max], FormatSettings));
+               vStream.WriteString(Format('%s=%.1f/%.1f/%.1f', [key, CityTemperatures[key].min / 10, RoundExDouble( (CityTemperatures[key].sum / 10) / CityTemperatures[key].count) , CityTemperatures[key].max / 10], FormatSettings));
 
                if (i = CityTemperatures.Count-1) then
                  vStream.WriteString('}' + #10)
@@ -115,7 +107,7 @@ begin
                if (i = 0) then
                 Write('{');
 
-               Write(Format('%s=%.1f/%.1f/%.1f', [key, CityTemperatures[key].min, RoundExDouble(CityTemperatures[key].sum / CityTemperatures[key].count), CityTemperatures[key].max], FormatSettings));
+               Write(Format('%s=%.1f/%.1f/%.1f', [key, CityTemperatures[key].min / 10, RoundExDouble( (CityTemperatures[key].sum / 10) / CityTemperatures[key].count), CityTemperatures[key].max / 10], FormatSettings));
 
                if (i = CityTemperatures.Count-1) then
                  Write('}' + #10)

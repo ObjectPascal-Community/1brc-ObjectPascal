@@ -1,5 +1,6 @@
 /// MIT code (c) Arnaud Bouchez, using the mORMot 2 framework
-program brcmormot;
+// - shared hash table version, potentially with "perfect hash" trick
+program brcmormotsharedht;
 
 {.$define NOPERFECTHASH}
 // you can define this conditional to force name comparison (slower)
@@ -410,12 +411,12 @@ begin
       begin
         // note: the PCardinal(p)^ + "shr and $ff" trick is actually slower
         v := (p[0] * 100 + p[1] * 10 + p[3] - (ord('0') * 111)) * neg;
-        p := @p[6]; // also jump ending $13/$10
+        p := @p[5]; // also jump ending $13/$10
       end
       else
       begin
         v := (p[0] * 10 + p[2] - (ord('0') * 11)) * neg; // x.x
-        p := @p[5];
+        p := @p[4];
       end;
       // store the value
       if s^.Count = 0 then

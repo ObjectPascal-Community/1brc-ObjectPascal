@@ -1,6 +1,6 @@
 /// MIT code (c) Arnaud Bouchez, using the mORMot 2 framework
-// - fastest version with "perfect hash" trick and optional name comparison
-program brcmormot;
+// - per-thread "perfect hash" table and no name comparison
+program brcmormotpertheadht;
 
 {$I mormot.defines.inc}
 
@@ -21,13 +21,14 @@ uses
   mormot.core.data;
 
 type
-  // a weather station info, using less than 1/4rd of a CPU L1 cache line
+  // a weather station info, using 1/4rd of a CPU L1 cache line (64/4=16 bytes)
   TBrcStation = packed record
-    Count, Sum: integer;  // we ensured no overflow occurs with 32-bit range
+    NameHash: cardinal;   // crc32c perfect hash of the name
+    Sum, Count: integer;  // we ensured no overflow occurs with 32-bit range
     Min, Max: SmallInt;   // 16-bit (-32767..+32768) temperatures * 10
   end;
   PBrcStation = ^TBrcStation;
-  TBrcStations = array of TBrcStation;
+  TBrcStationName = array[0..63] of byte; // should be big enough for our dataset
 
   // state machine used for efficient per-thread line processing
   TBrcChunk = packed record
@@ -35,7 +36,17 @@ type
     Value: integer;
     Name, Start, Stop, MemMapBuf: PUtf8Char;
     MemMapSize: PtrInt;
-    NameLen: byte;
+  end;
+
+  // store parsed values
+  TBrcList = record
+    StationHash: array of word;      // store 0 if void, or Station[] index + 1
+    Station: array of TBrcStation;
+    StationName: array of TBrcStationName; // local copy of a whole line
+    Count: PtrInt;
+    procedure Init(max: integer);
+    function Add(h: PtrUInt; var chunk: TBrcChunk): PBrcStation;
+    function Search(var chunk: TBrcChunk): PBrcStation; inline;
   end;
 
   // main processing class, orchestrating all TBrcThread instances
@@ -43,21 +54,15 @@ type
   protected
     fSafe: TOsLightLock;
     fEvent: TSynEvent;
-    fHashLookup: array of word;     // store 0 if void, or fStation[] index + 1
-    fNameHash: array of cardinal;   // quick "perfect hash" search
-    fNameLine: array of string[63]; // local copy of a whole line
-    fStation: TBrcStations;         // aggregated list of result
-    fCount: PtrInt;
     fRunning, fMax, fChunkSize, fCurrentChunk: integer;
+    fList: TBrcList;
     fFile: THandle;
     fFileSize: Int64;
-    function StationSearch(var chunk: TBrcChunk): PtrInt; inline;
-    function StationAdd(h: PtrUInt; var chunk: TBrcChunk): PtrInt;
-    procedure Aggregate(const another: TBrcStations);
+    procedure Aggregate(const another: TBrcList);
     function GetNext(var next: TBrcChunk): boolean;
   public
     constructor Create(const fn: TFileName; threads, chunkmb, max: integer;
-      affinity, fullsearch: boolean);
+      affinity: boolean);
     destructor Destroy; override;
     procedure WaitFor;
     function SortedText: RawUtf8;
@@ -67,7 +72,7 @@ type
   TBrcThread = class(TThread)
   protected
     fOwner: TBrcMain;
-    fStation: TBrcStations; // each thread work on its own resultset
+    fList: TBrcList; // each thread work on its own list
     procedure Execute; override;
   public
     constructor Create(owner: TBrcMain);
@@ -78,9 +83,8 @@ type
 
 procedure ParseLine(var chunk: TBrcChunk); nostackframe; assembler;
 asm
-         // 128-bit SSE2 ';" search with SSE4.2 crc32c hash
+         // 128-bit SSE2 ';" search and SSE4.2 crc32c hash
          mov      rsi, [rdi + TBrcChunk.Start]
-         mov      r8, rsi
          xor      edx, edx
          movaps   xmm0, oword ptr [rip + @pattern]
          movups   xmm1, oword ptr [rsi]      // search in first 16 bytes
@@ -94,10 +98,7 @@ asm
          jz       @less8
          crc32    rdx, qword ptr [rsi]       // branchless for 8..15 bytes
 @ok8:    crc32    rdx, qword ptr [rax - 8]   // may overlap
-@ok:     mov      rcx, rax
-         sub      rcx, r8
-         mov      [rdi + TBrcChunk.NameHash], edx
-         mov      [rdi + TBrcChunk.NameLen], cl
+@ok:     mov      [rdi + TBrcChunk.NameHash], edx
          // branchless temperature parsing - same algorithm as pascal code below
          xor      ecx, ecx
          xor      edx, edx
@@ -111,7 +112,7 @@ asm
          setne    dl
          mov      eax, dword ptr [r8 + 1]   // eax = xx.x or x.x
          shl      cl, 3
-         lea      r8, [r8 + rdx + 5]        // r8 = next line (LF only)
+         lea      r8, [r8 + rdx + 5]        // r8 = next line
          shl      eax, cl                   // normalized as xx.x
          and      eax, $0f000f0f            // from ascii to digit
          imul     rax, rax, 1 + 10 shl 16 + 100 shl 24
@@ -146,41 +147,12 @@ asm
          dq       ';;;;;;;;'
 end;
 
-function CompareMem(a, b: PAnsiChar; l: PtrInt): boolean; nostackframe; assembler;
-asm
-        // rdi=a rsi=b rdx=l
-        mov     rax, -8                    // rax=-SizeOf(PtrInt)
-        add     rdi, rdx
-        add     rsi, rdx
-        neg     rdx
-        cmp     rax, rdx
-        jl      @by1
-        align   8
-@by8:   mov     rcx, qword ptr [rdi + rdx] // branchless for 8..16 bytes
-        cmp     rcx, qword ptr [rsi + rdx]
-        jne     @set
-        sub     rdx, rax
-        jz      @ok
-        cmp     rax, rdx
-        jg      @by8
-        mov     rcx, qword ptr [rdi + rax] // compare last 8 bytes - may overlap
-        cmp     rcx, qword ptr [rsi + rax]
-@set:   sete    al
-        ret
-@by1:   mov     cl, byte ptr [rdi+rdx]
-        cmp     cl, byte ptr [rsi+rdx]
-        jnz     @set
-        add     rdx, 1
-        jnz     @by1
-@ok:    mov     al, 1
-end;
-
 {$else}
 
 procedure ParseLine(var chunk: TBrcChunk); inline;
 var
   p: PUtf8Char;
-  neg, len: PtrInt;
+  neg: PtrInt;
 begin
   // parse and hash the station name
   p := chunk.Start;
@@ -188,54 +160,64 @@ begin
   inc(p, 2);
   while p^ <> ';' do
     inc(p);
-  len := p - chunk.Name;
-  chunk.NameLen := len;
-  chunk.NameHash := crc32c(0, chunk.Name, len); // intel/aarch64 asm
+  chunk.NameHash := crc32c(0, chunk.Name, p - chunk.Name); // intel/aarch64 asm
   // branchless parsing of the temperature
   neg := ord(p[1] <> '-') * 2 - 1;         // neg = +1 or -1
   inc(p, ord(p[1] = '-'));                 // ignore '-' sign
-  chunk.Start := @p[ord(p[2] <> '.') + 5]; // next line (LF only)
+  chunk.Start := @p[ord(p[2] <> '.') + 5]; // next line
   chunk.Value := PtrInt(cardinal((QWord((PCardinal(p + 1)^ shl
                    (byte(ord(p[2] = '.') shl 3))) and $0f000f0f) *
          (1 + 10 shl 16 + 100 shl 24)) shr 24) and cardinal(1023)) * neg;
 end;
 
-function CompareMem(a, b: PAnsiChar; l: PtrInt): boolean;
-var
-  ptrsiz: PtrInt;
-begin
-  ptrsiz := -SizeOf(PtrInt); // FPC will use a register for this constant
-  inc(a, l);
-  inc(b, l);
-  l := -l;
-  result := true;
-  if l <= ptrsiz then
-    repeat
-      if PPtrUInt(@a[l])^ <> PPtrUInt(@b[l])^ then
-        break;
-      dec(l, ptrsiz);
-      if l = 0 then
-        exit
-      else if l < ptrsiz then
-        continue;
-      result := PPtrUInt(@a[ptrsiz])^ = PPtrUInt(@b[ptrsiz])^; // may overlap
-      exit;
-    until false
-  else
-    repeat
-      if a[l] <> b[l] then
-        break;
-      inc(l);
-      if l <> 0 then
-        continue;
-      result := true;
-      exit;
-    until false;
-  result := false;
-end;
-
 {$endif OSLINUXX64}
 
+
+{ TBrcList }
+
+const
+  HASHSIZE = 1 shl 17; // slightly oversized to avoid most collisions
+
+procedure TBrcList.Init(max: integer);
+begin
+  assert(max <= high(StationHash[0]));
+  SetLength(StationHash, HASHSIZE);
+  SetLength(Station, max);
+  SetLength(StationName, max);
+end;
+
+function TBrcList.Add(h: PtrUInt; var chunk: TBrcChunk): PBrcStation;
+var
+  ndx: PtrInt;
+begin
+  ndx := Count;
+  assert(ndx < length(Station));
+  inc(Count);
+  StationHash[h] := ndx + 1;
+  MoveFast(chunk.Name^, StationName[ndx], SizeOf(TBrcStationName));
+  result := @Station[ndx];
+  result^.NameHash := chunk.NameHash;
+  result^.Min := chunk.Value;
+  result^.Max := chunk.Value;
+end;
+
+function TBrcList.Search(var chunk: TBrcChunk): PBrcStation;
+var
+  h, x: PtrUInt;
+begin
+  h := chunk.NameHash;
+  repeat
+    h := h and (HASHSIZE - 1);
+    x := StationHash[h];
+    if x = 0 then
+      break;   // void slot
+    result := @Station[x - 1];
+    if result^.NameHash = chunk.NameHash then
+      exit;   // found this perfect hash = found this station name
+    inc(h);   // hash modulo collision: linear probing
+  until false;
+  result := Add(h, chunk);
+end;
 
 
 { TBrcThread }
@@ -244,25 +226,48 @@ constructor TBrcThread.Create(owner: TBrcMain);
 begin
   fOwner := owner;
   FreeOnTerminate := true;
-  SetLength(fStation, fOwner.fMax);
+  fList.Init(fOwner.fMax);
   InterlockedIncrement(fOwner.fRunning);
-  inherited Create({suspended=}false, {stacksize=}16384);
+  inherited Create({suspended=}false);
+end;
+
+procedure TBrcThread.Execute;
+var
+  chunk: TBrcChunk;
+  s: PBrcStation;
+  v: integer;
+begin
+  chunk.MemMapBuf := nil;
+  while fOwner.GetNext(chunk) do
+  begin
+    // parse this thread chunk
+    repeat
+      // parse next name;temp pattern into value * 10
+      ParseLine(chunk);
+      // store the value into the proper slot
+      s := fList.Search(chunk);
+      v := chunk.Value;
+      inc(s^.Sum, v);
+      inc(s^.Count);
+      if v < s^.Min then // branches are fine
+        s^.Min := v;
+      if v > s^.Max then
+        s^.Max := v;
+    until chunk.start >= chunk.stop;
+  end;
+  // aggregate this thread values into the main list
+  fOwner.Aggregate(fList);
 end;
 
 
 { TBrcMain }
 
-const
-  HASHSIZE = 1 shl 18; // slightly oversized to avoid most collisions
-  // we tried with a prime constant for fast modulo mult-by-reciprocal: slower
-
 constructor TBrcMain.Create(const fn: TFileName; threads, chunkmb, max: integer;
-  affinity, fullsearch: boolean);
+  affinity: boolean);
 var
   i, cores, core: integer;
   one: TBrcThread;
 begin
-  // initialize the processing
   fSafe.Init;
   fEvent := TSynEvent.Create;
   fFile := FileOpenSequentialRead(fn);
@@ -271,12 +276,6 @@ begin
     raise ESynException.CreateUtf8('Impossible to find %', [fn]);
   fMax := max;
   fChunkSize := chunkmb shl 20;
-  SetLength(fHashLookup, HASHSIZE);
-  if not fullsearch then
-    SetLength(fNameHash, fMax);
-  SetLength(fNameLine, fMax);
-  // (we tried pre-loading a first chunk here but it was not faster)
-  // run the thread workers
   core := 0;
   cores := SystemInfo.dwNumberOfProcessors;
   for i := 0 to threads - 1 do
@@ -296,59 +295,6 @@ begin
   inherited Destroy;
   fEvent.Free;
   fSafe.Done;
-end;
-
-function TBrcMain.StationSearch(var chunk: TBrcChunk): PtrInt;
-var
-  h: PtrUInt;
-  p: PCardinalArray;
-  n: PAnsiChar;
-begin
-  h := chunk.NameHash;
-  repeat
-    repeat
-      h := h and (HASHSIZE - 1);
-      result := fHashLookup[h];
-      if result = 0 then
-        break;   // void slot: call StationAdd()
-      p := pointer(fNameHash);
-      dec(result);
-      if p <> nil then
-        if p[result] = chunk.NameHash then // perfect hash match
-          exit
-        else
-          inc(h) // hash modulo collision: linear probing
-      else
-      begin
-        n := @fNameLine[result]; // full name comparison
-        if (n[0] = AnsiChar(chunk.NameLen)) and
-           CompareMem(@n[1], chunk.Name, ord(n[0])) then
-          exit
-        else
-          inc(h);
-      end;
-    until false;
-    result := StationAdd(h, chunk);
-  until result >= 0; // added
-end;
-
-function TBrcMain.StationAdd(h: PtrUInt; var chunk: TBrcChunk): PtrInt;
-begin
-  fSafe.Lock;
-  if fHashLookup[h] <> 0 then
-    result := -1 // race condition (at startup): try again
-  else
-  begin
-    result := fCount;
-    inc(fCount);
-    fHashLookup[h] := result + 1;
-    if fNameHash <> nil then
-      fNameHash[result] := chunk.NameHash;
-    assert(result < fMax);
-    assert(chunk.NameLen < SizeOf(fNameLine[0]));
-    SetString(fNameLine[result], chunk.Name, chunk.NameLen);
-  end;
-  fSafe.UnLock;
 end;
 
 const
@@ -389,75 +335,39 @@ begin
       dec(next.Stop);
 end;
 
-procedure TBrcMain.Aggregate(const another: TBrcStations);
+procedure TBrcMain.Aggregate(const another: TBrcList);
 var
   n: integer;
   s, d: PBrcStation;
+  p: ^TBrcStationName;
+  chunk: TBrcChunk;
 begin
   fSafe.Lock; // several TBrcThread may finish at the same time
-  n := fCount;
-  s := pointer(another);
-  d := pointer(fStation);
-  if d = nil then
-    fStation := another
+  if fList.Count = 0 then
+    fList := another
   else
-  repeat
-    if s^.Count <> 0 then
-    begin
+  begin
+    n := another.Count;
+    s := pointer(another.Station);
+    p := pointer(another.StationName);
+    repeat
+      chunk.Start := pointer(p);
+      ParseLine(chunk);
+      d := fList.Search(chunk);
       inc(d^.Count, s^.Count);
       inc(d^.Sum, s^.Sum);
-      if s^.Min < d^.Min then
-        d^.Min := s^.Min;
       if s^.Max > d^.Max then
         d^.Max := s^.Max;
-    end;
-    inc(s);
-    inc(d);
-    dec(n);
-  until n = 0;
+      if s^.Min < d^.Min then
+        d^.Min := s^.Min;
+      inc(s);
+      inc(p);
+      dec(n);
+    until n = 0;
+  end;
   fSafe.UnLock;
   if InterlockedDecrement(fRunning) = 0 then
     fEvent.SetEvent; // all threads finished: release WaitFor method
-end;
-
-procedure SetStationValue(s: PBrcStation; v: integer); // better not inlined
-var
-  m: integer;
-begin
-  if s^.Count <> 0 then
-  begin
-    inc(s^.Count);
-    inc(s^.Sum, v);
-    m := s^.Min;
-    if v < m then   // cmovg
-      m := v;
-    s^.Min := m;
-    m := s^.Max;
-    if v > m then   // cmovl
-      m := v;
-    s^.Max := m;
-    exit;
-  end;
-  s^.Count := 1;
-  s^.Sum := v;
-  s^.Min := v;
-  s^.Max := v;
-end;
-
-procedure TBrcThread.Execute; // defined here for proper inlining
-var
-  chunk: TBrcChunk;
-begin
-  chunk.MemMapBuf := nil;
-  while fOwner.GetNext(chunk) do
-    repeat
-      // parse next name;temp pattern into value * 10
-      ParseLine(chunk);
-      // store the value into the proper slot
-      SetStationValue(@fStation[fOwner.StationSearch(chunk)], chunk.Value);
-    until chunk.start >= chunk.stop;
-  // aggregate this thread values into the main list
-  fOwner.Aggregate(fStation);
 end;
 
 procedure TBrcMain.WaitFor;
@@ -481,19 +391,31 @@ begin
   w.Add(AnsiChar(val - d10 * 10 + ord('0')));
 end;
 
-function ByStationName(const A, B): integer;
+function ByStationName(const A, B): integer; // = StrComp() but ending with ';'
 var
-  sa: shortstring absolute A;
-  sb: shortstring absolute B;
-  la, lb: PtrInt;
+  pa, pb: PByte;
+  c: byte;
 begin
-  la := ord(sa[0]);
-  lb := ord(sb[0]);
-  if la < lb then
-    la := lb;
-  result := MemCmp(@sa[1], @sb[1], la);
-  if result = 0 then
-    result := ord(sa[0]) - ord(sb[0]);
+  result := 0;
+  pa := @A;
+  pb := @B;
+  dec(pa, {%H-}PtrUInt(pb));
+  if pa = nil then
+    exit;
+  repeat
+    c := PByteArray(pa)[{%H-}PtrUInt(pb)];
+    if c <> pb^ then
+      break
+    else if c = ord(';') then
+      exit; // Str1 = Str2
+    inc(pb);
+  until false;
+  if (c = ord(';')) or
+     ((pb^ <> ord(';')) and
+      (c < pb^)) then
+    result := -1
+  else
+    result := 1;
 end;
 
 function ceil(x: double): PtrInt; // "official" rounding method
@@ -503,18 +425,20 @@ end;
 
 function TBrcMain.SortedText: RawUtf8;
 var
-  c: integer;
+  c, l: PtrInt;
   n: PCardinal;
   s: PBrcStation;
+  p: PUtf8Char;
   st: TRawByteStringStream;
   w: TTextWriter;
   ndx: TSynTempBuffer;
   tmp: TTextWriterStackBuffer;
 begin
   // compute the sorted-by-name indexes of all stations
-  assert(fCount <> 0);
+  c := fList.Count;
+  assert(c <> 0);
   DynArraySortIndexed(
-    pointer(fNameLine), SizeOf(fNameLine[0]), fCount, ndx, ByStationName);
+    pointer(fList.StationName), SizeOf(TBrcStationName), c, ndx, ByStationName);
   try
     // generate output
     FastSetString(result, nil, 1200000); // pre-allocate result
@@ -523,12 +447,15 @@ begin
       w := TTextWriter.Create(st, @tmp, SizeOf(tmp));
       try
         w.Add('{');
-        c := fCount;
         n := ndx.buf;
         repeat
-          w.AddShort(fNameLine[n^]);
-          s := @fStation[n^];
+          s := @fList.Station[n^];
           assert(s^.Count <> 0);
+          p := @fList.StationName[n^];
+          l := 2;
+          while p[l] <> ';' do
+            inc(l);
+          w.AddNoJsonEscape(p, l);
           AddTemp(w, '=', s^.Min);
           AddTemp(w, '/', ceil(s^.Sum / s^.Count)); // average
           AddTemp(w, '/', s^.Max);
@@ -555,48 +482,49 @@ end;
 var
   fn: TFileName;
   threads, chunkmb: integer;
-  verbose, affinity, full, help: boolean;
+  verbose, affinity, help: boolean;
   main: TBrcMain;
   res: RawUtf8;
   start, stop: Int64;
 begin
-  assert(SizeOf(TBrcStation) <= 64 div 4); // 64 = CPU L1 cache line size
+  assert(SizeOf(TBrcStation) = 64 div 4); // 64 = CPU L1 cache line size
   // read command line parameters
-  with Executable.Command do
+  Executable.Command.ExeDescription := 'The mORMot One Billion Row Challenge';
+  if Executable.Command.Arg(0, 'the data source #filename') then
+    Utf8ToFileName(Executable.Command.Args[0], fn{%H-});
+  verbose := Executable.Command.Option(
+    ['v', 'verbose'], 'generate verbose output with timing');
+  affinity := Executable.Command.Option(
+    ['a', 'affinity'], 'force thread affinity to a single CPU core');
+  Executable.Command.Get(
+    ['t', 'threads'], threads, '#number of threads to run',
+      SystemInfo.dwNumberOfProcessors);
+  Executable.Command.Get(
+    ['c', 'chunk'], chunkmb, 'size in #megabytes used for per-thread chunking', 16);
+  help := Executable.Command.Option(['h', 'help'], 'display this help');
+  if Executable.Command.ConsoleWriteUnknown then
+    exit
+  else if help or
+     (fn = '') then
   begin
-    ExeDescription := 'The mORMot One Billion Row Challenge';
-    if Arg(0, 'the data source #filename') then
-      Utf8ToFileName(Executable.Command.Args[0], fn{%H-});
-    verbose := Option(['v', 'verbose'], 'generate verbose output with timing');
-    affinity := Option(['a', 'affinity'], 'force thread affinity to a single CPU core');
-    full := Option(['f', 'full'], 'force full name lookup (disable "perfect hash" trick)');
-    Get(['t', 'threads'], threads, '#number of thread workers', SystemInfo.dwNumberOfProcessors);
-    Get(['c', 'chunk'], chunkmb, 'size in #megabytes for per-thread chunking', 16);
-    help := Option(['h', 'help'], 'display this help');
-    if ConsoleWriteUnknown then
-      exit
-    else if help or
-       (fn = '') then
-    begin
-      ConsoleWrite(FullDescription);
-      exit;
-    end;
+    ConsoleWrite(Executable.Command.FullDescription);
+    exit;
   end;
   // actual process
   if verbose then
     ConsoleWrite(['Processing ', fn, ' with ', threads, ' threads, ',
-      chunkmb, 'MB chunks and affinity=', affinity, ' full=', full]);
+      chunkmb, 'MB chunks and affinity=', affinity]);
   QueryPerformanceMicroSeconds(start);
   try
-    main := TBrcMain.Create(fn, threads, chunkmb, {max=}45000, affinity, full);
+    main := TBrcMain.Create(fn, threads, chunkmb, {max=}45000, affinity);
     // note: current stations count = 41343 for 2.5MB of data per thread
     try
       main.WaitFor;
       res := main.SortedText;
       if verbose then
-        ConsoleWrite(['hash=',      CardinalToHexShort(crc32cHash(res)),
-                      ', length=',  length(res),
-                      ', stations count=', main.fCount,
+        ConsoleWrite(['result hash=',      CardinalToHexShort(crc32cHash(res)),
+                      ', result length=',  length(res),
+                      ', stations count=', main.fList.Count,
                       ', valid utf8=',     IsValidUtf8(res)])
       else
         ConsoleWrite(res);

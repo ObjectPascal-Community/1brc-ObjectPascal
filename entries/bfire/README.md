@@ -50,9 +50,20 @@ Second version uses hash of station name to accumulate data and fill a TStringLi
 The list is initially unsorted and has linked objects for records holding accumulated data for each station.
 Finally, the TStringList is sorted and used to output sorted data.
 
+Third version has a thread for the console (which waits for tabulation, then sorts and writes results),
+one thread to read file, four threads to tabulate stations (split by section of alphabet). File is read
+byte-wise into "classic" byte arrays for station name and temperature. The arrays are passed to one of
+four stacks, split by section of alphabet, for tabulation. Tabulation threads hash station name, use hash
+as index into a data array.  After all data is read and tabulated, the four data arrays are added to an
+initially unsorted TStringList that holds unsorted Unicode station name and has linked pointers to
+tabulated data for each station.  Finally, the TStringList is sorted, and the data is output.
+
 ## History
 
-- Version 1.0: first working version, based on TStringList.
-- Version 1.1: modified rounding to new baseline.
-- Version 2.0: use hashing, sort later.
-- Version 2.1: minor speed tweaks.
+- Version 1.0: First working version, based on TStringList.
+- Version 1.1: Modified rounding to new baseline.
+- Version 2.0: Use hashing, sort later.
+- Version 2.1: Minor speed tweaks.
+- Version 2.2: Try hash functions modification.
+- Version 3.0: Six threads: one to read, four to tabulate, one (console) to rule them all...
+- Version 3.1: Safer locking strategy

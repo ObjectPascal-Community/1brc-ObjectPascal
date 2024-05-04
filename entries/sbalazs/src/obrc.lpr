@@ -29,12 +29,12 @@ begin
 
   if (Trim(ParamStr(2)) <> '')  then
   begin
-    TC := StrToIntDef(ParamStr(2), 16);
-    if TC < 16 then
-      TC := 16;
+    TC := StrToIntDef(ParamStr(2), 8);
+    if TC < 8 then
+      TC := 8;
   end
   else
-    TC := 16;
+    TC := 8;
 
   FWSManager := TWSManager.Create(ParamStr(1), TC);
   FWSManager.WSThreadsWatcher.Start;

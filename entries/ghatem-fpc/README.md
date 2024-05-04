@@ -1,8 +1,16 @@
 # Georges Hatem
 
 ## Requirements
- - mORMot2 library
+ - mORMot2 library (for the `MemMap` and `crc32c` functions)
  - 64-bit compilation
+
+## Usage
+ - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
+
+currently there are 2 versions that can be compiled / run:
+ - `OneBRC.lpr              -> ghatem             `: all threads share the station names - involves locking
+ - `OneBRC-nosharedname.lpr -> ghatem-nosharedname`: each thread maintains a copy of the station names - no locking involved
+ - `OneBRC-smallrec.lpr     -> ghatem-smallrec    `: same as OneBRC, but the StationData's "count" is UInt16 instead of 32. Will likely fail to match hash on the 5B rows test
  
 ## Hardware + Environment
 host: 
@@ -207,3 +215,63 @@ So the problem (on my computer at least) does not seem to be related to the load
 As a last attempt, I tried again accumulating data in a shared memory, protecting all data accumulation with `InterlockedInc`, `InterlockedExchangeAdd`, and `TCriticalSection`. In order to avoid too many contentions on the critical section, I also tried to maintain a large array of critical sections, acquiring only the index for which we are accumulating data. All of these attempts under-performed on 4 threads, and likely will perform even worse as thread-count increases. The only way this would work is by having ﬁner-grained control over the locking, such that a thread would only be blocked if it tried to write into a record that is already locked.
 
 Lastly, the `TDictionary.TryGetValue` has shown to be quite costly, around `1/4th` of the total cost. And although it is currently so much better than when using the station name as key, evaluating the `mod` of all those hashes, there is a lot of collisions. So if the dictionary key-storage is implemented as an array, and `mod` is used to transform those `CRC32` into indexes ranging in `[0, 45k]`, those collisions will be the cause of slowness. If there is a way to reduce the number of collisions, then maybe a custom dictionary implementation might help.
+
+
+## Multi-Threaded attempt v.3 (2024-04-21)
+
+Using performance profiler ValGrind, it identified that:
+ - 30% of the time was spent on `TryGetValue` of the generic `TDictionary`.
+ - 14% of the time is on computing the crc32 hash
+ - 15% of the time on extracting the line data
+ - surprisingly, 9% of the time is spent on looking for the #13 (new-line) character
+
+I implemented my own Dictionary class consisting of two arrays. We compute the modulus of the incoming key (Cardinal) to fit it in the correct bucket. A first attempt at collision resolution was to store as values a TList, but performance was worse than the generic TDictionary.  Next attempt was a linear probing, with circular indexing in case the index goes out of bounds. Performance improved from 35s to 30s.  Will later try quadratic probing, as it apparently reduces clustering.
+
+edit:
+quadratic probing improved performance even further. we could probably do better with 2-level hashing, but finding such a hash function is going to take a lot of trials, this is probably acceptable results
+
+**ACTUAL TIMING (busy machine): ~4 seconds as per gcarreno**
+
+## v.4 (2024-04-24)
+
+a few performance improvements, and measurements as per gcarreno on a busy machine:
+ - using mORMot's `crc32c` function instead of the native `crc32`, time dropped to 3.8 seconds
+ - I had removed my pre-allocated records implementation. restored it in the custom dictionary class, time dropped to 3.2 seconds
+ - skipping a few chars that we don't need to bother with, no timing yet
+
+## v.5 (2024-04-27)
+
+Various attempts at dictionary sizes, ranging from 45k to 95k. Even though larger dictionaries reduce collision tremendously, a dictionary of size 45k was still optimal.
+
+Another trial with various hash functions, a simple modulus vs. a slightly more complex one: modulus is slower on my PC, remains to try on the test env.
+Can be tested with the HASHMULT build option
+
+Finally, it seems choosing a dictionary size that is a prime number is also recommended: shaves 1 second out of 20 on my PC.
+
+## v.6 (2024-05-04)
+
+As of the latest results executed by Paweld, there are two main bottlenecks throttling the entire implementation, according to CallGrind and KCacheGrind:
+ - function ExtractLineData, 23% of total cost, of which 9% is due to `fpc_stackcheck`
+ - the hash lookup function, at 40% of total cost
+
+Currently, the hash lookup is done on an array of records. Increasing the array size causes slowness, and reducing it causes further collisions.
+Will try to see how to reduce collisions (increase array size), all while minimizing the cost of cache misses.
+
+Edit:
+The goal is to both:
+ - minimize collisions on the hashes (keys) by having a good hash function, but also increase the size of the keys storage
+ - minimize the size of the array of packed records
+
+The idea:
+ - the dictionary will no longer point to a PStationData pointer, but rather to an index between 0 and StationCount, where the record is stored in the array.
+ - -> data about the same station will be stored at the same index for all threads' data-arrays
+ - -> names will also be stored at that same index upon first encounter, and is common to all threads
+ - no locking needs to occur when the key is already found, since there is no multiple-write occurring
+ - the data-arrays are pre-allocated, and a atomic-counter will be incremented to know where the next element will be stored.
+
+Thinking again, this is likely similar to the approach mentioned by @synopse in one of his comments.
+
+For the ExtractLineData, three ideas to try implementing:
+ - avoid using a function, to get rid of the cost of stack checking
+ - reduce branching, I think it should be possible to go from 3 if-statements, to only 1
+ - unroll the loop (although I had tried this in the past, did not show any improvements)

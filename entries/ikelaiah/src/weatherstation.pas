@@ -323,7 +323,7 @@ begin
   // Open the file for reading
   fileStream := TFileStream.Create(self.fname, fmOpenRead);
   try
-    streamReader := TStreamReader.Create(fileStream, 65536 * 32, False);
+    streamReader := TStreamReader.Create(fileStream, 65536 * 2, False);
     try
       // Read and parse chunks of data until EOF -------------------------------
       while not streamReader.EOF do

@@ -4,6 +4,8 @@ unit uWeatherStations;
 {$R-} {$Q-}
 {$INLINE ON}
 
+{$define LFONLY}
+
 interface
 
 uses
@@ -314,7 +316,9 @@ begin
       Temp := Temp*10 +  Ord(ABytes[PCur]) - Ord('0');
       if IsNeg then
         Temp := -Temp;
+      {$IFNDEF LFONLY}
       Inc(PCur);
+      {$ENDIF}
       DoTemp := False;
     end;
     if ABytes[PCur] = 59 then
@@ -552,8 +556,13 @@ begin
       if Size > High(LongInt) then
         Size := High(LongInt) - 100;
       StartP := FS.Position;
-      FS.Position :=FS.Position + Size;
+      FS.Position := FS.Position + Size;
+      {$IFNDEF LFONLY}
       GetNextLineBreak(FS);
+      {$ELSE}
+      while (FS.Position < FS.Size) and (FS.ReadByte <> 10) do
+        FS.Seek(1, soCurrent);   
+      {$ENDIF}
       EndP := FS.Position;
       WSThread := TWSThread.Create(StartP, EndP, FWSManager);
       WSThread.Start;
