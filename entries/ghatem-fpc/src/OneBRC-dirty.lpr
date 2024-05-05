@@ -434,7 +434,7 @@ begin
           vData^.Min := vTemp;
         if vTemp > vData^.Max then
           vData^.Max := vTemp;
-        vData^.Sum := vData^.Sum + vTemp;
+        Inc (vData^.Sum, vTemp);
         Inc (vData^.Count);
       end
       else begin
