@@ -11,13 +11,11 @@ uses
   Baseline.Console;
 
 const
-  cNumStations = 42000;
-  cDictSize    = 42000 * 4 + 1;
+  cNumStations = 41343;
+  cDictSize    = 248071; // numstations * 6, next prime number
   cThreadCount = 32;
 
   c0ascii: ShortInt = 48;
-  //c9ascii: ShortInt = 57;
-  //cNegAscii: ShortInt = 45;
 
 type
   //---------------------------------------
@@ -475,9 +473,9 @@ begin
     vDataL^.Count := vDataL^.Count + vDataR^.Count;
     vDataL^.Sum   := vDataL^.Sum + vDataR^.Sum;
 
-    if (vDataR^.Max > vDataL^.Max) and (vDataR^.Max <> 0) then
+    if (vDataR^.Max > vDataL^.Max) then
       vDataL^.Max := vDataR^.Max;
-    if (vDataR^.Min < vDataL^.Min) and (vDataR^.Min <> 0) then
+    if (vDataR^.Min < vDataL^.Min) then
       vDataL^.Min := vDataR^.Min;
   end;
 end;
