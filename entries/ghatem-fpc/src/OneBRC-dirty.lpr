@@ -417,50 +417,49 @@ begin
   vLineStart := i;
 
   while i < aEndIdx do begin
-    if FData[i] = #10 then begin
-      // new line parsed, process its contents
-      ExtractLineData (vLineStart, i - 1, vLenStationName, vTemp);
-
-      // compute the hash starting at the station's first char, and its length
-      // mORMot's crc32c is ~33% faster than the built-in one
-      vHash := crc32c(0, @FData[vLineStart], vLenStationName);
-
-      FDictionary.InternalFind (vHash, vFound, vHashIdx);
-
-
-      if vFound then begin
-        vData := @FDictionary.FThreadData[aThreadNb][FDictionary.FIndexes[vHashIdx]];
-        if vTemp < vData^.Min then
-          vData^.Min := vTemp;
-        if vTemp > vData^.Max then
-          vData^.Max := vTemp;
-        Inc (vData^.Sum, vTemp);
-        Inc (vData^.Count);
-      end
-      else begin
-        // pre-allocated array of records instead of on-the-go allocation
-        vHashIdx := FDictionary.AtomicRegisterHash (vHash);
-        // SetString done only once per station name, for later sorting
-        SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
-
-        FDictionary.Add(vHashIdx, aThreadNb, vTemp, vStation);
-      end;
-
-      // we're at a #10: next line starts at the next index
-      vLineStart := i+1;
-
-      // we're at a #10:
-      // until the next #10 char, there will be:
-      // - 1 semicolon
-      // - 3 chars for the temp (min)
-      // - 2 chars for the name (min)
-      // - the usual Inc (I)
-      // so we should be able to skip 7 chars until another #10 may appear
-      Inc (i, 7);
-      continue;
+    while FData[i] <> #10 do begin
+      Inc (I);
     end;
 
-    Inc (i);
+    // new line parsed, process its contents
+    ExtractLineData (vLineStart, i - 1, vLenStationName, vTemp);
+
+    // compute the hash starting at the station's first char, and its length
+    // mORMot's crc32c is ~33% faster than the built-in one
+    vHash := crc32c(0, @FData[vLineStart], vLenStationName);
+
+    FDictionary.InternalFind (vHash, vFound, vHashIdx);
+
+
+    if vFound then begin
+      vData := @FDictionary.FThreadData[aThreadNb][FDictionary.FIndexes[vHashIdx]];
+      if vTemp < vData^.Min then
+        vData^.Min := vTemp;
+      if vTemp > vData^.Max then
+        vData^.Max := vTemp;
+      Inc (vData^.Sum, vTemp);
+      Inc (vData^.Count);
+    end
+    else begin
+      // pre-allocated array of records instead of on-the-go allocation
+      vHashIdx := FDictionary.AtomicRegisterHash (vHash);
+      // SetString done only once per station name, for later sorting
+      SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
+
+      FDictionary.Add(vHashIdx, aThreadNb, vTemp, vStation);
+    end;
+
+    // we're at a #10: next line starts at the next index
+    vLineStart := i+1;
+
+    // we're at a #10:
+    // until the next #10 char, there will be:
+    // - 1 semicolon
+    // - 3 chars for the temp (min)
+    // - 2 chars for the name (min)
+    // - the usual Inc (I)
+    // so we should be able to skip 7 chars until another #10 may appear
+    Inc (i, 7);
   end;
 end;
 
