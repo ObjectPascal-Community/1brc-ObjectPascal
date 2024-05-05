@@ -36,7 +36,7 @@ uses
   WeatherStation;
 
 const
-  version = '1.5';
+  version = '1.11';
 
 type
 

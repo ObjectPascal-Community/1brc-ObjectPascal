@@ -26,7 +26,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="..\..\..\baseline\Common"/>
+            <OtherUnitFiles Value="..\..\..\baseline;lgenerics"/>
             <UnitOutputDirectory Value="..\..\..\bin\lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <Parsing>
@@ -69,7 +69,7 @@
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
-            <OtherUnitFiles Value="..\..\..\baseline\Common"/>
+            <OtherUnitFiles Value="..\..\..\baseline\Common;lgenerics"/>
             <UnitOutputDirectory Value="..\..\..\bin\lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
           <CodeGeneration>
@@ -100,11 +100,6 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <RequiredPackages Count="1">
-      <Item1>
-        <PackageName Value="LGenerics"/>
-      </Item1>
-    </RequiredPackages>
     <Units Count="3">
       <Unit0>
         <Filename Value="OneBRC.lpr"/>

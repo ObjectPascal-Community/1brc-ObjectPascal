@@ -141,6 +141,10 @@ Iwan Kelaiah
   * Reduced buffer for `TStreamReader` to `65536 * 2`. This saves approx 5 seconds.
   * Changed hashmap from `TGHashMapLP` (linear probing) to `TGHashMapQP` (quadratic probing). This saves approx 5 seconds.
 
+* 1.11
+  * Revision release - Sequential approach. 3-5 mins on my Inspiron 15 7510 laptop, around 2m55s (no improvement on speed).
+  * Replaced `LGenerics` with `Generics.Collections` for the time being.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details
