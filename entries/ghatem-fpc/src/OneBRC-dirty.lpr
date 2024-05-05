@@ -12,7 +12,7 @@ uses
 
 const
   cNumStations = 42000;
-  cDictSize    = 42000 * 4;
+  cDictSize    = 42000 * 4 + 1;
   cThreadCount = 32;
 
   c0ascii: ShortInt = 48;
@@ -285,10 +285,10 @@ begin
   // can safely skip 3:      ^^^
   J := aEnd - 3;
 
-  while True do begin
-    if FData[J] = ';' then
-      break;
-    Dec(J);
+  if FData[J] <> ';' then begin
+    Dec (J);
+    if FData[J] <> ';' then
+      Dec(J);
   end;
   // I is the position of the semi-colon, extract what's before and after it
 
@@ -313,13 +313,16 @@ begin
   //  aTemp := -aTemp;
 
   vIsNeg := Ord (FData[J+1] <> '-');
-  aTemp :=     (Ord(FData[aEnd])   - c0ascii)
-         + 10 *(Ord(FData[aEnd-2]) - c0ascii);
 
-  if (J+4 - vIsNeg < aEnd) then begin
-    aTemp := aTemp + 100*(Ord(FData[aEnd-3]) - c0ascii);
-  end;
-  aTemp := (vIsNeg * 2 - 1) * aTemp;
+  aTemp := (
+                 (Ord(FData[aEnd])  - c0ascii)
+           + 10 *(Ord(FData[aEnd-2]) - c0ascii)
+           + Ord ((J+4 - vIsNeg < aEnd)) * 100*(Ord(FData[aEnd-3]) - c0ascii)
+         ) * (vIsNeg * 2 - 1);
+  //if (J+4 - vIsNeg < aEnd) then begin
+    //aTemp := aTemp
+  //end;
+  //aTemp := (vIsNeg * 2 - 1) * aTemp;
 end;
 
 //---------------------------------------------------
