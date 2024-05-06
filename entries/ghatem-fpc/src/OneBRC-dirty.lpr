@@ -205,13 +205,13 @@ begin
         // found match
         aIndex := vIdx;
         aFound := True;
-        break;
+        exit;
       end;
       if FHashes[vIdx] = 0 then begin
         // found empty bucket to use
         aIndex := vIdx;
         aFound := False;
-        break;
+        exit;
       end;
     end;
   end;
@@ -281,8 +281,7 @@ begin
 
   if FData[J] <> ';' then begin
     Dec (J);
-    if FData[J] <> ';' then
-      Dec(J);
+    Dec (J, Ord (FData[J] <> ';'));
   end;
   // I is the position of the semi-colon, extract what's before and after it
 
@@ -382,9 +381,8 @@ var
   vFound: Boolean;
 begin
   for I := 0 to cNumStations - 1 do begin
-    vData := @FDictionary.FThreadData[aThreadNb][I];
-    vData^.Max := -2000;
-    vData^.Min := 2000;
+    FDictionary.FThreadData[aThreadNb][I].Max := -2000;
+    FDictionary.FThreadData[aThreadNb][I].Min := 2000;
   end;
 
   i := aStartIdx;
