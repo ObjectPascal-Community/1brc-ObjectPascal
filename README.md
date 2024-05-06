@@ -129,6 +129,19 @@ With this, we now have the official hash: `4256d19d3e134d79cc6f160d428a1d859ce96
 
 There's also an archived version of the [baseline output](./data/baseline.output.gz)
 
+## Small File Hashes
+
+For easier comparison with the baseline, here are the hashes for different generated row counts:
+
+| Lines | Input File Hash | Output File Hash |
+|--:|----------------:|---------:|
+| 1_000       | `0be4844a2417c08a85a44b26509bbe6868a6f65d0e0d087d3f9ceedc02f5ceaa` | `d42c37ca405f230e91dd0a75e6741dbbbcddd2338963ea0f0e727cf90ecbd7e7` |
+| 10_000      | `447380628ca25b1c9901c2e62e01591f2e2f794d2888934a5e9d4a67d72346a5` | `b4dd36d80a63fefdccbff50ffaaef7e2092034935c729b3330569c7c7f7351fc` |
+| 100_000     | `dd3a4821e91de82e44f17f65b1951af8a21652b92c20a7e53a1fa02ea6e5fbd2` | `c9e50d46bba327727bf4b412ec0401e0c2e59c9035b94b288e15631ca621cb52` |
+| 1_000_000   | `c2955973c3db29bf544655c11d2d3c7ac902c9f65014026b210bd25eb1876c0c` | `5fedbd9811660ee3423f979a0c854ec8b70da3e804170bc39bcc400c94f93bc0` |
+| 10_000_000  | `90193d314e991f7789258c8b6b06c493a4d624991e203b12343c2a8ce1d0c7fd` | `2f3a6383b3bc83a9ad53fc0773de2da57bd4add8a51662cdb86bfca502d276a3` |
+| 100_000_000 | `f55384da4646a0c77a1d5dd94a58f8430c5956fe180cedcb17b4425fe5389a39` | `7e8339b5d268fa400a93887b7a1140ac1adf683a8e837e6274fd71e383c26c6b` |
+
 ## Differences From Original
 I've decided that I would want this challenge to be turned way up to 11!
 
@@ -154,18 +167,18 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
-|  1 |   0:1.651 | lazarus-3.0, fpc-3.2.2  | Arnaud Bouchez         | Using `mORMot2`, 32 threads        | |
-|  2 |   0:2.606 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
-|  3 |   0:5.884 | lazarus-3.0, fpc-3.2.2  | Georges Hatem          | Free Pascal: Using 32 thread       | |
-|  4 |   0:9.808 | lazarus-3.99, fpc-3.3.1 | G Klark                | Using 32 threads                   | |
-|  5 |  0:15.059 | lazarus-3.0, fpc-3.2.2  | Székely Balázs         | Using 32 threads                   | |
-|  6 |  0:53.488 | lazarus-3.0, fpc-3.2.2  | Hartmut Grosser        | Using 1 thread                     | |
-|  7 |  1:15.706 | lazarus-3.0, fpc-3.2.2  | Richard Lawson         | Using 1 thread                     | |
-|  8 |  2:27.407 | lazarus-3.0, fpc-3.2.2  | Iwan Kelaiah           | Using 1 thread                     | |
-|  9 |  6:55.406 | delphi 12.1             | David Cornelius        | Using 1 thread                     | |
-| 10 |   7:4.147 | delphi 12.1             | Brian Fire             | Using 1 thread                     | |
-| 🟠 |  0:19.460 | lazarus-3.0, fpc-3.2.2  | Lurendrejer Aksen      | Using 32 threads **(failed hash)** | |
-| 🟠 |  15:4.100 | delphi 12.1             | Daniel Töpfl           | Using 1 thread **(failed hash)**   | |
+|  1 |   0:1.260 | lazarus-3.99, fpc-3.3.1 | Arnaud Bouchez         | Using `mORMot2`, 32 threads        | |
+|  2 |   0:2.006 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
+|  3 |   0:3.164 | lazarus-3.99, fpc-3.3.1 | Georges Hatem - FPC    | Free Pascal: Using 32 thread       | |
+|  4 |   0:9.652 | lazarus-3.99, fpc-3.3.1 | G Klark                | Using 32 threads                   | |
+|  5 |  0:13.388 | lazarus-3.99, fpc-3.3.1 | Székely Balázs         | Using 32 threads                   | |
+|  6 |  0:18.007 | lazarus-3.99, fpc-3.3.1 | Lurendrejer Aksen      | Using 32 threads                   | |
+|  7 |  0:52.486 | lazarus-3.99, fpc-3.3.1 | Hartmut Grosser        | Using 1 thread                     | |
+|  8 |  1:10.017 | lazarus-3.99, fpc-3.3.1 | Richard Lawson         | Using 1 thread                     | |
+|  9 |  2:36.787 | lazarus-3.0, fpc-3.2.2  | Iwan Kelaiah           | Using 1 thread                     | |
+| 10 |  6:49.745 | delphi 12.1             | David Cornelius        | Using 1 thread                     | |
+| 11 |  8:34.438 | delphi 12.1             | Daniel Töpfl           | Using 1 thread                     | |
+| 12 |  16:6.862 | delphi 12.1             | Brian Fire             | Using 1 thread                     | |
 
 
 > **NOTE**
