@@ -41,7 +41,7 @@ type
   TStationData = packed record
     Min: SmallInt;
     Max: SmallInt;
-    Count: UInt16; // will fail on 400 stations / 5B row tests, due to overflow
+    Count: UInt32;
     Sum: Integer;
   end;
   PStationData = ^TStationData;
