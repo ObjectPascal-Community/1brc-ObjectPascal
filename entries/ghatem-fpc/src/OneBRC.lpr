@@ -11,11 +11,11 @@ uses
   Baseline.Console;
 
 const
-  cDictSize: Integer = 45007;
+  cNumStations = 41343;  // as per the input file
+  cDictSize    = 248071; // numstations * 6, next prime number
+  cThreadCount = 32;
 
   c0ascii: ShortInt = 48;
-  c9ascii: ShortInt = 57;
-  cNegAscii: ShortInt = 45;
 
 type
   //---------------------------------------
@@ -41,34 +41,61 @@ type
   TStationData = packed record
     Min: SmallInt;
     Max: SmallInt;
-    Count: UInt32;
+    Count: UInt16; // will fail on 400 stations / 5B row tests, due to overflow
     Sum: Integer;
   end;
   PStationData = ^TStationData;
 
-  TKeys = array [0..45006] of Cardinal;
-  TStationNames = array [0..45006] of AnsiString;
-  TValues = array [0..45006] of PStationData;
+  TThreadCount  = UInt8;  // max number of threads = 256
+  TStationCount = UInt16; // max number of stations = 65536 (enough for 42k)
+  THashSize     = UInt32; // size of dictionary can exceed 2^16
 
-  //---------------------------------------
-  { TMyDictionary }
+  THashes = array [0..cDictSize-1] of Cardinal;
+  TIndexes = array [0..cDictSize-1] of TStationCount;
+  TStationNames = array [0..cNumStations-1] of AnsiString;
 
-  TMyDictionary = class
+
+  { TBRCDictionary }
+
+  TBRCDictionary = class
   private
-    FHashes: TKeys;
-    FValues: TValues;
-    FRecords: array [0..45006] of TStationData;
-    // store the station names outside of the record as they are filled only upon first encounter
+    // keys/values for a Large dictionary:
+    // values will be the index where the actual record is stored
+    FHashes: THashes;
+    FIndexes: TIndexes;
+
+    // where the actual records are stored:
+    // - each thread holds its own data
+    // - for each thread, pre-allocate as much space as needed
+    // - all threads store their data at the exact same index
+    FThreadData: array [0..cThreadCount-1] of array [0..cNumStations-1] of TStationData;
+
+    // station names are also shared, not lock-protected (in the worst case, the value is written twice)
+    // stored separately as it is rarely needed
     FStationNames: TStationNames;
-    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
+
+    // points to the next slot in FThreadData where we should fill a newly encountered station
+    FCounter: TStationCount;
+
+    // exclusively to protect FCounter from concurrent-writes
+    FCS: TCriticalSection;
+
+    // searches for a given key, returns if found the key and the storage index
+    // (or, if not found, which index to use next)
+    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: THashSize);
+
   public
     constructor Create;
-    property Keys: TKeys read FHashes;
-    property StationNames: TStationNames read FStationNames;
-    property Values: TValues read FValues;
-    function TryGetValue (const aKey: Cardinal; out aValue: PStationData): Boolean; inline;
-    procedure Add (const aKey: Cardinal; const aValue: PStationData); inline;
-    procedure AddName (const aKey: Cardinal; const aStationName: AnsiString); inline;
+    destructor Destroy; override;
+
+    // simple wrapper to find station-record pointers
+    function TryGetValue (const aKey: Cardinal; const aThreadNb: TThreadCount; out aValue: PStationData): Boolean; inline;
+
+    // multithread-unprotected: adds a firstly-encountered station-data (temp, name)
+    procedure Add (const aHashIdx: THashSize; const aThreadNb: TThreadCount; const aTemp: SmallInt; const aStationName: AnsiString); inline;
+
+    // multithread-protected: safely assign a slot for a given key
+    function AtomicRegisterHash (const aKey: Cardinal): THashSize;
   end;
 
   //---------------------------------------
@@ -81,25 +108,32 @@ type
     FMemoryMap: TMemoryMap;
     FData: pAnsiChar;
     FDataSize: Int64;
-    FCS: TCriticalSection;
 
-    FThreadCount: UInt16;
+    FThreadCount: TThreadCount;
     FThreads: array of TThread;
-    FStationsDicts: array of TMyDictionary;
+    FDictionary: TBRCDictionary;
 
-    FStationsNames: TMyDictionary;
-
+    // for a line between idx [aStart; aEnd], returns the station-name length, and the integer-value of temperature
     procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
 
   public
-    constructor Create (const aThreadCount: UInt16);
+    constructor Create (const aThreadCount: TThreadCount);
     destructor Destroy; override;
     function mORMotMMF (const afilename: string): Boolean;
+
+    // initial thread-spawn
     procedure DispatchThreads;
+
+    // await for all threads to complete work
     procedure WaitAll;
-    procedure ProcessData (aThreadNb: UInt16; aStartIdx: Int64; aEndIdx: Int64);
-    procedure Merge (aLeft: UInt16; aRight: UInt16);
+
+    // executed by each thread to process data in the given range
+    procedure ProcessData (aThreadNb: TThreadCount; aStartIdx: Int64; aEndIdx: Int64);
+
+    // merge data from all threads
+    procedure Merge (aLeft: TThreadCount; aRight: TThreadCount);
     procedure MergeAll;
+
     procedure GenerateOutput;
     property DataSize: Int64 read FDataSize;
   end;
@@ -107,19 +141,124 @@ type
   //---------------------------------------
   { TBRCThread }
 
-  TThreadProc = procedure (aThreadNb: UInt16; aStartIdx: Int64; aEndIdx: Int64) of object;
+  TThreadProc = procedure (aThreadNb: TThreadCount; aStartIdx: Int64; aEndIdx: Int64) of object;
 
   TBRCThread = class (TThread)
   private
     FProc: TThreadProc;
-    FThreadNb: UInt16;
+    FThreadNb: TThreadCount;
     FStart: Int64;
     FEnd: Int64;
   protected
     procedure Execute; override;
   public
-    constructor Create (aProc: TThreadProc; aThreadNb: UInt16; aStart: Int64; aEnd: Int64);
+    constructor Create (aProc: TThreadProc; aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
   end;
+
+{ TBRCDictionary }
+
+constructor TBRCDictionary.Create;
+begin
+  FCS := TCriticalSection.Create;
+  FCounter := 0;
+end;
+
+destructor TBRCDictionary.Destroy;
+begin
+  FCS.Free;
+  inherited Destroy;
+end;
+
+function TBRCDictionary.TryGetValue(const aKey: Cardinal; const aThreadNb: TThreadCount; out aValue: PStationData): Boolean;
+var
+  vIdx: THashSize;
+begin
+  InternalFind (aKey, Result, vIdx);
+  aValue := @FThreadData[aThreadNb][FIndexes[vIdx]];
+end;
+
+procedure TBRCDictionary.Add(const aHashIdx: THashSize; const aThreadNb: TThreadCount; const aTemp: SmallInt; const aStationName: AnsiString);
+var
+  vData: PStationData;
+begin
+  vData := @FThreadData[aThreadNb][FIndexes[aHashIdx]];
+  vData^.Count := 1;
+  vData^.Max   := aTemp;
+  vData^.Min   := aTemp;
+  vData^.Sum   := aTemp;
+
+  FStationNames[FIndexes[aHashIdx]] := aStationName;
+end;
+
+function TBRCDictionary.AtomicRegisterHash(const aKey: Cardinal): THashSize;
+var
+  vFound: Boolean;
+begin
+  // must call InternalFind again, within the critical-section,
+  // to ensure the slot was not taken by another thread
+  // this function should execute only once per station, so at most 41343 times
+  FCS.Acquire;
+  try
+    InternalFind (aKey, vFound, Result);
+    if not vFound then begin
+      FHashes[Result]  := aKey;
+      FIndexes[Result] := FCounter;
+      Inc (FCounter);
+    end;
+  finally
+    FCS.Release;
+  end;
+end;
+
+procedure TBRCDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: THashSize);
+var vIdx: Integer;
+    vOffset: Integer;
+begin
+  // Lemire hashing: faster to ocmpute than modulus, but more collisions from trials
+  // https://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
+  // thanks Arnaud for the suggestion
+  vIdx := aKey * cDictSize shr 32;
+
+  if FHashes[vIdx] = 0 then begin
+    // found match
+    aIndex := vIdx;
+    aFound := False;
+    exit;
+  end;
+  if FHashes[vIdx] = aKey then begin
+    // found empty bucket to use
+    aIndex := vIdx;
+    aFound := True;
+    exit;
+  end
+  else begin
+    vOffset := 1;
+
+    while True do begin
+      // linear (not quadratic) probing, with continous increments to minimize clusters
+      Inc (vIdx, vOffset);
+      Inc (vOffset);
+
+      // exceeded boundary, loop back
+      if vIdx >= cDictSize then
+        Dec (vIdx, cDictSize);
+
+      if FHashes[vIdx] = aKey then begin
+        // found match
+        aIndex := vIdx;
+        aFound := True;
+        exit;
+      end;
+      if FHashes[vIdx] = 0 then begin
+        // found empty bucket to use
+        aIndex := vIdx;
+        aFound := False;
+        exit;
+      end;
+    end;
+  end;
+end;
+
 
 { TOneBRCApp }
 
@@ -166,125 +305,37 @@ end;
 { TOneBRC }
 
 function Compare(AList: TStringList; AIndex1, AIndex2: Integer): Integer;
-var
-  Str1, Str2: String;
 begin
-  Str1 := AList.Strings[AIndex1];
-  Str2 := AList.Strings[AIndex2];
-  Result := CompareStr(Str1, Str2);
-end;
-
-{ TMyDictionary }
-
-procedure TMyDictionary.InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: Integer);
-var vIdx: Integer;
-    vOffset: Integer;
-begin
-  vIdx := aKey * cDictSize shr 32;
-
-  if FHashes[vIdx] = aKey then begin
-    aIndex := vIdx;
-    aFound := True;
-  end
-  else begin
-    vOffset := 1;
-
-    while True do begin
-      // quadratic probing, by incrementing vOffset
-      Inc (vIdx, vOffset);
-      Inc (vOffset);
-
-      // exceeded boundary, loop back
-      if vIdx >= cDictSize then
-        Dec (vIdx, cDictSize);
-
-      if FHashes[vIdx] = aKey then begin
-        // found match
-        aIndex := vIdx;
-        aFound := True;
-        break;
-      end;
-      if FHashes[vIdx] = 0 then begin
-        // found empty bucket to use
-        aIndex := vIdx;
-        aFound := False;
-        break;
-      end;
-    end;
-  end;
-end;
-
-constructor TMyDictionary.Create;
-var
-  I: Integer;
-begin
-  for I := 0 to cDictSize - 1 do begin
-    FValues[I] := @FRecords[I];
-  end;
-end;
-
-function TMyDictionary.TryGetValue(const aKey: Cardinal; out aValue: PStationData): Boolean;
-var
-  vIdx: Integer;
-begin
-  InternalFind (aKey, Result, vIdx);
-  aValue := FValues[vIdx];
-end;
-
-procedure TMyDictionary.Add(const aKey: Cardinal; const aValue: PStationData);
-var
-  vIdx: Integer;
-  vFound: Boolean;
-begin
-  InternalFind (aKey, vFound, vIdx);
-  if not vFound then begin
-    FHashes[vIdx] := aKey;
-    FValues[vIdx] := aValue;
-  end
-  else
-    raise Exception.Create ('TMyDict: cannot add, duplicate key');
-end;
-
-procedure TMyDictionary.AddName (const aKey: Cardinal; const aStationName: AnsiString);
-var
-  vIdx: Integer;
-  vFound: Boolean;
-begin
-  InternalFind (aKey, vFound, vIdx);
-  if not vFound then begin
-    FHashes[vIdx] := aKey;
-    FStationNames[vIdx] := aStationName;
-  end
-  else
-    raise Exception.Create ('TMyDict: cannot add, duplicate key');
+  Result := CompareStr(AList.Strings[AIndex1], AList.Strings[AIndex2]);
 end;
 
 procedure TOneBRC.ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt);
 // given a line of data, extract the length of station name, and temperature as Integer.
 var
-  I: Int64;
-  vDigit: UInt8;
+  J: Int64;
+  vIsNeg: Int8;
 begin
   // we're looking for the semicolon ';', but backwards since there's fewer characters to traverse
   // a thermo measurement must be at least 3 characters long (one decimal, one period, and the units)
   // e.g. input: Rock Hill;-54.3
   // can safely skip 3:      ^^^
-  I := aEnd - 3;
+  J := aEnd - 3;
 
-  while True do begin
-    if FData[I] = ';' then
-      break;
-    Dec(I);
+  if FData[J] <> ';' then begin
+    Dec (J);
+    Dec (J, Ord (FData[J] <> ';'));
   end;
   // I is the position of the semi-colon, extract what's before and after it
 
   // length of the station name string
-  aLength := i - aStart;
+  aLength := J - aStart;
 
   // ASCII of 3 is 51.
   // subtract ASCII of 0 to get the digit 3
   // repeat with the remaining digits, multiplying by 10^x (skip the '.')
   // multiply by -1 upon reaching a '-'
+
+  {
   aTemp :=     (Ord(FData[aEnd])   - c0ascii)
          + 10 *(Ord(FData[aEnd-2]) - c0ascii);
   vDigit := Ord(FData[aEnd-3]);
@@ -296,33 +347,38 @@ begin
   end
   else if vDigit = cNegAscii then
     aTemp := -aTemp;
+  }
+
+  //==========
+  // entire computation is branchless (for readability, see version above)
+  // no intermediary results also showed better performance
+
+  // 0 if -
+  // 1 if +
+  // convert range [0;1] to [-1;1] for branchless negation when needed
+  // if there is a 3rd digit (*100), add it, otherwise multiply by 0 to cancel it out
+  vIsNeg := Ord (FData[J+1] <> '-');
+
+  aTemp := (
+                 (Ord(FData[aEnd])  - c0ascii)
+           + 10 *(Ord(FData[aEnd-2]) - c0ascii)
+           + Ord ((J+4 - vIsNeg < aEnd)) * 100*(Ord(FData[aEnd-3]) - c0ascii)
+         ) * (vIsNeg * 2 - 1);
 end;
 
 //---------------------------------------------------
 
-constructor TOneBRC.Create (const aThreadCount: UInt16);
-var I: UInt16;
+constructor TOneBRC.Create (const aThreadCount: TThreadCount);
 begin
   FThreadCount := aThreadCount;
-  SetLength (FStationsDicts, aThreadCount);
   SetLength (FThreads, aThreadCount);
 
-  for I := 0 to aThreadCount - 1 do begin
-    FStationsDicts[I] := TMyDictionary.Create;
-  end;
-
-  FStationsNames := TMyDictionary.Create;
-  FCS := TCriticalSection.Create;
+  FDictionary := TBRCDictionary.Create;
 end;
 
 destructor TOneBRC.Destroy;
-var I: UInt16;
 begin
-  FCS.Free;
-  FStationsNames.Free;
-  for I := 0 to FThreadCount - 1 do begin
-    FStationsDicts[I].Free;
-  end;
+  FDictionary.Free;
   inherited Destroy;
 end;
 
@@ -339,9 +395,10 @@ end;
 
 procedure TOneBRC.DispatchThreads;
 var
-  I: UInt16;
+  I: TThreadCount;
   vRange: Int64;
 begin
+  // distribute input equally across available threads
   vRange := Trunc (FDataSize / FThreadCount);
 
   for I := 0 to FThreadCount - 1 do begin
@@ -351,7 +408,7 @@ end;
 
 procedure TOneBRC.WaitAll;
 var
-  I: UInt16;
+  I: TThreadCount;
 begin
   for I := 0 to FThreadCount - 1 do begin
     FThreads[I].WaitFor;
@@ -360,16 +417,24 @@ end;
 
 //---------------------------------------------------
 
-procedure TOneBRC.ProcessData (aThreadNb: UInt16; aStartIdx: Int64; aEndIdx: Int64);
+procedure TOneBRC.ProcessData (aThreadNb: TThreadCount; aStartIdx: Int64; aEndIdx: Int64);
 var
   i: Int64;
   vStation: AnsiString;
   vTemp: SmallInt;
   vData: PStationData;
+  vHashIdx: THashSize;
   vLineStart: Int64;
   vHash: Cardinal;
   vLenStationName: ShortInt;
+  vFound: Boolean;
 begin
+  // initialize min/max, else we may get zeroes (due to our Add that fires once per station across all threads)
+  for I := 0 to cNumStations - 1 do begin
+    FDictionary.FThreadData[aThreadNb][I].Max := -2000;
+    FDictionary.FThreadData[aThreadNb][I].Min := 2000;
+  end;
+
   i := aStartIdx;
 
   // the given starting point might be in the middle of a line:
@@ -394,92 +459,78 @@ begin
   vLineStart := i;
 
   while i < aEndIdx do begin
-    if FData[i] = #10 then begin
-      // new line parsed, process its contents
-      ExtractLineData (vLineStart, i - 1, vLenStationName, vTemp);
-
-      // compute the hash starting at the station's first char, and its length
-      // mORMot's crc32c is ~33% faster than the built-in one
-      vHash := crc32c(0, @FData[vLineStart], vLenStationName);
-
-      if FstationsDicts[aThreadNb].TryGetValue(vHash, vData) then begin
-        if vTemp < vData^.Min then
-          vData^.Min := vTemp;
-        if vTemp > vData^.Max then
-          vData^.Max := vTemp;
-        vData^.Sum := vData^.Sum + vTemp;
-        Inc (vData^.Count);
-      end
-      else begin
-        // pre-allocated array of records instead of on-the-go allocation
-        vData^.Min := vTemp;
-        vData^.Max := vTemp;
-        vData^.Sum := vTemp;
-        vData^.Count := 1;
-        FStationsDicts[aThreadNb].Add (vHash, vData);
-
-        // SetString done only once per station name, for later sorting
-        if not FStationsNames.TryGetValue (vHash, vData) then begin
-          FCS.Acquire;
-          if not FStationsNames.TryGetValue (vHash, vData) then begin
-            SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
-            FStationsNames.AddName (vHash, vStation);
-          end;
-          FCS.Release;
-        end;
-      end;
-
-      // we're at a #10: next line starts at the next index
-      vLineStart := i+1;
-
-      // we're at a #10:
-      // until the next #10 char, there will be:
-      // - 1 semicolon
-      // - 3 chars for the temp (min)
-      // - 2 chars for the name (min)
-      // - the usual Inc (I)
-      // so we should be able to skip 7 chars until another #10 may appear
-      Inc (i, 7);
-      continue;
+    while FData[i] <> #10 do begin
+      Inc (I);
     end;
 
-    Inc (i);
+    // new line parsed, process its contents
+    ExtractLineData (vLineStart, i - 1, vLenStationName, vTemp);
+
+    // compute the hash starting at the station's first char, and its length
+    // mORMot's crc32c is ~33% faster than the built-in one
+    vHash := crc32c(0, @FData[vLineStart], vLenStationName);
+
+    FDictionary.InternalFind (vHash, vFound, vHashIdx);
+
+    if vFound then begin
+      vData := @FDictionary.FThreadData[aThreadNb][FDictionary.FIndexes[vHashIdx]];
+      if vTemp < vData^.Min then
+        vData^.Min := vTemp;
+      if vTemp > vData^.Max then
+        vData^.Max := vTemp;
+      Inc (vData^.Sum, vTemp);
+      Inc (vData^.Count);
+    end
+    else begin
+      // pre-allocated array of records instead of on-the-go allocation
+      vHashIdx := FDictionary.AtomicRegisterHash (vHash);
+
+      // SetString done only once per station name, for later sorting
+      SetString(vStation, pAnsiChar(@FData[vLineStart]), vLenStationName);
+
+      // data can be safely added at the given index, without locking
+      FDictionary.Add(vHashIdx, aThreadNb, vTemp, vStation);
+    end;
+
+    // we're at a #10: next line starts at the next index
+    vLineStart := i+1;
+
+    // we're at a #10:
+    // until the next #10 char, there will be:
+    // - 1 semicolon
+    // - 3 chars for the temp (min)
+    // - 2 chars for the name (min)
+    // - the usual Inc (I)
+    // so we should be able to skip 7 chars until another #10 may appear
+    Inc (i, 7);
   end;
 end;
 
-procedure TOneBRC.Merge(aLeft: UInt16; aRight: UInt16);
-var iHash: Cardinal;
-    vDataR: PStationData;
+procedure TOneBRC.Merge(aLeft: TThreadCount; aRight: TThreadCount);
+var vDataR: PStationData;
     vDataL: PStationData;
     I: Integer;
 begin
-  for I := 0 to cDictSize - 1 do begin
-    iHash := FStationsDicts[aRight].Keys[I];
-    // zero means empty slot: skip
-    if iHash = 0 then
-      continue;
+  // accumulate data into Left
+  for I := 0 to cNumStations - 1 do begin
+    vDataR := @FDictionary.FThreadData[aRight][I];
+    vDataL := @FDictionary.FThreadData[aLeft][I];
 
-    FStationsDicts[aRight].TryGetValue(iHash, vDataR);
+    vDataL^.Count := vDataL^.Count + vDataR^.Count;
+    vDataL^.Sum   := vDataL^.Sum + vDataR^.Sum;
 
-    if FStationsDicts[aLeft].TryGetValue(iHash, vDataL) then begin
-      vDataL^.Count := vDataL^.Count + vDataR^.Count;
-      vDataL^.Sum   := vDataL^.Sum + vDataR^.Sum;
-
-      if vDataR^.Max > vDataL^.Max then
-        vDataL^.Max := vDataR^.Max;
-      if vDataR^.Min < vDataL^.Min then
-        vDataL^.Min := vDataR^.Min;
-    end
-    else begin
-      FStationsDicts[aLeft].Add (iHash, vDataR);
-    end;
+    if (vDataR^.Max > vDataL^.Max) then
+      vDataL^.Max := vDataR^.Max;
+    if (vDataR^.Min < vDataL^.Min) then
+      vDataL^.Min := vDataR^.Min;
   end;
 end;
 
 procedure TOneBRC.MergeAll;
 var
-  I: UInt16;
+  I: TThreadCount;
 begin
+  // all thread-data is accumulated into index 0
   for I := 1 to FThreadCount - 1 do begin
     Merge (0, I);
   end;
@@ -489,6 +540,8 @@ end;
 
 function MyFormatInt (const aIn: SmallInt): AnsiString; inline;
 begin
+  // much faster than FormatFloat
+  // oddly, IntToStr does not include leading zeroes for both pos and neg numbers
   Result := IntToStr(aIn);
   Insert ('.', Result, Length(Result));
 
@@ -510,6 +563,7 @@ var vMean: Integer;
     vData: PStationData;
     vHash: Cardinal;
     vStations: TStringList;
+    iStationName: AnsiString;
 begin
   vStream := TStringStream.Create;
   vStations := TStringList.Create;
@@ -517,14 +571,11 @@ begin
   vStations.UseLocale := False;
   try
     vStations.BeginUpdate;
-    for I := 0 to cDictSize - 1 do begin
-      if FStationsNames.Keys[I] <> 0 then begin
-        // count = 0 means empty slot: skip
-        vStations.Add(FStationsNames.StationNames[I]);
-      end;
+    for iStationName in FDictionary.FStationNames do begin
+      if iStationName <> '' then
+        vStations.Add(iStationName);
     end;
     vStations.EndUpdate;
-
     vStations.CustomSort (@Compare);
 
     I := 0;
@@ -536,7 +587,7 @@ begin
       // would it be more efficient to store the hash as well?
       // debatable, and the whole output generation is < 0.3 seconds, so not exactly worth it
       vHash := crc32c(0, @vStations[i][1], Length (vStations[i]));
-      FStationsDicts[0].TryGetValue(vHash, vData);
+      FDictionary.TryGetValue(vHash, 0, vData);
       vMean := RoundExInteger(vData^.Sum/vData^.Count/10);
 
       vStream.WriteString(
@@ -569,7 +620,7 @@ begin
   Terminate;
 end;
 
-constructor TBRCThread.Create(aProc: TThreadProc; aThreadNb: UInt16; aStart: Int64; aEnd: Int64);
+constructor TBRCThread.Create(aProc: TThreadProc; aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
 begin
   inherited Create(False);
   FProc := aProc;
