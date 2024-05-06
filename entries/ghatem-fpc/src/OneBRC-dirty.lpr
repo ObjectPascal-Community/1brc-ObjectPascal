@@ -263,12 +263,8 @@ end;
 { TOneBRC }
 
 function Compare(AList: TStringList; AIndex1, AIndex2: Integer): Integer;
-var
-  Str1, Str2: String;
 begin
-  Str1 := AList.Strings[AIndex1];
-  Str2 := AList.Strings[AIndex2];
-  Result := CompareStr(Str1, Str2);
+  Result := CompareStr(AList.Strings[AIndex1], AList.Strings[AIndex2]);
 end;
 
 procedure TOneBRC.ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt);
@@ -527,7 +523,6 @@ begin
         vStations.Add(iStationName);
     end;
     vStations.EndUpdate;
-    //vStations.AddStrings(FDictionary.FStationNames);
     vStations.CustomSort (@Compare);
 
     I := 0;
