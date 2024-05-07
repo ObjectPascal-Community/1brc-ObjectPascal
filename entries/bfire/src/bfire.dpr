@@ -13,7 +13,6 @@ uses
   ConsoleUnit in 'ConsoleUnit.pas';
 
 var
-  UseStdOut: Boolean; // True unless output file is defined
   start: TDateTime; // for timing
 
 begin
@@ -49,14 +48,16 @@ begin
 
       if Not(UseStdOut) then // wait and report
       begin
-        while Not(ReadFile_Done and ParseDataQ_Done1 and ParseDataQ_Done2 and
-          ParseDataQ_Done3 and ParseDataQ_Done4) do
+        // while Not(ReadFile_Done1 and ReadFile_Done2 and ParseDataQ_Done1 and
+        // ParseDataQ_Done2 and ParseDataQ_Done3 and ParseDataQ_Done4 and
+        // ParseDataQ_Done5 and ParseDataQ_Done6) do
+        while Not(ReadFile_Done1 and ReadFile_Done2 and ParseData_Done) do
         begin
           Sleep(1000);
           WriteLn('Lines: ' + IntToStr(LineCount) + '  Stacks: ' +
             IntToStr(DataStackCount1) + ' / ' + IntToStr(DataStackCount2) +
             ' / ' + IntToStr(DataStackCount3) + ' / ' +
-            IntToStr(DataStackCount4));
+            IntToStr(DataStackCount4) + ' / ' + IntToStr(DataStackCount5));
 
           if DataStackCount1 > StackMax1 then
             StackMax1 := DataStackCount1;
@@ -66,27 +67,29 @@ begin
             StackMax3 := DataStackCount3;
           if DataStackCount4 > StackMax4 then
             StackMax4 := DataStackCount4;
+          if DataStackCount5 > StackMax5 then
+            StackMax5 := DataStackCount5;
 
-          if ReadFile_Done then
-            WriteLn('Done reading file');
-          if ParseDataQ_Done1 then
-            WriteLn('Done with ParseDataQ1');
-          if ParseDataQ_Done2 then
-            WriteLn('Done with ParseDataQ2');
-          if ParseDataQ_Done3 then
-            WriteLn('Done with ParseDataQ3');
-          if ParseDataQ_Done4 then
-            WriteLn('Done with ParseDataQ4');
+          if ReadFile_Done1 then
+            WriteLn('Done with reading thread 1');
+          if ReadFile_Done2 then
+            WriteLn('Done with reading thread 2');
+          if ParseData_Done then
+            WriteLn('Done with tabulating threads');
         end;
       end
       else // just wait
       begin
-        while Not(ReadFile_Done and ParseDataQ_Done1 and ParseDataQ_Done2 and
-          ParseDataQ_Done3 and ParseDataQ_Done4) do
+        // while Not(ReadFile_Done1 and ReadFile_Done2 and ParseDataQ_Done2 and
+        // ParseDataQ_Done2 and ParseDataQ_Done3 and ParseDataQ_Done4 and
+        // ParseDataQ_Done5 and ParseDataQ_Done6) do
+        while Not(ReadFile_Done1 and ReadFile_Done2 and ParseData_Done) do
         begin
           Sleep(100);
         end;
       end;
+
+      Challenge.Free;
 
       SortArrays; // sort
       ArrayToFile(outputFilename, UseStdOut); // output
@@ -97,7 +100,8 @@ begin
           Now - start)]));
 
         WriteLn('Stack Max: ' + IntToStr(StackMax1) + '/' + IntToStr(StackMax2)
-          + '/' + IntToStr(StackMax3) + '/' + IntToStr(StackMax4));
+          + '/' + IntToStr(StackMax3) + '/' + IntToStr(StackMax4) + '/' +
+          IntToStr(StackMax5));
 
         WriteLn('Press ENTER to exit');
         readln;
