@@ -564,6 +564,8 @@ var vMean: Integer;
     vHash: Cardinal;
     vStations: TStringList;
     iStationName: AnsiString;
+    vIdx: THashSize;
+    vRes: Boolean;
 begin
   vStream := TStringStream.Create;
   vStations := TStringList.Create;
@@ -587,7 +589,10 @@ begin
       // would it be more efficient to store the hash as well?
       // debatable, and the whole output generation is < 0.3 seconds, so not exactly worth it
       vHash := crc32c(0, @vStations[i][1], Length (vStations[i]));
-      FDictionary.TryGetValue(vHash, 0, vData);
+
+      FDictionary.InternalFind (vHash, vRes, vIdx);
+      vData := @FDictionary.FThreadData[0][FDictionary.FIndexes[vIdx]];
+
       vMean := RoundExInteger(vData^.Sum/vData^.Count/10);
 
       vStream.WriteString(
