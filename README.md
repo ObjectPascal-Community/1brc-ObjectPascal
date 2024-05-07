@@ -169,7 +169,7 @@ These are the results from running all entries into the challenge on my personal
 |--:|----------------:|---------:|:----------|:------|:-------------|
 |  1 |   0:1.260 | lazarus-3.99, fpc-3.3.1 | Arnaud Bouchez         | Using `mORMot2`, 32 threads        | |
 |  2 |   0:2.006 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
-|  3 |   0:3.164 | lazarus-3.99, fpc-3.3.1 | Georges Hatem - FPC    | Free Pascal: Using 32 thread       | |
+|  3 |   0:3.164 | lazarus-3.99, fpc-3.3.1 | Georges Hatem          | Using 32 threads                   | |
 |  4 |   0:9.652 | lazarus-3.99, fpc-3.3.1 | G Klark                | Using 32 threads                   | |
 |  5 |  0:13.388 | lazarus-3.99, fpc-3.3.1 | Székely Balázs         | Using 32 threads                   | |
 |  6 |  0:18.007 | lazarus-3.99, fpc-3.3.1 | Lurendrejer Aksen      | Using 32 threads                   | |
