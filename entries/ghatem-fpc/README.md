@@ -8,9 +8,8 @@
  - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
 
 currently there are 2 versions that can be compiled / run:
- - `OneBRC.lpr              -> ghatem             `: all threads share the station names - involves locking
- - `OneBRC-nosharedname.lpr -> ghatem-nosharedname`: each thread maintains a copy of the station names - no locking involved
- - `OneBRC-smallrec.lpr     -> ghatem-smallrec    `: same as OneBRC, but the StationData's "count" is UInt16 instead of 32. Will likely fail to match hash on the 5B rows test
+ - `OneBRC.lpr              -> ghatem             `: compact record, optimal for the 1B row / 41k stations, will fail on the other tests due to overflow
+ - `OneBRC-largerec.lpr     -> ghatem-largerec    `: same as OneBRC, but the StationData's "count" is UInt32 instead of 16. Passes all the tests
  
 ## Hardware + Environment
 host: 
@@ -25,10 +24,6 @@ VM (VirtualBox):
  - CPU count: 4 out of 8 (threads, probably)
  - 20 GB RAM
  
-note about the hash:
-run with DEBUG compiler directive to write from stream directly to file, otherwise the hash will not match.
-
-## Baseline
 the initial implementation (the Delphi baseline found in /baseline) aimed to get a correct output, regardless of performance: 
 "Make it work, then make it work better".
 It turns out even the baseline caused some trouble, namely the `Ceil` implementation was yielding different results between FPC and Delphi (and different results between Delphi Win32/Win64).
@@ -267,7 +262,7 @@ The idea:
  - -> data about the same station will be stored at the same index for all threads' data-arrays
  - -> names will also be stored at that same index upon first encounter, and is common to all threads
  - no locking needs to occur when the key is already found, since there is no multiple-write occurring
- - the data-arrays are pre-allocated, and a atomic-counter will be incremented to know where the next element will be stored.
+ - the data-arrays are pre-allocated, and an atomic-counter will be incremented to know where the next element will be stored.
 
 Thinking again, this is likely similar to the approach mentioned by @synopse in one of his comments.
 
@@ -275,3 +270,9 @@ For the ExtractLineData, three ideas to try implementing:
  - avoid using a function, to get rid of the cost of stack checking
  - reduce branching, I think it should be possible to go from 3 if-statements, to only 1
  - unroll the loop (although I had tried this in the past, did not show any improvements)
+
+Edit 2: 
+ - was unable to get rid of the stack_check: removing the function somehow became more expensive, I don't understand why that is.
+ - I was able to reduce branching to zero in the parsing of temperature
+ - unroll the loop was also beneficial, and even more so when the inner if-statement was removed in favor of branchless
+ - dictionary improvements were successful and showed a 30% speedup
