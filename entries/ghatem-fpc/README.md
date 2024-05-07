@@ -7,10 +7,10 @@
 ## Usage
  - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
 
-currently there are 3 configurations that can be compiled / run:
- - `HASHMOD`: uses modulus for hashing, least collisions
- - `HASHMULT`: alternative hashing, more collisions, faster on my PC, but seemingly slower on test PCs
- - `LEMIRE`: faster hash function calculation, most collisions it seems, yet the fastest on my PC
+currently there are 2 versions that can be compiled / run:
+ - `OneBRC.lpr              -> ghatem             `: all threads share the station names - involves locking
+ - `OneBRC-nosharedname.lpr -> ghatem-nosharedname`: each thread maintains a copy of the station names - no locking involved
+ - `OneBRC-smallrec.lpr     -> ghatem-smallrec    `: same as OneBRC, but the StationData's "count" is UInt16 instead of 32. Will likely fail to match hash on the 5B rows test
  
 ## Hardware + Environment
 host: 
@@ -247,3 +247,31 @@ Another trial with various hash functions, a simple modulus vs. a slightly more 
 Can be tested with the HASHMULT build option
 
 Finally, it seems choosing a dictionary size that is a prime number is also recommended: shaves 1 second out of 20 on my PC.
+
+## v.6 (2024-05-04)
+
+As of the latest results executed by Paweld, there are two main bottlenecks throttling the entire implementation, according to CallGrind and KCacheGrind:
+ - function ExtractLineData, 23% of total cost, of which 9% is due to `fpc_stackcheck`
+ - the hash lookup function, at 40% of total cost
+
+Currently, the hash lookup is done on an array of records. Increasing the array size causes slowness, and reducing it causes further collisions.
+Will try to see how to reduce collisions (increase array size), all while minimizing the cost of cache misses.
+
+Edit:
+The goal is to both:
+ - minimize collisions on the hashes (keys) by having a good hash function, but also increase the size of the keys storage
+ - minimize the size of the array of packed records
+
+The idea:
+ - the dictionary will no longer point to a PStationData pointer, but rather to an index between 0 and StationCount, where the record is stored in the array.
+ - -> data about the same station will be stored at the same index for all threads' data-arrays
+ - -> names will also be stored at that same index upon first encounter, and is common to all threads
+ - no locking needs to occur when the key is already found, since there is no multiple-write occurring
+ - the data-arrays are pre-allocated, and a atomic-counter will be incremented to know where the next element will be stored.
+
+Thinking again, this is likely similar to the approach mentioned by @synopse in one of his comments.
+
+For the ExtractLineData, three ideas to try implementing:
+ - avoid using a function, to get rid of the cost of stack checking
+ - reduce branching, I think it should be possible to go from 3 if-statements, to only 1
+ - unroll the loop (although I had tried this in the past, did not show any improvements)

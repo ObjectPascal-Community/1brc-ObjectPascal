@@ -2,6 +2,8 @@ program laksen;
 
 {$mode objfpc}{$h+}
 
+{$define LFONLY}
+
 uses
   cthreads,
   SysUtils,
@@ -212,15 +214,17 @@ type
       ptr := @pbyte(@ABuffer)[offset];
       lineEnd := IndexChar(ptr^, remainder, #$A);
 
+      {$IFNDEF LFONLY}
       // Mark EOL
       ptr[lineEnd-1] := 0;
+      {$ENDIF}
 
       // Find delimiter and add null terminator
-      delim := IndexChar(ptr^, lineEnd-2, ';');
+      delim := IndexChar(ptr^, lineEnd-{$IFNDEF LFONLY}2{$ELSE}1{$ENDIF}, ';');
       ptr[delim] := 0;
 
       tempStart := PChar(@ptr[delim+1]);
-      tempLen := lineEnd-2-delim;
+      tempLen := lineEnd-{$IFNDEF LFONLY}2{$ELSE}1{$ENDIF}-delim;
       tempNeg := False;
 
       if tempStart^ = '-' then
@@ -294,7 +298,7 @@ type
 
   function AsNum(AValue, ACount: longint): string;
   begin
-    Result := formatfloat('0.0', RoundExDouble(AValue/ACount)/10);
+    Result := formatfloat('0.0', RoundExDouble(AValue/(ACount * 10)));
   end;
 
   procedure TParser.Dump;

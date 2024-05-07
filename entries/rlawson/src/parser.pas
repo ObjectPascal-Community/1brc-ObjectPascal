@@ -65,12 +65,12 @@ begin
     begin
       temp := currentTempSign * (100 * Integer(buffer[idx]) + 10 *
         Integer(buffer[idx + 1]) + Integer(buffer[idx + 3]) - 5328);
-      idx := idx + 6;
+      idx := idx + 5; // changed from 6 to 5 for compatibility with LF instead of CRLF
     end
     else
     begin
       temp := currentTempSign * (10 * Integer(buffer[idx]) + Integer(buffer[idx + 2]) - 528);
-      idx := idx + 5;
+      idx := idx + 4; // changed from 5 to 4 for compatibility with LF instead of CRLF
     end;
     reading := results.Find(city);
     if reading = nil then
