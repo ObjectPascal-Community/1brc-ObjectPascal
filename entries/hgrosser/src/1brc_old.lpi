@@ -11,7 +11,7 @@
         <CompatibilityMode Value="True"/>
       </Flags>
       <SessionStorage Value="InIDEConfig"/>
-      <Title Value="1brc"/>
+      <Title Value="1brc_old"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
     </General>
@@ -24,7 +24,7 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/hgrosser"/>
+            <Filename Value="../../../bin/hgrosser_old"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -59,7 +59,7 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/hgrosser"/>
+            <Filename Value="../../../bin/hgrosser_old"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -104,7 +104,7 @@
     </RunParams>
     <Units Count="1">
       <Unit0>
-        <Filename Value="1brc.pas"/>
+        <Filename Value="1brc_old.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit0>
     </Units>
@@ -112,7 +112,7 @@
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../../bin/hgrosser"/>
+      <Filename Value="../../../bin/hgrosser_old"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
