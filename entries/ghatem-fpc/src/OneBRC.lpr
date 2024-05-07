@@ -82,17 +82,17 @@ type
 
     // searches for a given key, returns if found the key and the storage index
     // (or, if not found, which index to use next)
-    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: THashSize);
+    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: THashSize); {$IFNDEF VALGRIND} inline; {$ENDIF}
 
   public
     constructor Create;
     destructor Destroy; override;
 
     // simple wrapper to find station-record pointers
-    function TryGetValue (const aKey: Cardinal; const aThreadNb: TThreadCount; out aValue: PStationData): Boolean; inline;
+    function TryGetValue (const aKey: Cardinal; const aThreadNb: TThreadCount; out aValue: PStationData): Boolean; {$IFNDEF VALGRIND} inline; {$ENDIF}
 
     // multithread-unprotected: adds a firstly-encountered station-data (temp, name)
-    procedure Add (const aHashIdx: THashSize; const aThreadNb: TThreadCount; const aTemp: SmallInt; const aStationName: AnsiString); inline;
+    procedure Add (const aHashIdx: THashSize; const aThreadNb: TThreadCount; const aTemp: SmallInt; const aStationName: AnsiString); {$IFNDEF VALGRIND} inline; {$ENDIF}
 
     // multithread-protected: safely assign a slot for a given key
     function AtomicRegisterHash (const aKey: Cardinal): THashSize;
@@ -114,7 +114,7 @@ type
     FDictionary: TBRCDictionary;
 
     // for a line between idx [aStart; aEnd], returns the station-name length, and the integer-value of temperature
-    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); inline;
+    procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); {$IFNDEF VALGRIND} inline; {$ENDIF}
 
   public
     constructor Create (const aThreadCount: TThreadCount);
@@ -564,6 +564,8 @@ var vMean: Integer;
     vHash: Cardinal;
     vStations: TStringList;
     iStationName: AnsiString;
+    vIdx: THashSize;
+    vRes: Boolean;
 begin
   vStream := TStringStream.Create;
   vStations := TStringList.Create;
@@ -587,7 +589,10 @@ begin
       // would it be more efficient to store the hash as well?
       // debatable, and the whole output generation is < 0.3 seconds, so not exactly worth it
       vHash := crc32c(0, @vStations[i][1], Length (vStations[i]));
-      FDictionary.TryGetValue(vHash, 0, vData);
+
+      FDictionary.InternalFind (vHash, vRes, vIdx);
+      vData := @FDictionary.FThreadData[0][FDictionary.FIndexes[vIdx]];
+
       vMean := RoundExInteger(vData^.Sum/vData^.Count/10);
 
       vStream.WriteString(
