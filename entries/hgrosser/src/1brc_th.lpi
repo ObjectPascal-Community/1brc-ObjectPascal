@@ -24,7 +24,7 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/hgrosser-th"/>
+            <Filename Value="../../../bin/hgrosser"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -59,7 +59,7 @@
         <CompilerOptions>
           <Version Value="11"/>
           <Target>
-            <Filename Value="../../../bin/hgrosser-th"/>
+            <Filename Value="../../../bin/hgrosser"/>
           </Target>
           <SearchPaths>
             <IncludeFiles Value="$(ProjOutDir)"/>
@@ -116,7 +116,7 @@
   <CompilerOptions>
     <Version Value="11"/>
     <Target>
-      <Filename Value="../../../bin/hgrosser-th"/>
+      <Filename Value="../../../bin/hgrosser"/>
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
