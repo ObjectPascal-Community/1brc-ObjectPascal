@@ -89,7 +89,7 @@ type
     destructor Destroy; override;
 
     // simple wrapper to find station-record pointers
-    function TryGetValue (const aKey: Cardinal; const aThreadNb: TThreadCount; out aValue: PStationData): Boolean;
+    function TryGetValue (const aKey: Cardinal; const aThreadNb: TThreadCount; out aValue: PStationData): Boolean; {$IFNDEF VALGRIND} inline; {$ENDIF}
 
     // multithread-unprotected: adds a firstly-encountered station-data (temp, name)
     procedure Add (const aHashIdx: THashSize; const aThreadNb: TThreadCount; const aTemp: SmallInt; const aStationName: AnsiString); {$IFNDEF VALGRIND} inline; {$ENDIF}
@@ -569,7 +569,7 @@ var vMean: Integer;
 begin
   vStream := TStringStream.Create;
   vStations := TStringList.Create;
-  vStations.Capacity := cDictSize;
+  vStations.Capacity := cNumStations;
   vStations.UseLocale := False;
   try
     vStations.BeginUpdate;
