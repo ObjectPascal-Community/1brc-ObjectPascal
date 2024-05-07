@@ -82,7 +82,7 @@ type
 
     // searches for a given key, returns if found the key and the storage index
     // (or, if not found, which index to use next)
-    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: THashSize);
+    procedure InternalFind(const aKey: Cardinal; out aFound: Boolean; out aIndex: THashSize); inline;
 
   public
     constructor Create;
