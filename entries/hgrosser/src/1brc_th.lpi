@@ -101,6 +101,11 @@
         </Mode0>
       </Modes>
     </RunParams>
+    <RequiredPackages Count="1">
+      <Item1>
+        <PackageName Value="mormot2"/>
+      </Item1>
+    </RequiredPackages>
     <Units Count="1">
       <Unit0>
         <Filename Value="1brc_th.pas"/>
@@ -115,6 +120,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value="../../../baseline/Common"/>
       <UnitOutputDirectory Value="../../../bin/lib/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>
