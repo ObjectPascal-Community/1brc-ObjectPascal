@@ -569,7 +569,7 @@ var vMean: Integer;
 begin
   vStream := TStringStream.Create;
   vStations := TStringList.Create;
-  vStations.Capacity := cDictSize;
+  vStations.Capacity := cNumStations;
   vStations.UseLocale := False;
   try
     vStations.BeginUpdate;
