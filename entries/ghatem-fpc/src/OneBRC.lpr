@@ -564,7 +564,7 @@ end;
 
 procedure TOneBRC.GenerateOutput;
 var vStream: TStringStream;
-    I, N: Int64;
+    I, N: Int32;
     vData: PStationData;
     vHash: Cardinal;
     vStations: TStringList;
