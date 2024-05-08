@@ -577,9 +577,11 @@ begin
   vStations.UseLocale := False;
   try
     vStations.BeginUpdate;
-    for I := 0 to N - 1 do begin
-      vStations.Add(FDictionary.FStationNames[I]);
+    for i := 0 to cNumStations - 1 do begin
+      if FDictionary.FStationNames[i] <> '' then
+        vStations.Add (FDictionary.FStationNames[i]);
     end;
+
     vStations.EndUpdate;
     vStations.CustomSort (@Compare);
 
