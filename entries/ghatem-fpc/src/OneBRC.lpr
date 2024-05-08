@@ -563,13 +563,11 @@ end;
 //---------------------------------------------------
 
 procedure TOneBRC.GenerateOutput;
-var vMean: Integer;
-    vStream: TStringStream;
+var vStream: TStringStream;
     I, N: Int64;
     vData: PStationData;
     vHash: Cardinal;
     vStations: TStringList;
-    iStationName: AnsiString;
     vIdx: THashSize;
     vRes: Boolean;
 begin
@@ -579,8 +577,8 @@ begin
   vStations.UseLocale := False;
   try
     vStations.BeginUpdate;
-    for iStationName in FDictionary.FStationNames do begin
-      vStations.Add(iStationName);
+    for I := 0 to N - 1 do begin
+      vStations.Add(FDictionary.FStationNames[I]);
     end;
     vStations.EndUpdate;
     vStations.CustomSort (@Compare);
@@ -598,11 +596,9 @@ begin
       FDictionary.InternalFind (vHash, vRes, vIdx);
       vData := @FDictionary.FThreadData[0][FDictionary.FIndexes[vIdx]];
 
-      vMean := RoundExInteger(vData^.Sum/vData^.Count/10);
-
       vStream.WriteString(
         vStations[i] + '=' + MyFormatInt(vData^.Min)
-                     + '/' + MyFormatInt(vMean)
+                     + '/' + MyFormatInt(RoundExInteger(vData^.Sum/vData^.Count/10))
                      + '/' + MyFormatInt(vData^.Max) + ', '
       );
       Inc(I);
