@@ -459,6 +459,12 @@ begin
   vLineStart := i;
 
   while i < aEndIdx do begin
+
+    // can still skip some chars
+    if FData[i] > ';' then begin
+      Inc (I, 5);
+    end;
+
     while FData[i] <> #10 do begin
       Inc (I);
     end;
