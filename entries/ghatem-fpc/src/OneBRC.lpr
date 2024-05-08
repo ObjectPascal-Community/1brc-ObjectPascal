@@ -459,6 +459,12 @@ begin
   vLineStart := i;
 
   while i < aEndIdx do begin
+
+    // can still skip some chars
+    if FData[i] > ';' then begin
+      Inc (I, 5);
+    end;
+
     while FData[i] <> #10 do begin
       Inc (I);
     end;
@@ -574,8 +580,7 @@ begin
   try
     vStations.BeginUpdate;
     for iStationName in FDictionary.FStationNames do begin
-      if iStationName <> '' then
-        vStations.Add(iStationName);
+      vStations.Add(iStationName);
     end;
     vStations.EndUpdate;
     vStations.CustomSort (@Compare);
@@ -622,7 +627,6 @@ end;
 procedure TBRCThread.Execute;
 begin
   FProc (FThreadNb, FStart, FEnd);
-  Terminate;
 end;
 
 constructor TBRCThread.Create(aProc: TThreadProc; aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
