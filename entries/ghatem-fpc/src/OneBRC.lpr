@@ -465,8 +465,21 @@ begin
       Inc (I, 5);
     end;
 
-    while FData[i] <> #10 do begin
-      Inc (I);
+    // unroll a few seems to be improving?
+    if FData[i] <> #10 then begin
+      Inc (i);
+      if FData[i] <> #10 then begin
+        Inc (i);
+        if FData[i] <> #10 then begin
+          Inc (I);
+          if FData[i] <> #10 then begin
+            Inc (i);
+            while FData[i] <> #10 do begin
+              Inc (I);
+            end;
+          end;
+        end;
+      end;
     end;
 
     // new line parsed, process its contents
