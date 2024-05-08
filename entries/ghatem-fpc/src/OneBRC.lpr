@@ -627,7 +627,6 @@ end;
 procedure TBRCThread.Execute;
 begin
   FProc (FThreadNb, FStart, FEnd);
-  Terminate;
 end;
 
 constructor TBRCThread.Create(aProc: TThreadProc; aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
