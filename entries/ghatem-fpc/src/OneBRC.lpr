@@ -580,8 +580,7 @@ begin
   try
     vStations.BeginUpdate;
     for iStationName in FDictionary.FStationNames do begin
-      if iStationName <> '' then
-        vStations.Add(iStationName);
+      vStations.Add(iStationName);
     end;
     vStations.EndUpdate;
     vStations.CustomSort (@Compare);
