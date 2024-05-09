@@ -37,6 +37,8 @@ type
 
 type
   // Using this dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
+  // THashMap<shortstring, PStat> - takes around 120s.
+  // TFastHash<shortstring, PStat> - takes around 100s.
   TWeatherDictionary = specialize TFastHashMap<shortstring, PStat>;
 
 type

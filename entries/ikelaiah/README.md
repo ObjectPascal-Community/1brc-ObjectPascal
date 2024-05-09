@@ -145,6 +145,11 @@ Iwan Kelaiah
   * Revision release - Sequential approach. 3-5 mins on my Inspiron 15 7510 laptop, around 2m55s (no improvement on speed).
   * Replaced `LGenerics` with `Generics.Collections` for the time being.
 
+* 1.12
+  * Revision release - Sequential approach. 3-5 mins on my Inspiron 15 7510 laptop, around 2m40s (small improvement on speed).
+  * Called TStreamReader.ReadLn, twice in the while loop. This saves approx 5-10 seconds.
+  * Updated the Acknowledgments section.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE.md file for details
@@ -164,10 +169,12 @@ Inspiration, code snippets, libraries, etc.
       - Borrowed and modified Gus' `WriteHelp` from the `baseline.lpr`.
  3. A.Koverdyaev (avk)
       - For the amazing (LGenerics)[https://github.com/avk959/LGenerics] library.
- 4. Székely Balázs.
+ 4. Benito van der Zander (benibella)
+      - FOr providing the [Free Pascal Hashmaps Benchmark](https://www.benibela.de/fpc-map-benchmark_en.html).
+ 5. Székely Balázs.
       - Now I know what `Single` data type is!
       - I borrowed the custom `TStringList` comparer from the `baseline` program.
- 5. Shraddha Agrawal - https://www.bytesizego.com/blog/one-billion-row-challenge-go.
+ 6. Shraddha Agrawal - https://www.bytesizego.com/blog/one-billion-row-challenge-go.
       - The advice for not storing measurements for each station in a data structure.
- 6. Arman Hajisafi - https://arman-hs.github.io
+ 7. Arman Hajisafi - https://arman-hs.github.io
       - Encouragements and inspirations.
