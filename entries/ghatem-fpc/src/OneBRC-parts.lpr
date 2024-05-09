@@ -119,7 +119,7 @@ type
     // for a line between idx [aStart; aEnd], returns the station-name length, and the integer-value of temperature
     procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); {$IFNDEF VALGRIND} inline; {$ENDIF}
     procedure GetNextPart (var aStart, aEnd: Int64);
-    procedure InitMinMax (const aThreadNb: TThreadCount);
+    procedure InitMinMax (const aThreadNb: TThreadCount); inline;
 
   public
     constructor Create (const aThreadCount: TThreadCount);
@@ -148,20 +148,18 @@ type
 
   TThreadProc = procedure (aThreadNb: TThreadCount; aStartIdx: Int64; aEndIdx: Int64) of object;
   TGetNextPart = procedure (var aStart, aEnd: Int64) of object;
-  TInitMinMax = procedure (const aThreadNb: TThreadCount) of object;
 
   TBRCThread = class (TThread)
   private
     FProc: TThreadProc;
     FGetNextPart: TGetNextPart;
-    FInitMinMax: TInitMinMax;
     FThreadNb: TThreadCount;
     FStart: Int64;
     FEnd: Int64;
   protected
     procedure Execute; override;
   public
-    constructor Create (aProc: TThreadProc; aGetNextPart: TGetNextPart; aInitMinMax: TInitMinMax;
+    constructor Create (aProc: TThreadProc; aGetNextPart: TGetNextPart;
                         aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
   end;
 
@@ -439,7 +437,8 @@ begin
   FDone := cPart * FThreadCount;
 
   for I := 0 to FThreadCount - 1 do begin
-    FThreads[I] := TBRCThread.Create (@ProcessData, @GetNextPart, @InitMinMax, I, I*cPart, (I+1)*cPart);
+    InitMinMax(I);
+    FThreads[I] := TBRCThread.Create (@ProcessData, @GetNextPart, I, I*cPart, (I+1)*cPart);
   end;
 end;
 
@@ -668,8 +667,6 @@ end;
 
 procedure TBRCThread.Execute;
 begin
-  FInitMinMax (FThreadNb);
-
   while true do begin
     FProc (FThreadNb, FStart, FEnd);
     FGetNextPart(FStart, FEnd);
@@ -677,13 +674,12 @@ begin
   end;
 end;
 
-constructor TBRCThread.Create(aProc: TThreadProc; aGetNextPart: TGetNextPart; aInitMinMax: TInitMinMax;
+constructor TBRCThread.Create(aProc: TThreadProc; aGetNextPart: TGetNextPart;
                               aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
 begin
   inherited Create(False);
   FProc := aProc;
   FGetNextPart := aGetNextPart;
-  FInitMinMax := aInitMinMax;
   FThreadNb := aThreadNb;
   FStart := aStart;
   FEnd := aEnd;
