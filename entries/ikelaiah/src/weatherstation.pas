@@ -7,11 +7,12 @@ interface
 uses
   Classes
   , SysUtils
-  , Math
   , streamex
   , bufstream
   //, lgHashMap
   , generics.Collections
+  , csvdocument
+  , csvdataset
   {$IFDEF DEBUG}
   , Stopwatch
   {$ENDIF}
@@ -29,31 +30,36 @@ type
     sum: int64;
     cnt: int64;
   public
-    function ToString: ShortString;
+    function ToString: shortstring;
   end;
   {Using pointer to TStat saves approx. 30-60 seconds for processing 1 billion rows}
   PStat = ^TStat;
 
 type
   // Using this dictionary, now approx 4 mins faster than Generics.Collections.TDictionary
-  TWeatherDictionaryLG = specialize TFastHashMap<ShortString, PStat>;
+  // THashMap<shortstring, PStat> - takes around 120s.
+  // TFastHash<shortstring, PStat> - takes around 100s.
+  TWeatherDictionary = specialize TFastHashMap<shortstring, PStat>;
 
 type
   // a type for storing valid lookup temperature
-  TValidTemperatureDictionary = specialize TFastHashMap<ShortString, int64>;
+  TValidTemperatureDictionary = specialize TFastHashMap<shortstring, int64>;
 
 type
   // Create a class to encapsulate the temperature observations of each weather station.
   TWeatherStation = class
   private
     fname: string;
-    weatherDictionary: TWeatherDictionaryLG;
+    weatherDictionary: TWeatherDictionary;
     weatherStationList: TStringList;
     lookupStrFloatToIntList: TValidTemperatureDictionary;
     procedure CreateLookupTemp;
     procedure ReadMeasurements;
-    procedure ParseStationAndTemp(const line: ShortString);
-    procedure AddCityTemperatureLG(const cityName: ShortString; const newTemp: int64);
+    procedure ReadMeasurementsBuffered;
+    procedure ReadMeasurementsV2;
+    procedure ReadMeasurementsV3;
+    procedure ParseStationAndTemp(const line: shortstring);
+    procedure AddCityTemperatureLG(const cityName: shortstring; const newTemp: int64);
     procedure SortWeatherStationAndStats;
     procedure PrintSortedWeatherStationAndStats;
   public
@@ -92,7 +98,7 @@ begin
 end;
 
 // Remove dots from a string
-function RemoveDots(const line: ShortString): ShortString;
+function RemoveDots(const line: shortstring): shortstring;
 var
   index: integer;
 begin
@@ -104,7 +110,7 @@ begin
   end;
 end;
 
-function TStat.ToString: ShortString;
+function TStat.ToString: shortstring;
 var
   minR, meanR, maxR: double; // Store the rounded values prior saving to TStringList.
 begin
@@ -124,7 +130,7 @@ begin
   // Set expected capacity - saves 10 seconds.
   self.lookupStrFloatToIntList.Capacity := 44691;
   // Create a dictionary
-  weatherDictionary := TWeatherDictionaryLG.Create;
+  weatherDictionary := TWeatherDictionary.Create;
   weatherDictionary.Capacity := 44691;
   // Create a TStringList for sorting
   weatherStationList := TStringList.Create;
@@ -132,7 +138,7 @@ end;
 
 destructor TWeatherStation.Destroy;
 var
-  stationName: ShortString;
+  stationName: shortstring;
 begin
 
   // Free the lookup dictionary
@@ -206,7 +212,7 @@ end;
 
 procedure TWeatherStation.SortWeatherStationAndStats;
 var
-  wsKey: ShortString;
+  wsKey: shortstring;
 begin
 
   {$IFDEF DEBUG}
@@ -235,7 +241,7 @@ begin
   {$ENDIF DEBUG}
 end;
 
-procedure TWeatherStation.AddCityTemperatureLG(const cityName: ShortString;
+procedure TWeatherStation.AddCityTemperatureLG(const cityName: shortstring;
   const newTemp: int64);
 var
   stat: PStat;
@@ -288,12 +294,15 @@ begin
   end;
 end;
 
-procedure TWeatherStation.ParseStationAndTemp(const line: ShortString);
+procedure TWeatherStation.ParseStationAndTemp(const line: shortstring);
 var
   delimiterPos: integer;
-  parsedStation, strFloatTemp: ShortString;
-  parsedTemp, valCode: int64;
+  strFloatTemp: shortstring;
+  parsedTemp: int64;
 begin
+
+  if length(line) = 0 then Exit;
+
   // Get position of the delimiter
   delimiterPos := Pos(';', line);
   if delimiterPos > 0 then
@@ -314,6 +323,7 @@ begin
   end;
 end;
 
+{This approach turned out to be the faster method than the TCSVDocument method.}
 procedure TWeatherStation.ReadMeasurements;
 var
   fileStream: TFileStream;
@@ -328,7 +338,9 @@ begin
       // Read and parse chunks of data until EOF -------------------------------
       while not streamReader.EOF do
       begin
-        // line := streamReader.ReadLine;
+        //streamReader.ReadLine;
+        //streamReader.ReadLine;
+        self.ParseStationAndTemp(streamReader.ReadLine);
         self.ParseStationAndTemp(streamReader.ReadLine);
       end;// End of read and parse chunks of data ------------------------------
     finally
@@ -340,11 +352,123 @@ begin
   end;
 end;
 
+{TCSVDocument Method. Easiest to use. About 2 times slower then the first method.}
+procedure TWeatherStation.ReadMeasurementsV2;
+var
+  fileStream: TFileStream;
+  buffStream: TReadBufStream;
+  csvReader: TCSVDocument;
+  index, totalLines, parsedTemp: int64;
+begin
+  totalLines := 0;
+  fileStream := TFileStream.Create(self.fname, fmOpenRead);
+  try
+    buffStream := TReadBufStream.Create(fileStream, 65536);
+    try
+      csvReader := TCSVDocument.Create;
+      try
+        csvReader.Delimiter := ';';
+        csvReader.LoadFromStream(buffStream);
+
+        totalLines := csvReader.RowCount;
+
+        for index := 0 to totalLines - 1 do
+        begin
+          if self.lookupStrFloatToIntList.TryGetValue(csvReader.Cells[1, index],
+            parsedTemp) then
+          begin
+            self.AddCityTemperatureLG(csvReader.Cells[0, index], parsedTemp);
+          end;
+        end;
+
+      finally
+        csvReader.Free;
+      end;
+    finally
+      buffStream.Free;
+    end;
+  finally
+  end;
+  fileStream.Free;
+end;
+
+{This method is twice times slower than the first one.}
+procedure TWeatherStation.ReadMeasurementsV3;
+var
+  fileStream: TFileStream;
+  buffStream: TReadBufStream;
+  csvDataset: TCSVDataset;
+  parsedTemp: int64;
+begin
+  fileStream := TFileStream.Create(self.fname, fmOpenRead);
+  try
+    buffStream := TReadBufStream.Create(fileStream);
+    try
+      csvDataset := TCSVDataset.Create(nil);
+      try
+        csvDataset.CSVOptions.Delimiter := ';';
+        csvDataset.CSVOptions.FirstLineAsFieldNames := False;
+        csvDataset.LoadFromCSVStream(buffStream);
+
+        // Move to first record
+        csvDataset.First;
+
+        while not csvDataset.EOF do
+        begin
+          // WriteLn('Field1 is ', csvDataset.Fields[0].AsString, ' and Field2 is ', csvDataset.Fields[1].AsString);
+          if self.lookupStrFloatToIntList.TryGetValue(csvDataset.Fields[1].AsString, parsedTemp) then
+          begin
+            self.AddCityTemperatureLG(csvDataset.Fields[0].AsString, parsedTemp);
+          end;
+          csvDataset.Next;
+        end;
+      finally
+        csvDataset.Free;
+      end;
+    finally
+      buffStream.Free;
+    end;
+  finally
+  end;
+  fileStream.Free;
+end;
+
+{This aproach is surprisingly 10 seconds slower than the first one.}
+procedure TWeatherStation.ReadMeasurementsBuffered;
+var
+  fileStream: TBufferedFileStream;
+  streamReader: TStreamReader;
+begin
+
+  // Open the file for reading
+  fileStream := TBufferedFileStream.Create(self.fname, fmOpenRead);
+  try
+    streamReader := TStreamReader.Create(fileStream);
+    try
+      // Read and parse chunks of data until EOF -------------------------------
+      while not streamReader.EOF do
+      begin
+        self.ParseStationAndTemp(streamReader.ReadLine);
+        self.ParseStationAndTemp(streamReader.ReadLine);
+      end;// End of read and parse chunks of data ------------------------------
+    finally
+      streamReader.Free;
+    end;
+  finally
+    // Close the file
+    fileStream.Free;
+  end;
+end;
+
+
 // The main algorithm
 procedure TWeatherStation.ProcessMeasurements;
 begin
   self.CreateLookupTemp;
   self.ReadMeasurements;
+  //self.ReadMeasurementsBuffered;
+  //self.ReadMeasurementsV2;
+  //self.ReadMeasurementsV3;
   self.SortWeatherStationAndStats;
   self.PrintSortedWeatherStationAndStats;
 end;
