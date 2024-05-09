@@ -459,8 +459,27 @@ begin
   vLineStart := i;
 
   while i < aEndIdx do begin
-    while FData[i] <> #10 do begin
-      Inc (I);
+
+    // can still skip some chars
+    if FData[i] > ';' then begin
+      Inc (I, 5);
+    end;
+
+    // unroll a few seems to be improving?
+    if FData[i] <> #10 then begin
+      Inc (i);
+      if FData[i] <> #10 then begin
+        Inc (i);
+        if FData[i] <> #10 then begin
+          Inc (I);
+          if FData[i] <> #10 then begin
+            Inc (i);
+            while FData[i] <> #10 do begin
+              Inc (I);
+            end;
+          end;
+        end;
+      end;
     end;
 
     // new line parsed, process its contents
@@ -557,13 +576,11 @@ end;
 //---------------------------------------------------
 
 procedure TOneBRC.GenerateOutput;
-var vMean: Integer;
-    vStream: TStringStream;
-    I, N: Int64;
+var vStream: TStringStream;
+    I, N: Int32;
     vData: PStationData;
     vHash: Cardinal;
     vStations: TStringList;
-    iStationName: AnsiString;
     vIdx: THashSize;
     vRes: Boolean;
 begin
@@ -573,10 +590,11 @@ begin
   vStations.UseLocale := False;
   try
     vStations.BeginUpdate;
-    for iStationName in FDictionary.FStationNames do begin
-      if iStationName <> '' then
-        vStations.Add(iStationName);
+    for i := 0 to cNumStations - 1 do begin
+      if FDictionary.FStationNames[i] <> '' then
+        vStations.Add (FDictionary.FStationNames[i]);
     end;
+
     vStations.EndUpdate;
     vStations.CustomSort (@Compare);
 
@@ -593,11 +611,9 @@ begin
       FDictionary.InternalFind (vHash, vRes, vIdx);
       vData := @FDictionary.FThreadData[0][FDictionary.FIndexes[vIdx]];
 
-      vMean := RoundExInteger(vData^.Sum/vData^.Count/10);
-
       vStream.WriteString(
         vStations[i] + '=' + MyFormatInt(vData^.Min)
-                     + '/' + MyFormatInt(vMean)
+                     + '/' + MyFormatInt(RoundExInteger(vData^.Sum/vData^.Count/10))
                      + '/' + MyFormatInt(vData^.Max) + ', '
       );
       Inc(I);
@@ -622,7 +638,6 @@ end;
 procedure TBRCThread.Execute;
 begin
   FProc (FThreadNb, FStart, FEnd);
-  Terminate;
 end;
 
 constructor TBRCThread.Create(aProc: TThreadProc; aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
