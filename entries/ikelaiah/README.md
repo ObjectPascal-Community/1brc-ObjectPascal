@@ -146,7 +146,7 @@ Iwan Kelaiah
   * Replaced `LGenerics` with `Generics.Collections` for the time being.
 
 * 1.12
-  * Revision release - Sequential approach. 3-5 mins on my Inspiron 15 7510 laptop, around 2m40s (small improvement on speed).
+  * Revision release - Sequential approach. 2-5 mins on my Inspiron 15 7510 laptop, around 2m40s (small improvement on speed).
   * Called TStreamReader.ReadLn, twice in the while loop. This saves approx 5-10 seconds.
   * Updated the Acknowledgments section.
 
