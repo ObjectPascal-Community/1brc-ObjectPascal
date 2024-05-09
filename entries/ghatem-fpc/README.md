@@ -8,9 +8,12 @@
  - -t flag to specify the thread-count (default reads the thread-count available on the CPU)
 
 currently there are 2 versions that can be compiled / run:
- - `OneBRC.lpr              -> ghatem             `: compact record, optimal for the 1B row / 41k stations, will fail on the other tests due to overflow
- - `OneBRC-largerec.lpr     -> ghatem-largerec    `: same as OneBRC, but the StationData's "count" is UInt32 instead of 16. Passes all the tests
+ - `OneBRC.lpr                -> ghatem           `: compact record, optimal for the 1B row / 41k stations, will fail on the other tests due to overflow
+ - `OneBRC-largerec.lpr       -> ghatem-largerec  `: same as OneBRC, but the StationData's "count" is UInt32 instead of 16. Passes all the tests
  
+ - `OneBRC-parts.lpr          -> ghatem-parts     `: compact record, processes in parts as attempt stability, optimal for the 1B row / 41k stations, will fail on the other tests due to overflow
+ - `OneBRC-parts-largerec.lpr -> ghatem-partslarge`: same as OneBRC-parts, but the StationData's "count" is UInt32 instead of 16. Passes all the tests
+
 ## Hardware + Environment
 host: 
  - Dell XPS 15 (9560, 2017)

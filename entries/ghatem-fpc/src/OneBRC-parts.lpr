@@ -14,6 +14,7 @@ const
   cNumStations = 41343;  // as per the input file
   cDictSize    = 248071; // numstations * 6, next prime number
   cThreadCount = 32;
+  cPart = 1 shl 20;
 
   c0ascii: ShortInt = 48;
 
@@ -41,7 +42,7 @@ type
   TStationData = packed record
     Min: SmallInt;
     Max: SmallInt;
-    Count: UInt32;
+    Count: UInt16; // will fail on 400 stations / 5B row tests, due to overflow
     Sum: Integer;
   end;
   PStationData = ^TStationData;
@@ -108,6 +109,8 @@ type
     FMemoryMap: TMemoryMap;
     FData: pAnsiChar;
     FDataSize: Int64;
+    FDone: Int64;
+    FCS2: TCriticalSection;
 
     FThreadCount: TThreadCount;
     FThreads: array of TThread;
@@ -115,6 +118,8 @@ type
 
     // for a line between idx [aStart; aEnd], returns the station-name length, and the integer-value of temperature
     procedure ExtractLineData(const aStart: Int64; const aEnd: Int64; out aLength: ShortInt; out aTemp: SmallInt); {$IFNDEF VALGRIND} inline; {$ENDIF}
+    procedure GetNextPart (var aStart, aEnd: Int64);
+    procedure InitMinMax (const aThreadNb: TThreadCount);
 
   public
     constructor Create (const aThreadCount: TThreadCount);
@@ -142,17 +147,22 @@ type
   { TBRCThread }
 
   TThreadProc = procedure (aThreadNb: TThreadCount; aStartIdx: Int64; aEndIdx: Int64) of object;
+  TGetNextPart = procedure (var aStart, aEnd: Int64) of object;
+  TInitMinMax = procedure (const aThreadNb: TThreadCount) of object;
 
   TBRCThread = class (TThread)
   private
     FProc: TThreadProc;
+    FGetNextPart: TGetNextPart;
+    FInitMinMax: TInitMinMax;
     FThreadNb: TThreadCount;
     FStart: Int64;
     FEnd: Int64;
   protected
     procedure Execute; override;
   public
-    constructor Create (aProc: TThreadProc; aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
+    constructor Create (aProc: TThreadProc; aGetNextPart: TGetNextPart; aInitMinMax: TInitMinMax;
+                        aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
   end;
 
 { TBRCDictionary }
@@ -366,11 +376,39 @@ begin
          ) * (vIsNeg * 2 - 1);
 end;
 
+procedure TOneBRC.GetNextPart (var aStart, aEnd: Int64);
+begin
+  FCs2.Acquire;
+  try
+    aStart := FDone;
+    Inc (FDone, cPart);
+  finally
+    fcs2.Release;
+  end;
+
+  if aStart >= DataSize then
+    aStart := -1;
+  aEnd := aStart + cPart - 1;
+  if aEnd >= DataSize then
+    aEnd := DataSize - 1;
+end;
+
+procedure TOneBRC.InitMinMax(const aThreadNb: TThreadCount);
+var I: TStationCount;
+begin
+  // initialize min/max, else we may get zeroes (due to our Add that fires once per station across all threads)
+  for I := 0 to cNumStations - 1 do begin
+    FDictionary.FThreadData[aThreadNb][I].Max := -2000;
+    FDictionary.FThreadData[aThreadNb][I].Min := 2000;
+  end;
+end;
+
 //---------------------------------------------------
 
 constructor TOneBRC.Create (const aThreadCount: TThreadCount);
 begin
   FThreadCount := aThreadCount;
+  FCs2 := TCriticalSection.Create;
   SetLength (FThreads, aThreadCount);
 
   FDictionary := TBRCDictionary.Create;
@@ -379,6 +417,7 @@ end;
 destructor TOneBRC.Destroy;
 begin
   FDictionary.Free;
+  Fcs2.free;
   inherited Destroy;
 end;
 
@@ -396,13 +435,11 @@ end;
 procedure TOneBRC.DispatchThreads;
 var
   I: TThreadCount;
-  vRange: Int64;
 begin
-  // distribute input equally across available threads
-  vRange := Trunc (FDataSize / FThreadCount);
+  FDone := cPart * FThreadCount;
 
   for I := 0 to FThreadCount - 1 do begin
-    FThreads[I] := TBRCThread.Create (@ProcessData, I, I*vRange, (I+1)*vRange);
+    FThreads[I] := TBRCThread.Create (@ProcessData, @GetNextPart, @InitMinMax, I, I*cPart, (I+1)*cPart);
   end;
 end;
 
@@ -429,12 +466,6 @@ var
   vLenStationName: ShortInt;
   vFound: Boolean;
 begin
-  // initialize min/max, else we may get zeroes (due to our Add that fires once per station across all threads)
-  for I := 0 to cNumStations - 1 do begin
-    FDictionary.FThreadData[aThreadNb][I].Max := -2000;
-    FDictionary.FThreadData[aThreadNb][I].Min := 2000;
-  end;
-
   i := aStartIdx;
 
   // the given starting point might be in the middle of a line:
@@ -637,13 +668,22 @@ end;
 
 procedure TBRCThread.Execute;
 begin
-  FProc (FThreadNb, FStart, FEnd);
+  FInitMinMax (FThreadNb);
+
+  while true do begin
+    FProc (FThreadNb, FStart, FEnd);
+    FGetNextPart(FStart, FEnd);
+    if FStart = -1 then break;
+  end;
 end;
 
-constructor TBRCThread.Create(aProc: TThreadProc; aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
+constructor TBRCThread.Create(aProc: TThreadProc; aGetNextPart: TGetNextPart; aInitMinMax: TInitMinMax;
+                              aThreadNb: TThreadCount; aStart: Int64; aEnd: Int64);
 begin
   inherited Create(False);
   FProc := aProc;
+  FGetNextPart := aGetNextPart;
+  FInitMinMax := aInitMinMax;
   FThreadNb := aThreadNb;
   FStart := aStart;
   FEnd := aEnd;
