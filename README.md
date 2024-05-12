@@ -177,7 +177,7 @@ These are the results from running all entries into the challenge on my personal
 |  8 |  0:18.062 | lazarus-3.99, fpc-3.3.1 | Lurendrejer Aksen      | Using 32 threads                   | |
 |  9 |   1:9.354 | lazarus-3.99, fpc-3.3.1 | Richard Lawson         | Using 1 thread                     | |
 | 10 |  2:24.787 | lazarus-3.99, fpc-3.3.1 | Iwan Kelaiah           | Using 1 thread                     | |
-| 11 |   6:2.343 | delphi 12.1             | Brian Fire             | Using 1 thread                     | |
+| 11 |   6:2.343 | delphi 12.1             | Brian Fire             | Using 8 threads                    | |
 | 12 |  6:53.788 | delphi 12.1             | David Cornelius        | Using 1 thread                     | |
 | 13 |  8:37.975 | delphi 12.1             | Daniel Töpfl           | Using 1 thread                     | |
 
