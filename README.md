@@ -168,8 +168,8 @@ These are the results from running all entries into the challenge on my personal
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
 |  1 |   0:1.261 | lazarus-3.99, fpc-3.3.1 | Arnaud Bouchez         | Using `mORMot2`, 32 threads        | |
-|  2 |   0:2.116 | lazarus-3.99, fpc-3.3.1 | Georges Hatem          | Using `mORMot2`, 32 threads        | |
-|  3 |   0:2.563 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
+|  2 |   0:1.950 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
+|  3 |   0:2.101 | lazarus-3.99, fpc-3.3.1 | Georges Hatem          | Using `mORMot2`, 32 threads        | |
 |  4 |   0:5.248 | lazarus-3.99, fpc-3.3.1 | Hartmut Grosser        | Using 32 thread                    | |
 |  5 |   0:7.363 | lazarus-3.99, fpc-3.3.1 | Benito van der Zander  | Using 32 threads                   | |
 |  6 |   0:9.627 | lazarus-3.99, fpc-3.3.1 | G Klark                | Using 32 threads                   | |
