@@ -67,6 +67,7 @@ var
   Challenge: TFileStream;
 
   UseStdOut: Boolean; // True unless output file is defined
+  ReadThreadCount: Integer;
 
   // set up for 41351 places (actually seems to be 41343 entries)
   // split into five roughly equal groups for separate hash tables
@@ -109,6 +110,7 @@ var
 
   ReadFile_Done1: Boolean;
   ReadFile_Done2: Boolean;
+  ReadFile_Done3: Boolean;
   ParseData_Done: Boolean;
 
   StackMax1: Integer; // sample stack count for peak value (approx.)
@@ -120,6 +122,7 @@ var
 procedure FileToArrays(inputFilename: String; UseStdOut: Boolean); // read
 procedure LaunchReadingThread1;
 procedure LaunchReadingThread2;
+procedure LaunchReadingThread3;
 procedure LaunchTabulateThread1;
 procedure LaunchTabulateThread2;
 procedure LaunchTabulateThread3;
@@ -391,8 +394,10 @@ begin
     // Challenge := TBufferedFileStream.Create(inputFilename, fmOpenRead, fmShareDenyNone);
 
     LaunchReadingThread1;
-    LaunchReadingThread2;
-
+    if ReadThreadCount >= 2 then
+      LaunchReadingThread2;
+    if ReadThreadCount = 3 then
+      LaunchReadingThread3;
   end
   else
   begin
@@ -1021,6 +1026,316 @@ begin
   ReadingThread2.Start;
 end;
 
+procedure LaunchReadingThread3;
+var
+  ReadingThread3: TThread;
+
+begin
+  ReadingThread3 := TThread.CreateAnonymousThread(
+    procedure
+    var
+      ReadItem3: array [0 .. 107] of Byte;
+      BufferIndex: Integer; // index into read buffer
+      DataIndex: Integer; // index into raw data array
+      Choice: Integer;
+      BytesRead: Integer;
+      SafetyCount: Integer;
+      PReadBuffer3: PByte;
+      Posted: Boolean; // flag for successfully sending to queue
+
+    begin
+      PReadBuffer3 := System.AllocMem(ReadBufferSize);
+      BytesRead := 1; // some value > 0
+      while BytesRead > 0 do
+      begin
+        ReadLock.Acquire;
+        BytesRead := Challenge.ReadData(PReadBuffer3,
+          ReadBufferSize - ReadBufferMargin);
+
+        if BytesRead < 8 then
+        // problem, or just end of file?   ================
+        begin
+          if Not(UseStdOut) then
+          begin
+            WriteLn('EOF 3: ' + IntToStr(BytesRead));
+          end;
+          ReadLock.Release;
+          Break;
+        end;
+
+        if Not((PReadBuffer3 + BytesRead - 1)^ = 10) then
+        // did not get LF at end
+        begin
+          // read a few more bytes until we get a line feed
+          for SafetyCount := 1 to ReadBufferMargin do
+          begin
+            if Challenge.ReadData((PReadBuffer3 + BytesRead)^, 1) <= 0 then
+            // EOF?
+            begin
+              Break;
+            end
+            else
+            begin
+              inc(BytesRead);
+              if ((PReadBuffer3 + BytesRead - 1)^ = 10) then // done
+              begin
+                Break;
+              end;
+            end;
+          end;
+          if SafetyCount = ReadBufferMargin then // problem
+          begin
+            if Not(UseStdOut) then
+            begin
+              WriteLn('Need bigger ReadBufferMargin');
+            end;
+          end;
+        end;
+
+        ReadLock.Release;
+
+        DataIndex := 0;
+
+        BufferIndex := 0;
+        while BufferIndex < BytesRead do
+        begin
+          if ((PReadBuffer3 + BufferIndex)^ = 10) then // line feed
+          begin
+            // done collecting bytes, tack on null  as data end flag
+            // DataStackItem.RawData[DataIndex] := 0;
+            ReadItem3[DataIndex] := 0;
+
+            Posted := False;
+
+            // try for an even distribution to the five stacks
+            // define choice as sum of two byte values minus 161
+            // Choice := ReadItem1[0] + ReadItem1[1] - 161;
+            // define choice as sum of three byte values minus 258
+            Choice := ReadItem3[0] + ReadItem3[1] + ReadItem3[2] - 258;
+
+            if Choice <= SplitPoint2 then
+            begin
+              if Choice <= SplitPoint1 then
+              begin
+                Choice := 0;
+              end
+              else
+              begin
+                Choice := 1;
+              end;
+            end
+            else
+            begin
+              if Choice <= SplitPoint3 then
+              begin
+                Choice := 2;
+              end
+              else
+              begin
+                if Choice <= SplitPoint4 then
+                begin
+                  Choice := 3;
+                end
+                else
+                begin
+                  Choice := 4;
+                end;
+              end;
+            end;
+            case Choice of
+              0:
+                begin
+                  while True do // break on success
+                  begin
+                    if (DataStackCount1 < DataBufferSize1 - DataBufferCushion)
+                    then
+                    begin
+                      // lock and attempt to store the data
+                      while Not Posted do
+                      begin
+                        DataStackLock1.Acquire;
+                        if (DataStackCount1 < DataBufferSize1 - 2) then
+                        begin
+                          Move(ReadItem3[0], DataStack1[DataStackCount1].RawData
+                            [0], SizeOf(ReadItem3));
+                          inc(DataStackCount1);
+                          DataStackLock1.Release;
+                          Posted := True;
+                        end
+                        else
+                        begin
+                          DataStackLock1.Release;
+                          Sleep(1); // stack is full
+                        end;
+                      end;
+                      If Posted then
+                        Break;
+                    end
+                    else
+                    begin
+                      Sleep(1); // stack is full
+                    end;
+                  end;
+                end;
+              1:
+                begin
+                  while True do // break on success
+                  begin
+                    if (DataStackCount2 < DataBufferSize2 - DataBufferCushion)
+                    then
+                    begin
+                      // lock and attempt to store the data
+                      while Not Posted do
+                      begin
+                        DataStackLock2.Acquire;
+                        if (DataStackCount2 < DataBufferSize2 - 2) then
+                        begin
+                          Move(ReadItem3[0], DataStack2[DataStackCount2].RawData
+                            [0], SizeOf(ReadItem3));
+                          inc(DataStackCount2);
+                          DataStackLock2.Release;
+                          Posted := True;
+                        end
+                        else
+                        begin
+                          DataStackLock2.Release;
+                          Sleep(1); // stack is full
+                        end;
+                      end;
+                      If Posted then
+                        Break;
+                    end
+                    else
+                    begin
+                      Sleep(1); // stack is full
+                    end;
+                  end;
+                end;
+              2:
+                begin
+                  while True do // break on success
+                  begin
+                    if (DataStackCount3 < DataBufferSize3 - DataBufferCushion)
+                    then
+                    begin
+                      // lock and attempt to store the data
+                      while Not Posted do
+                      begin
+                        DataStackLock3.Acquire;
+                        if (DataStackCount3 < DataBufferSize3 - 2) then
+                        begin
+                          Move(ReadItem3[0], DataStack3[DataStackCount3].RawData
+                            [0], SizeOf(ReadItem3));
+                          inc(DataStackCount3);
+                          DataStackLock3.Release;
+                          Posted := True;
+                        end
+                        else
+                        begin
+                          DataStackLock3.Release;
+                          Sleep(1); // stack is full
+                        end;
+                      end;
+                      If Posted then
+                        Break;
+                    end
+                    else
+                    begin
+                      Sleep(1); // stack is full
+                    end;
+                  end;
+                end;
+              3:
+                begin
+                  while True do // break on success
+                  begin
+                    if (DataStackCount4 < DataBufferSize4 - DataBufferCushion)
+                    then
+                    begin
+                      // lock and attempt to store the data
+                      while Not Posted do
+                      begin
+                        DataStackLock4.Acquire;
+                        if (DataStackCount4 < DataBufferSize4 - 2) then
+                        begin
+                          Move(ReadItem3[0], DataStack4[DataStackCount4].RawData
+                            [0], SizeOf(ReadItem3));
+                          inc(DataStackCount4);
+                          DataStackLock4.Release;
+                          Posted := True;
+                        end
+                        else
+                        begin
+                          DataStackLock4.Release;
+                          Sleep(1); // stack is full
+                        end;
+                      end;
+                      If Posted then
+                        Break;
+                    end
+                    else
+                    begin
+                      Sleep(1); // stack is full
+                    end;
+                  end;
+                end;
+              4:
+                begin
+                  while True do // break on success
+                  begin
+                    if (DataStackCount5 < DataBufferSize5 - DataBufferCushion)
+                    then
+                    begin
+                      // lock and attempt to store the data
+                      while Not Posted do
+                      begin
+                        DataStackLock5.Acquire;
+                        if (DataStackCount5 < DataBufferSize5 - 2) then
+                        begin
+                          Move(ReadItem3[0], DataStack5[DataStackCount5].RawData
+                            [0], SizeOf(ReadItem3));
+                          inc(DataStackCount5);
+                          DataStackLock5.Release;
+                          Posted := True;
+                        end
+                        else
+                        begin
+                          DataStackLock5.Release;
+                          Sleep(1); // stack is full
+                        end;
+                      end;
+                      If Posted then
+                        Break;
+                    end
+                    else
+                    begin
+                      Sleep(1); // stack is full
+                    end;
+                  end;
+                end;
+            end;
+
+            // done processing, reset for next line
+            inc(LineCount);
+            DataIndex := 0;
+          end
+          else // accumulate bytes
+          begin
+            ReadItem3[DataIndex] := (PReadBuffer3 + BufferIndex)^;
+            inc(DataIndex);
+          end;
+          inc(BufferIndex);
+
+        end; // of: while i < iBytesRead do
+
+      end; // of while iBytesRead > 0 do   --- implies end of file
+
+      ReadFile_Done3 := True;
+
+    end);
+  ReadingThread3.Start;
+end;
+
 procedure LaunchTabulateThread1;
 var
   TabulateThread1: TThread;
@@ -1060,7 +1375,7 @@ begin
               DataStackCount4 + DataStackCount5 = 0) then
             // might be done
             begin
-              if (ReadFile_Done1 and ReadFile_Done2) then
+              if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
               // recheck to verify no more data
               begin
                 // wait a moment to be sure
@@ -1072,7 +1387,7 @@ begin
                   ParseData_Done := True;
                   Break;
                 end;
-              end; // of: if (ReadFile_Done1 and ReadFile_Done2) then
+              end; // of: if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
             end;
           end
           else // lock and check again
@@ -1279,7 +1594,7 @@ begin
               DataStackCount4 + DataStackCount5 = 0) then
             // might be done
             begin
-              if (ReadFile_Done1 and ReadFile_Done2) then
+              if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
               // recheck to verify no more data
               begin
                 // wait a moment to be sure
@@ -1291,7 +1606,7 @@ begin
                   ParseData_Done := True;
                   Break;
                 end;
-              end; // of: if (ReadFile_Done1 and ReadFile_Done2) then
+              end; // of: if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
             end;
           end
           else // lock and check again
@@ -1499,7 +1814,7 @@ begin
               DataStackCount4 + DataStackCount5 = 0) then
             // might be done
             begin
-              if (ReadFile_Done1 and ReadFile_Done2) then
+              if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
               // recheck to verify no more data
               begin
                 // wait a moment to be sure
@@ -1511,7 +1826,7 @@ begin
                   ParseData_Done := True;
                   Break;
                 end;
-              end; // of: if (ReadFile_Done1 and ReadFile_Done2) then
+              end; // of: if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
             end;
           end
           else // lock and check again
@@ -1721,7 +2036,7 @@ begin
               DataStackCount4 + DataStackCount5 = 0) then
             // might be done
             begin
-              if (ReadFile_Done1 and ReadFile_Done2) then
+              if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
               // recheck to verify no more data
               begin
                 // wait a moment to be sure
@@ -1733,7 +2048,7 @@ begin
                   ParseData_Done := True;
                   Break;
                 end;
-              end; // of: if (ReadFile_Done1 and ReadFile_Done2) then
+              end; // of: if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
             end;
           end
           else // lock and check again
@@ -1941,7 +2256,7 @@ begin
               DataStackCount4 + DataStackCount5 = 0) then
             // might be done
             begin
-              if (ReadFile_Done1 and ReadFile_Done2) then
+              if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
               // recheck to verify no more data
               begin
                 // wait a moment to be sure
@@ -1953,7 +2268,7 @@ begin
                   ParseData_Done := True;
                   Break;
                 end;
-              end; // of: if (ReadFile_Done1 and ReadFile_Done2) then
+              end; // of: if (ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3) then
             end;
           end
           else // lock and check again
