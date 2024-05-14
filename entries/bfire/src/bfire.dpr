@@ -23,6 +23,7 @@ begin
     begin
       inputFilename := ExpandFileName(inputFilename);
       Val(ReadThreadCountParam, ReadThreadCount, dummy);
+      TabulateOn := Not(NoTabulate);
       if outputFilename <> '' then
       begin
         UseStdOut := False;
@@ -30,6 +31,8 @@ begin
         WriteLn(Format(rsInputFile, [inputFilename]));
         WriteLn(Format(rsOutputFile, [outputFilename]));
         WriteLn('Reading Thread Count: ' + IntToStr(ReadThreadCount));
+        if NoTabulate then
+          WriteLn('Tabulation turned off');
         WriteLn;
         start := Now();
       end;

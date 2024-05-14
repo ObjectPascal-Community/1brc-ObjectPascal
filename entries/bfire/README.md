@@ -21,8 +21,11 @@ Project uses Delphi System units: `Classes`, `SysUtils`, `StrUtils`, `Diagnostic
                                    |  <file_2> contains result
     If <file_2> is not defined, result goes to CONSOLE (STDOUT)
 
-    Select 1, 2 or 3 reading threads (use -r in addition to -o)
-    bfire -i <file_1> -o <file_2> -r <n>
+  Experimental Options (use in addition to -o)
+    bfire -i <file_1> -o <file_2> -r 1   | Use a single reading thread
+    bfire -i <file_1> -o <file_2> -r 2   | Use two reading threads
+    bfire -i <file_1> -o <file_2> -r 3   | Use three reading threads
+    bfire -i <file_1> -o <file_2> -t 0   | Only read, do not tabulate
 ```
 
 #### Contest Mode
@@ -52,6 +55,9 @@ as index into one of five data arrays.  After all data is read and tabulated, th
 initially unsorted TStringList that holds unsorted Unicode station name and has linked pointers to
 tabulated data for each station.  Finally, the TStringList is sorted, and the data is output.
 
+Subject to further testing, it looks like one of the slower parts of this code is the byte-by-byte scan
+through the read buffer to find the line feed character that separates each data entry.
+
 ## History
 
 - Version 1.0: first working version, based on TStringList.
@@ -63,4 +69,5 @@ tabulated data for each station.  Finally, the TStringList is sorted, and the da
 - Version 3.1: Safer locking strategy - didn't work.
 - Version 3.2: Eight threads: two to read, five to tabulate, one (console) to rule them all...
 - Version 3.3: Use 1, 2 or 3 threads to read.
+- Version 3.4: For testing, use -t 0 option to turn off tabulation
 

@@ -36,7 +36,7 @@ const
   // see http://compoasso.free.fr/primelistweb/page/prime/liste_online_en.php
   Prime: Integer = 18701;
 
-  ReadBufferSize: Integer = 32768; // 16384 is OK, 32768 seems optimum-ish
+  ReadBufferSize: Integer = 327680; // 16384 is OK, 32768 seems optimum-ish
   ReadBufferMargin: Integer = 128; // was 128
   // reduce requested number of bytes by this much when reading
 
@@ -68,6 +68,7 @@ var
 
   UseStdOut: Boolean; // True unless output file is defined
   ReadThreadCount: Integer;
+  TabulateOn: Boolean; // when false, data is not pushed into stacks
 
   // set up for 41351 places (actually seems to be 41343 entries)
   // split into five roughly equal groups for separate hash tables
@@ -484,7 +485,9 @@ begin
             // done collecting bytes, tack on null  as data end flag
             ReadItem1[DataIndex] := 0;
 
-            Posted := False;
+            // Posted := False;
+            // hack to run reading without actually send data to stacks
+            Posted := Not(TabulateOn);
 
             // try for an even distribution to the five stacks
             // define choice as sum of two byte values minus 161
@@ -499,6 +502,7 @@ begin
                 Choice := 0;
               end
               else
+
               begin
                 Choice := 1;
               end;
@@ -795,7 +799,9 @@ begin
             // DataStackItem.RawData[DataIndex] := 0;
             ReadItem2[DataIndex] := 0;
 
-            Posted := False;
+            // Posted := False;
+            // hack to run reading without actually send data to stacks
+            Posted := Not(TabulateOn);
 
             // try for an even distribution to the five stacks
             // define choice as sum of two byte values minus 161
@@ -1105,7 +1111,9 @@ begin
             // DataStackItem.RawData[DataIndex] := 0;
             ReadItem3[DataIndex] := 0;
 
-            Posted := False;
+            // Posted := False;
+            // hack to run reading without actually send data to stacks
+            Posted := Not(TabulateOn);
 
             // try for an even distribution to the five stacks
             // define choice as sum of two byte values minus 161

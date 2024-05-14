@@ -14,7 +14,8 @@ const
   cShortOptInput: Char = 'i';
   cShortOptOutput: Char = 'o';
   cShortOptReaders: Char = 'r';
-  cShortOptions: array of Char = ['h', 'v', 'i', 'o', 'r'];
+  cShortOptNoTabulate: Char = 't';
+  cShortOptions: array of Char = ['h', 'v', 'i', 'o', 'r', 't'];
 
 resourcestring
   rsAppTitle = 'One Billion Row Challenge Entry';
@@ -31,6 +32,8 @@ var
   outputFilename: String = '';
   FParams: TStringList;
   ReadThreadCountParam: String = '2'; // unless changed to 1, below
+  NoTabulate: Boolean = True;
+  // if true, file is read, but no data is sent to stacks
 
 function ParseConsoleParams: Boolean;
 
@@ -48,8 +51,11 @@ begin
   WriteLn('                                 |  <file_2> contains result');
   WriteLn('  If <file_2> is not defined, result goes to CONSOLE (STDOUT)');
   WriteLn;
-  WriteLn('Debugging Options (use in addition to -o)');
+  WriteLn('Experimental Options (use in addition to -o)');
   WriteLn('  bfire -i <file_1> -o <file_2> -r 1   | Use a single reading thread');
+  WriteLn('  bfire -i <file_1> -o <file_2> -r 2   | Use two reading threads');
+  WriteLn('  bfire -i <file_1> -o <file_2> -r 3   | Use three reading threads');
+  WriteLn('  bfire -i <file_1> -o <file_2> -t 0   | Only read, do not tabulate');
 
 end;
 
@@ -206,6 +212,23 @@ begin
           exit;
         end;
       end;
+    end;
+  end;
+
+  // check for no tabulate flag
+  J := -1;
+  J := FParams.IndexOfName(cShortOptNoTabulate);
+  if J > -1 then // test value
+  begin
+    if FParams.ValueFromIndex[J] = '0' then
+    begin
+      NoTabulate := True;
+    end
+    else
+    begin
+      WriteLn('Invalid value for No Tabulate Flag: ' +
+        FParams.ValueFromIndex[J]);
+      exit;
     end;
   end;
 
