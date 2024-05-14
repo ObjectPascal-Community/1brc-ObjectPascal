@@ -23,6 +23,7 @@ begin
     begin
       inputFilename := ExpandFileName(inputFilename);
       Val(ReadThreadCountParam, ReadThreadCount, dummy);
+      TabulateOn := Not(NoTabulate);
       if outputFilename <> '' then
       begin
         UseStdOut := False;
@@ -30,6 +31,8 @@ begin
         WriteLn(Format(rsInputFile, [inputFilename]));
         WriteLn(Format(rsOutputFile, [outputFilename]));
         WriteLn('Reading Thread Count: ' + IntToStr(ReadThreadCount));
+        if NoTabulate then
+          WriteLn('Tabulation turned off');
         WriteLn;
         start := Now();
       end;
@@ -82,6 +85,8 @@ begin
                   WriteLn('Done with reading thread 1');
                   ReadFile_Done2 := True;
                   ReadFile_Done3 := True;
+                  if Not(TabulateOn) then
+                    ParseData_Done := True;
                 end;
               end;
             2:
@@ -93,6 +98,8 @@ begin
                   WriteLn('Done with reading thread 2');
                   ReadFile_Done2 := True;
                   ReadFile_Done3 := True;
+                  if Not(TabulateOn) then
+                    ParseData_Done := True;
                 end;
               end;
             3:
@@ -103,10 +110,12 @@ begin
                   WriteLn('Done with reading thread 2');
                 if ReadFile_Done3 then
                   WriteLn('Done with reading thread 3');
+                if Not(TabulateOn) then
+                  ParseData_Done := True;
               end;
           end;
 
-          if ParseData_Done then
+          if ParseData_Done and TabulateOn then
             WriteLn('Done with tabulating threads');
 
         end;
