@@ -36,7 +36,7 @@ const
   // see http://compoasso.free.fr/primelistweb/page/prime/liste_online_en.php
   Prime: Integer = 18701;
 
-  ReadBufferSize: Integer = 327680; // 16384 is OK, 32768 seems optimum-ish
+  ReadBufferSize: Integer = 32768; // 16384 is OK, 32768 seems optimum-ish
   ReadBufferMargin: Integer = 128; // was 128
   // reduce requested number of bytes by this much when reading
 
@@ -385,11 +385,14 @@ begin
 
   if FileExists(inputFilename) then
   begin
-    LaunchTabulateThread1;
-    LaunchTabulateThread2;
-    LaunchTabulateThread3;
-    LaunchTabulateThread4;
-    LaunchTabulateThread5;
+    if TabulateOn then
+    begin
+      LaunchTabulateThread1;
+      LaunchTabulateThread2;
+      LaunchTabulateThread3;
+      LaunchTabulateThread4;
+      LaunchTabulateThread5;
+    end;
 
     Challenge := TFileStream.Create(inputFilename, fmOpenRead, fmShareDenyNone);
     // Challenge := TBufferedFileStream.Create(inputFilename, fmOpenRead, fmShareDenyNone);
