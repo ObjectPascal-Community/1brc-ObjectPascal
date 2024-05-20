@@ -147,8 +147,15 @@ Iwan Kelaiah
 
 * 1.12
   * Revision release - Sequential approach. 2-5 mins on my Inspiron 15 7510 laptop, around 2m40s (small improvement on speed).
-  * Called TStreamReader.ReadLn, twice in the while loop. This saves approx 5-10 seconds.
+  * Called `TStreamReader.ReadLn`, twice in the while loop. This saves approx 5-10 seconds.
   * Updated the Acknowledgments section.
+
+* 1.13
+  * Tried `TCSVDataset` and `TCSVDocument`. Did not lead to time improvements, although both are easy to use.
+
+* 1.14
+  * Revision release - Sequential approach. 2-5 mins on my Inspiron 15 7510 laptop, around 2m35s (small improvement on speed).
+  * Removed string creation in `procedure TWeatherStation.ParseStationAndTemp(const line: shortstring);`. This saves approx 5 seconds for 1 billion row.
 
 ## License
 
