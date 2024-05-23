@@ -310,10 +310,10 @@ begin
 
     // No need to create a string
     // parsedStation := Copy(line, 1, delimiterPos - 1);
-    strFloatTemp := Copy(line, delimiterPos + 1, Length(line));
+    // strFloatTemp := Copy(line, delimiterPos + 1, Length(line));
 
     // Using a lookup value speeds up 30-45 seconds
-    if self.lookupStrFloatToIntList.TryGetValue(strFloatTemp, parsedTemp) then
+    if self.lookupStrFloatToIntList.TryGetValue(Copy(line, delimiterPos + 1, Length(line)), parsedTemp) then
     begin
       self.AddCityTemperatureLG(Copy(line, 1, delimiterPos - 1), parsedTemp);
     end;
