@@ -94,6 +94,23 @@ begin
   end;
 end;
 
+{Custom function to find a delimiter from end of string}
+function LastDelimiter(const Delimiter: Char; const S: ShortString): SizeInt;
+var
+  i: SizeInt;
+begin
+  for i := Length(S) downto 1 do
+  begin
+    if S[i] = Delimiter then
+    begin
+      Result := i;
+      Exit;
+    end;
+  end;
+  Result := 0; // Return 0 if delimiter is not found
+end;
+
+
 // Remove dots from a string
 function RemoveDots(const line: shortstring): shortstring;
 var
@@ -294,14 +311,14 @@ end;
 procedure TWeatherStation.ParseStationAndTemp(const line: shortstring);
 var
   delimiterPos: integer;
-  strFloatTemp: shortstring;
+  parsedStation, strFloatTemp: shortstring;
   parsedTemp: int64;
 begin
 
-  if length(line) = 0 then Exit;
+  // if length(line) = 0 then Exit;
 
   // Get position of the delimiter
-  delimiterPos := Pos(';', line);
+  delimiterPos := LastDelimiter(';', line);
   if delimiterPos > 0 then
   begin
     // Get the weather station name
@@ -313,9 +330,11 @@ begin
     // strFloatTemp := Copy(line, delimiterPos + 1, Length(line));
 
     // Using a lookup value speeds up 30-45 seconds
-    if self.lookupStrFloatToIntList.TryGetValue(Copy(line, delimiterPos + 1, Length(line)), parsedTemp) then
+    if self.lookupStrFloatToIntList.TryGetValue(Copy(line, delimiterPos + 1, Length(line)),
+                                                parsedTemp) then
     begin
-      self.AddCityTemperatureLG(Copy(line, 1, delimiterPos - 1), parsedTemp);
+      self.AddCityTemperatureLG(Copy(line, 1, delimiterPos - 1),
+                                parsedTemp);
     end;
   end;
 end;
@@ -330,13 +349,12 @@ begin
   // Open the file for reading
   fileStream := TFileStream.Create(self.filename, fmOpenRead);
   try
-    streamReader := TStreamReader.Create(fileStream, 65536 * 2, False);
+    streamReader := TStreamReader.Create(fileStream, 65536, False);
     try
       // Read and parse chunks of data until EOF -------------------------------
       while not streamReader.EOF do
       begin
         self.ParseStationAndTemp(streamReader.ReadLine);
-        //self.ParseStationAndTemp(streamReader.ReadLine);
       end;// End of read and parse chunks of data ------------------------------
     finally
       streamReader.Free;

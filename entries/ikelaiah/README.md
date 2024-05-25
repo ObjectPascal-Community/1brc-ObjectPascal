@@ -155,7 +155,9 @@ Iwan Kelaiah
 
 * 1.14
   * Revision release - Sequential approach. 2-5 mins on my Inspiron 15 7510 laptop, around 2m35s (small improvement on speed).
-  * Removed string creation in `procedure TWeatherStation.ParseStationAndTemp(const line: shortstring);`. This saves approx 5 seconds for 1 billion row.
+  * Removed string creation in `procedure TWeatherStation.ParseStationAndTemp(const line: shortstring);`. No noticable difference in speed.
+  * TStreamReader.Create uses only 64kb cache.
+  * Replaced `PoS()` with a simpler function, `LastDelimiter()`, to get the position of `;` from the right.
 
 ## License
 
