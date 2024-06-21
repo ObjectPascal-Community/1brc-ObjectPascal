@@ -8,18 +8,8 @@ An Entry to the One Billion Row Challenge in Object Pascal using Delphi 12 by [E
 
 ### Dependencies
 
-Project uses Delphi units: `Classes`, `System.SysUtils`, `System.StrUtils` and `Math`.
-
-### UTF8 vs. Windows Terminal
-
-The text in the Windows Terminal console uses the system code page, which does not play well with `UTF8`.
-The only way to match the approved result is to write the output to a file, with resulting `SHA256` hash:\
-`4256d19d3e134d79cc6f160d428a1d859ce961167bd01ca528daca8705163910`
-
-If the Windows console output is redirected to a file, some characters are mangled, and the resulting `SHA256` hash is:\
-`5c1942377034a69c7457f7cf671b5f8605df597ef18037c1baf4b9ead3c84678`
-
-For the challenge, compiled for LINUX, the console result will (hopefully) be correct.
+Project uses Delphi System units: `Classes`, `SysUtils`, `StrUtils`, `Diagnostics`,
+`Threading` and `SyncObjs`.
 
 ### Execution
 ```
@@ -30,6 +20,12 @@ For the challenge, compiled for LINUX, the console result will (hopefully) be co
     bfire -i <file_1> -o <file_2>  |  <file_1> contains Weather Data
                                    |  <file_2> contains result
     If <file_2> is not defined, result goes to CONSOLE (STDOUT)
+
+  Experimental Options (use in addition to -o)
+    bfire -i <file_1> -o <file_2> -r 1   | Use a single reading thread
+    bfire -i <file_1> -o <file_2> -r 2   | Use two reading threads
+    bfire -i <file_1> -o <file_2> -r 3   | Use three reading threads
+    bfire -i <file_1> -o <file_2> -t 0   | Only read, do not tabulate
 ```
 
 #### Contest Mode
@@ -51,19 +47,27 @@ The list is initially unsorted and has linked objects for records holding accumu
 Finally, the TStringList is sorted and used to output sorted data.
 
 Third version has a thread for the console (which waits for tabulation, then sorts and writes results),
-one thread to read file, four threads to tabulate stations (split by section of alphabet). File is read
-byte-wise into "classic" byte arrays for station name and temperature. The arrays are passed to one of
-four stacks, split by section of alphabet, for tabulation. Tabulation threads hash station name, use hash
-as index into a data array.  After all data is read and tabulated, the four data arrays are added to an
+two threads to read file, five threads to tabulate stations.  Stations are grouped into five separate stacks,
+so each tabulation thread has roughly the same work load. File is read byte-wise into "classic" byte array
+for each file line ending in ascii 10.  Each of these arrays is queued as a record in a last-in-first-out stack.
+Tabulation threads split the data into station name and temperature, then hash station name and use hash
+as index into one of five data arrays.  After all data is read and tabulated, the five data arrays are added to an
 initially unsorted TStringList that holds unsorted Unicode station name and has linked pointers to
 tabulated data for each station.  Finally, the TStringList is sorted, and the data is output.
 
+Subject to further testing, it looks like one of the slower parts of this code is the byte-by-byte scan
+through the read buffer to find the line feed character that separates each data entry.
+
 ## History
 
-- Version 1.0: First working version, based on TStringList.
-- Version 1.1: Modified rounding to new baseline.
-- Version 2.0: Use hashing, sort later.
-- Version 2.1: Minor speed tweaks.
-- Version 2.2: Try hash functions modification.
+- Version 1.0: first working version, based on TStringList.
+- Version 1.1: modified rounding to new baseline.
+- Version 2.0: use hashing, sort later.
+- Version 2.1: minor speed tweaks.
+- Version 2.2: try hash functions modification.
 - Version 3.0: Six threads: one to read, four to tabulate, one (console) to rule them all...
-- Version 3.1: Safer locking strategy
+- Version 3.1: Safer locking strategy - didn't work.
+- Version 3.2: Eight threads: two to read, five to tabulate, one (console) to rule them all...
+- Version 3.3: Use 1, 2 or 3 threads to read.
+- Version 3.4: For testing, use -t 0 option to turn off tabulation
+

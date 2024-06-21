@@ -14,6 +14,7 @@ uses
 
 var
   start: TDateTime; // for timing
+  dummy: Integer; // for Val function
 
 begin
   UseStdOut := True;
@@ -21,18 +22,23 @@ begin
     if ParseConsoleParams then
     begin
       inputFilename := ExpandFileName(inputFilename);
+      Val(ReadThreadCountParam, ReadThreadCount, dummy);
+      TabulateOn := Not(NoTabulate);
       if outputFilename <> '' then
       begin
         UseStdOut := False;
         outputFilename := ExpandFileName(outputFilename);
         WriteLn(Format(rsInputFile, [inputFilename]));
         WriteLn(Format(rsOutputFile, [outputFilename]));
+        WriteLn('Reading Thread Count: ' + IntToStr(ReadThreadCount));
+        if NoTabulate then
+          WriteLn('Tabulation turned off');
         WriteLn;
         start := Now();
       end;
 
       // One thread for console (waits for tabulation, then sorts and
-      // writes results), one thread to read file, four threads to
+      // writes results), one, two or three threads to read file, five threads to
       // tabulate stations (split by section of alphabet).
       // File is read byte-wise into "classic" byte arrays for station
       // name and temperature. The arrays are passed to one of four
@@ -51,7 +57,8 @@ begin
         // while Not(ReadFile_Done1 and ReadFile_Done2 and ParseDataQ_Done1 and
         // ParseDataQ_Done2 and ParseDataQ_Done3 and ParseDataQ_Done4 and
         // ParseDataQ_Done5 and ParseDataQ_Done6) do
-        while Not(ReadFile_Done1 and ReadFile_Done2 and ParseData_Done) do
+        while Not(ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3 and
+          ParseData_Done) do
         begin
           Sleep(1000);
           WriteLn('Lines: ' + IntToStr(LineCount) + '  Stacks: ' +
@@ -70,21 +77,77 @@ begin
           if DataStackCount5 > StackMax5 then
             StackMax5 := DataStackCount5;
 
-          if ReadFile_Done1 then
-            WriteLn('Done with reading thread 1');
-          if ReadFile_Done2 then
-            WriteLn('Done with reading thread 2');
-          if ParseData_Done then
+          case ReadThreadCount of
+            1:
+              begin
+                if ReadFile_Done1 then
+                begin
+                  WriteLn('Done with reading thread 1');
+                  ReadFile_Done2 := True;
+                  ReadFile_Done3 := True;
+                  if Not(TabulateOn) then
+                    ParseData_Done := True;
+                end;
+              end;
+            2:
+              begin
+                if ReadFile_Done1 then
+                  WriteLn('Done with reading thread 1');
+                if ReadFile_Done2 then
+                begin
+                  WriteLn('Done with reading thread 2');
+                  ReadFile_Done2 := True;
+                  ReadFile_Done3 := True;
+                  if Not(TabulateOn) then
+                    ParseData_Done := True;
+                end;
+              end;
+            3:
+              begin
+                if ReadFile_Done1 then
+                  WriteLn('Done with reading thread 1');
+                if ReadFile_Done2 then
+                  WriteLn('Done with reading thread 2');
+                if ReadFile_Done3 then
+                  WriteLn('Done with reading thread 3');
+                if Not(TabulateOn) then
+                  ParseData_Done := True;
+              end;
+          end;
+
+          if ParseData_Done and TabulateOn then
             WriteLn('Done with tabulating threads');
+
         end;
+
       end
       else // just wait
       begin
         // while Not(ReadFile_Done1 and ReadFile_Done2 and ParseDataQ_Done2 and
         // ParseDataQ_Done2 and ParseDataQ_Done3 and ParseDataQ_Done4 and
         // ParseDataQ_Done5 and ParseDataQ_Done6) do
-        while Not(ReadFile_Done1 and ReadFile_Done2 and ParseData_Done) do
+        while Not(ReadFile_Done1 and ReadFile_Done2 and ReadFile_Done3 and
+          ParseData_Done) do
         begin
+          case ReadThreadCount of
+            1:
+              begin
+                if ReadFile_Done1 then
+                begin
+                  ReadFile_Done2 := True;
+                  ReadFile_Done3 := True;
+                end;
+              end;
+            2:
+              begin
+                if ReadFile_Done2 then
+                begin
+                  ReadFile_Done2 := True;
+                  ReadFile_Done3 := True;
+                end;
+              end;
+          end;
+
           Sleep(100);
         end;
       end;

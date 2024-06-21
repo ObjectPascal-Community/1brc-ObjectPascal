@@ -167,19 +167,19 @@ These are the results from running all entries into the challenge on my personal
 
 | # | Result (m:s.ms) | Compiler | Submitter | Notes | Certificates |
 |--:|----------------:|---------:|:----------|:------|:-------------|
-|  1 |   0:1.260 | lazarus-3.99, fpc-3.3.1 | Arnaud Bouchez         | Using `mORMot2`, 32 threads        | |
-|  2 |   0:2.006 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
-|  3 |   0:3.164 | lazarus-3.99, fpc-3.3.1 | Georges Hatem          | Using 32 threads                   | |
-|  4 |   0:9.652 | lazarus-3.99, fpc-3.3.1 | G Klark                | Using 32 threads                   | |
-|  5 |  0:13.388 | lazarus-3.99, fpc-3.3.1 | Székely Balázs         | Using 32 threads                   | |
-|  6 |  0:18.007 | lazarus-3.99, fpc-3.3.1 | Lurendrejer Aksen      | Using 32 threads                   | |
-|  7 |  0:52.486 | lazarus-3.99, fpc-3.3.1 | Hartmut Grosser        | Using 1 thread                     | |
-|  8 |  1:10.017 | lazarus-3.99, fpc-3.3.1 | Richard Lawson         | Using 1 thread                     | |
-|  9 |  2:36.787 | lazarus-3.0, fpc-3.2.2  | Iwan Kelaiah           | Using 1 thread                     | |
-| 10 |  6:49.745 | delphi 12.1             | David Cornelius        | Using 1 thread                     | |
-| 11 |  8:34.438 | delphi 12.1             | Daniel Töpfl           | Using 1 thread                     | |
-| 12 |  16:6.862 | delphi 12.1             | Brian Fire             | Using 1 thread                     | |
-
+|  1 |   0:1.261 | lazarus-3.99, fpc-3.3.1 | Arnaud Bouchez         | Using `mORMot2`, 32 threads        | |
+|  2 |   0:1.950 | lazarus-3.99, fpc-3.3.1 | O Coddo                | Using `SCL`, 32 threads            | |
+|  3 |   0:2.101 | lazarus-3.99, fpc-3.3.1 | Georges Hatem          | Using `mORMot2`, 32 threads        | |
+|  4 |   0:5.248 | lazarus-3.99, fpc-3.3.1 | Hartmut Grosser        | Using 32 thread                    | |
+|  5 |   0:7.363 | lazarus-3.99, fpc-3.3.1 | Benito van der Zander  | Using 32 threads                   | |
+|  6 |   0:9.627 | lazarus-3.99, fpc-3.3.1 | G Klark                | Using 32 threads                   | |
+|  7 |  0:13.321 | lazarus-3.99, fpc-3.3.1 | Székely Balázs         | Using 32 threads                   | |
+|  8 |  0:18.062 | lazarus-3.99, fpc-3.3.1 | Lurendrejer Aksen      | Using 32 threads                   | |
+|  9 |   1:9.354 | lazarus-3.99, fpc-3.3.1 | Richard Lawson         | Using 1 thread                     | |
+| 10 |  2:24.787 | lazarus-3.99, fpc-3.3.1 | Iwan Kelaiah           | Using 1 thread                     | |
+| 11 |   6:2.343 | delphi 12.1             | Brian Fire             | Using 8 threads                    | |
+| 12 |  6:53.788 | delphi 12.1             | David Cornelius        | Using 1 thread                     | |
+| 13 |  8:37.975 | delphi 12.1             | Daniel Töpfl           | Using 1 thread                     | |
 
 > **NOTE**
 >

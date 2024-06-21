@@ -1,0 +1,64 @@
+Benito van der Zander
+=====================
+
+Billion Row Challenge Solver
+============================
+
+This Pascal program is designed to solve the "Billion Row Challenge." It utilizes multiple threads to efficiently process a large dataset and compute statistics for each unique key. The program makes use of a custom hashmap implementation and performs sorting and combining steps to produce the final results.
+
+Usage
+-----
+
+To run the program, provide the input file as a command-line argument:
+
+`./brows inputfile`
+
+Replace `inputfile` with the path to your input file.
+
+Program Overview
+----------------
+
+The program is structured into several parts:
+
+2.  **Thread Configuration:**
+    
+    *   `THREAD_COUNT`: The number of threads used by the program. It is set to 16 by default.
+    
+3.  **Custom HashMap:**
+    
+    *   The program uses a custom hashmap implementation (`TBRMap`) based on either the fast hashmap (`TXQBaseHashmapStr`) or a standard dictionary (`TDictionary`).
+    
+4.  **Sorting Algorithm:**
+    
+    *   The program employs a QuickSort algorithm for sorting arrays of pointers.
+    
+5.  **Multithreading:**
+    
+    *   The program utilizes multiple threads (`TProcessTextThread` and `TCombineCountersThread`) to process and combine data efficiently.
+    
+6.  **File I/O:**
+    
+    *   The input file is memory-mapped (`Fpmmap`) for efficient access and processing.
+
+Compilation
+-----------
+
+To compile the program, use the Free Pascal Compiler (FPC) with the following command:
+
+
+`fpc brows.pas`
+
+This will generate an executable file named `brows`.
+
+License
+-------
+
+This program is provided under the GNU Lesser General Public License (LGPL). 
+
+
+Author
+------
+
+This program was developed by \[Benito van der Zander\]. 
+
+Feel free to modify and enhance the program according to your needs!
