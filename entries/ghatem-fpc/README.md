@@ -219,6 +219,9 @@ Some numbers for perspective:
 According to `Valgrind`, one of the functions cost 23% of the total program execution time. **9%** of total time was spent executing `fpc_stackcheck`, which is implicitly executed before the function call, and verifies correctness of the stack frame.  Inlining the function seems to remove this cost (since the code is substituted).
 Alternatively, if a method is purely written in `asm` (assembly), the directive `nostackframe` will indicate not to generate a stack frame, but I did not venture to this level.
 
+There is a catch, however: in FreePascal at least, if method A calls method B, both of them cannot be marked as `inline`.
+For this reason, some code had to be duplicated into both methods A and B, so as to benefit from optimal inlining.
+
 ## unrolling loops
 
 Loop unrolling is another space-time tradeoff, which in this case we did manually, when knowing ahead of time that a certain loop will execute `N` number of times.
@@ -350,5 +353,10 @@ More time was probably spent trying to optimize these last few seconds than the 
 Definitely more time than I would like to admit :)
 
 Nonetheless, much was learned, and I leave the challenge with still many questions as to why certain optimization attempts did not yield any improvements.
+
+In addition, one must decide for each such optimization, whether it is appropriate to make use of it in a given project / product or team. In the OneBRC challenge, there are no long-term implications, and we can optimize without restraint or compromise.
+However, the same cannot be said for mature, long-lived, production-ready applications where maintainability is key: at this point, one must look at each optimization and decide whether it is worth the readability compromise or not.  At a glance, branchless code is definitely a no-go. Deduplication of code for optimal inlining is probably a second.
+
+Of course, there is no universal truth to such decisions, and the choice must be made keeping in mind the project at stake, and the team responsible for its development.
 
 Finally, I would like to thank @gcarreno for organizing this event, as well as @paweld and @abouchez for providing additional testing results and hints.
