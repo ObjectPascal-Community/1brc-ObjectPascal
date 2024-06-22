@@ -2,10 +2,10 @@
 #### entry by Georges Hatem
 
 
-## About the challenge
+## About The Challenge
 Given a file with 1 billion rows (~16 GB) each containing a weather station and a temperature measurement, the goal is to provide the fastest implementation to parse the file, process it and extract some statistics [*(details here)*](https://github.com/ObjectPascal-    Community/1brc-ObjectPascal)
 
-## Results overview
+## Results Overview
 
 This entry was ranked <b> </b3>3<sup>rd</sup> @ 2.10 seconds</b>, after:
 - 1<sup>st</sup> place : 1.26 seconds
@@ -19,35 +19,39 @@ An un-optimized, single-threaded implementation can take <b>5 - 8 minutes\*</b>.
 The below summarizes my development environment.  Specs of the PC used to benchmark the implementations can be found in the project's homepage.
  - Dell XPS 15 (9560, 2017)
  - OS: ArchLinux
- - CPU: Intel i7 7700 HQ (4 Cores, 8 Threads @ 2.80-3.80 GHz, Kaby Lake)
+ - CPU: Intel i7 7700 HQ (4 Cores, 8 Threads @ 2.80-3.80 GHz)
+ - Cache:
+  - L1: 64 KB per core
+  - L2: 256 KB per core
+  - L3: 6 MB shared
  - 32 GB RAM DDR4 (2400 MHz)
  - 1 TB SSD NVME
 
-# Opening notes
+# Opening Notes
 
-## start with a slow and functioning solution, follow with iterative optimizations
+## Start with a Slow and Functioning Solution, Follow with Iterative Optimizations
 It is tempting to delve into early optimizations. However, these often result in complex code that is hard to understand or debug - particularly so if the implementation is multi-threaded.
 For this reason, in this submission, the goal was to first reach a correct result, irrespective of performance.  Optimizations would follow, one after another, each taking the program from one working state to another working state that is a little faster.
 
-## don't guess, measure
+## Don’t Guess, Measure
 When writing high-performance code, it is not enough to rely on assumptions of what *could theoretically* execute faster.  These assumptions are important nonetheless, as they often are at the root of alternative paths we choose to explore in trying to improve the speed of execution of our program.
 By measuring the (sub-)program's execution time, one can verify that a certain implementation is faster (or not) than another.
 
 When possible, such measurements are best done on the hardware on which the program is intended to run, although this is not always possible, as was the case in this challenge.
 
-## clean code vs. high-performance code
+## Clean Code vs. High-Performance Code
 There is a natural trade-off here: code generally considered readable and maintainable often uses higher-level abstractions and constructs to convey the code's meaning.  This can lead to un-optimized, slower code.  When chasing high-performance, bottlenecks will arise and resolving these will likely come at the cost of readability / maintainability.
 
-## Measuring execution time
+## Measuring Execution Time
 
-### manual measurements
+### Manual Measurements
 In the early stages of the implementation, the program's execution was quite slow, around 8 minutes on my laptop.  Performance improvements were obvious to the naked eye.
 
 To time a specific function, simply measure the time before it starts and after it ends, and compute the delta.  `TStopWatch` in Delphi, or similarly `GetTickCount` in FPC.
 
 As the implementation matured however, this manual approach was no longer viable. It was time for performance profilers.
 
-### performance profiler
+### Performance Profiler
 
 The first thing to note about performance profilers is that they slow down the execution tremendously, as they measure the time taken by every line of code in the project.
 To reduce the wait between each run, a smaller input file was used (100M rows instead of 1B).  Even then, a single profiling run would take ~15 minutes.
@@ -56,12 +60,12 @@ In this project, we used `Valgrind` and `Callgrind`, which output a text log sho
 
 Methods marked with the `inline` directive will not be analyzed, so the inlining must be temporarily removed to profile the method's internals.
 
-### mean execution time
+### Mean Execution Time
 
 When measuring two implementations to pick the fastest, often times the results are inconsistent, making the decision process difficult.
 The utility `hyperfine` was used to run N rounds to obtain a mean execution time.
 
-# Structuring a first working solution
+# Structuring a First Working Solution
 
 We break down the problem into 3 major steps:
 1. read the input file
@@ -89,7 +93,7 @@ The key point here is that the reading / writing steps (1 and 3) are single-thre
 
 Moving forward, this section describes in more detail the various optimizations attempted, their impact on performance, their implication on the code, and the issues faced during implementation.
 
-## memory-mapped file
+## Memory-Mapped File
 
 Instead of reading the file line-by-line, the file can be memory-mapped if it fits into the RAM.  In our case, the file size is ~16 GB, and both my laptop and the target PC have 32 GB of RAM.
 
@@ -103,7 +107,7 @@ A first memmap attempt was to use `GetFileSizeEx` and `CreateFileMapping` direct
 
 Credits to `synopse/mORMot2` library for providing the `memmap` function.
 
-## caching efficiency: temporal and spacial locality principles
+## Caching Efficiency: Temporal and Spacial Locality Principles
 
 A few stats for each station need to be maintained in order to generate the expected result:
 
@@ -121,14 +125,16 @@ Each field in the record is no larger than it needs to be to store the expected 
 Since these records will be regularly accessed, the smaller each one is, the more can fit into cache.
 
 Additionally, the records are stored in an array to benefit from contiguous memory allocation:
-when reading a byte of data from memory, a block of 64 bytes containing nearby station-records is loaded into cache.  Had the storage not been contiguous, random unnecessary bytes of data would be polluting the cache.
+when reading a byte of data from memory, a block of 64 bytes (the 64 byte cache line) containing nearby station-records is loaded into cache.  Had the storage not been contiguous, random unnecessary bytes of data would be polluting the cache.
 
 Being able to maximize the *useful* data that can fit in cache, closest to the CPU layer, increases the likelihood of cache-hits, as otherwise the data needs to be fetched from memory, orders of magnitude slower than the L1 / L2 caches.
 
-An alternative test benchmark by @paweld ran the program on a few variations of the dataset.  In some of these variations, the `count` field could be reduced to a `UInt16`.  Two types of implementations are provided: `smallrec` using a `UInt16`, and `largerec` using a `UInt32`.
+An alternative test benchmark by @paweld ran the program on a few variations of the dataset.  Among these variations, 400 weather stations were used instead of the full ~42,000. In such a case, the `count` field could be reduced to a `UInt16`.
+
+Two types of implementations are provided: `smallrec` using a `UInt16`, and `largerec` using a `UInt32`.
 Surprisingly, the implementation with the smaller record size performed worse than its larger record counterpart.
 
-## a custom dictionary data-structure
+## A Custom Dictionary Data-Structure
 
 When parsing a line that consists of a weather station and a measurement, the new reading must be added to the station's record.
 Locating a station's record-data was initially achieved using a `TDictionary<AnsiString, PStationData>`.
@@ -150,19 +156,19 @@ The solution turns out to be quite simple:
  - the lookup is done separately, where the key is the station name, and the value is the **index** where the record is stored in the `data_array`.
 
 The lookup dictionary now consists of two arrays, one for keys and the other for values.
-Since the lookup value is an `Int16` (the largest index is ~42,000, smaller than 65536), we can afford to increase the lookup array-sizes to minimize collisions.
+Since the lookup value is an `Int16` (the largest index is ~42,000, smaller than 65,536), we can afford to increase the lookup array-sizes to minimize collisions.
 The exact choice of size is mainly the result of measuring a few attempts and settling on one that yields the best numbers. Again, since we did not have access to the target hardware, it was picked based on trials on the available hardware.
 
 In the end, we chose a size that is 6 times larger than the station count. The chosen number was also a prime number, as it seems to have improved under some selected hash functions (see next section)
 
-## improve the dictionary's hash function
+## Improve the Dictionary’s Hash Function
 
 As was previously mentioned, the data is now being read from a pointer to an array of `AnsiChar`s.  The station name must be recovered from a `pAnsiChar` and a length.
 The procedure `SetString (..., startPtr, length)` will extract this string-value.
 
-### altering the lookup key
+### Altering the Lookup Key
 
-Though not very expensive, it had still become a bottleneck: in an attempt to find an alternative `key` for the dictionary, learned about the `crc` hash functions while navigating the docs.  An implementation of `crc32` was natively available, and it also expected the same parameters as `SetString`, that is, a `pAnsiChar` to the first character, and a length.
+Though not very expensive, `SetString` had still become a bottleneck: in an attempt to find an alternative `key` for the dictionary, I encountered the  `crc` hash functions while navigating the docs.  An implementation of `crc32` was natively available, and it also expected the same parameters as `SetString`, that is, a `pAnsiChar` to the first character, and a length.
 
 So now, the dictionary's lookup keys store a `Cardinal` (the `crc32` of our station name) instead of the station name itself.
 
@@ -170,21 +176,24 @@ So now, the dictionary's lookup keys store a `Cardinal` (the `crc32` of our stat
 For the `crc32` hashing to work properly, it has to offer a 1-to-1 mapping between the station name and the resulting `Cardinal`: should there have been collisions where the `crc32` of two stations yield the same value, the resulting output would be incorrect.
 Thus, this technique can only be applied if the input dataset is known in advance, and if it shows no collisions.
 
-### value lookup
+### Value Lookup
 In order to lookup a value, a simple modulus is applied to the key. If the slot is available, use it.  Otherwise resolve the collision (see next section).
 
 @abouchez of `synopse\mORMot2` pointed out that computing a modulus (which requires a division) is slow and suggested to look at `mORMot2` docs.  He also noted that `mORMot2` provides a faster, optimized implementation of `crc32` using SSE (Streaming SIMD Extensions for x86 architecture - whose details I know nothing about).
 
 The docs mention an alternative hash function, `Lemire hash`, which proved to be faster, even though it resulted in a higher collision rate than `modulus` hashing.
 
-## improve the dictionary's collision resolution
+## Improve the Dictionary’s Collision Resolution
 
 By widening the key-space of the dictionary, the number of collisions was reduced significantly.  Even then, there is still an average of 8 collisions when trying to bucket a key in the key-space.
-Several collision resolution algorithms were attempted, among which: linear probing, quadratic probing and double-hashing.
+Several collision resolution algorithms were attempted, among which:
+ - Linear probing
+ - Quadratic probing
+ - Double-hashing
 
-In theory, quadratic and double-hashing are supposed to improve performance, as they reduce clustering.  Measurements showed that linear probing was faster in our case, likely due to the relatively low collision rate.
+In theory, quadratic probing and double-hashing are supposed to improve performance, as they reduce clustering.  Measurements showed that linear probing was faster in our case, likely due to the relatively low collision rate.
 
-## decode temperature strings into numerical value
+## Decode Temperature Strings Into Numerical Value
 
 The initial implementation used `StrToFloat`, which proved to be very slow.  A first alternative, `Val`, was still slow, but definitely a step-up. `Val` with `SmallInt` types proved to be faster than with `Double`, even though the `.` had to be extracted prior to conversion.
 
@@ -210,7 +219,7 @@ The temperature is thus extracted as an Integer value, at a fraction of the cost
 
 This block of code will be subject to yet another optimization, discussed further down.
 
-## inlining functions
+## Inlining Functions
 
 Inlining a function instructs the compiler to try substituting the call to a function `F` by the actual code of `F`.
 Inlining a function generates larger binaries, but also generally would improve its overall performance, as there is no need to push a function onto the execution stack, and pop it when the function is done executing.  In this program, since some functions are called 1 billion times, this cost can accumulate to be significant.
@@ -222,14 +231,14 @@ Alternatively, if a method is purely written in `asm` (assembly), the directive 
 There is a catch, however: in FreePascal at least, if method A calls method B, both of them cannot be marked as `inline`.
 For this reason, some code had to be duplicated into both methods A and B, so as to benefit from optimal inlining.
 
-## unrolling loops
+## Unrolling Loops
 
 Loop unrolling is another space-time tradeoff, which in this case we did manually, when knowing ahead of time that a certain loop will execute `N` number of times.
 Unrolling generally aims to improve performance by avoiding the control loop's internal `goto` statement, as well as evaluating its end-of-loop condition.
 
 As usual, the performance numbers will dictate whether it is worth unrolling a loop or not.
 
-## branchless code
+## Branchless Code
 
 Reading about branchless code as another optimization technique, I thought the temp-decode optimization above could be reduced to a single IF-statement.  In fact, it was possible to remove all branching from this snippet of code, as seen below:
 ```
@@ -247,25 +256,36 @@ This can be observed at line 7, where `vIsNeg` could be `0`, so multiplying it b
 
 Reading further into this subject, I came across CPU's branch predictors, which tries to predict which of an `if` or `else` branch would execute.  The branching path that is predicted to be most likely taken is executed speculatively. If it turns out the guess was wrong, then the correct branch path is evaluated and executed again, discarding previously obtained results.
 
-If, in a given `if-else` statement, it is clear that one branch will rarely ever enter (in this program, such a branch exists when updating the min / max of each station), then the branch predictor can correctly predict which branch to execute most of the time.
+#### Predictable Branch
 
-However, if it is not so clear which branch will be most likely to enter, the branch predictor will often times be wrong.  In such a case, branchless code is consistently faster than having if-else conditions.
+In the below snippet, the probability of encountering a new min / max value is very low, so the majority of the time, the if-branch will not execute.  The branch predictor can benefit from this information:
+```
+if vTemp < vData^.Min then
+  vData^.Min := vTemp;
+if vTemp > vData^.Max then
+  vData^.Max := vTemp;
+```
 
-## pass parameters by address instead of by value
+#### Unpredictable Branch
+
+However, if it is not so clear which branch will be most likely to enter, the branch predictor will often times be wrong.  In such a case, branchless code as shown above is consistently faster than having if-else conditions.
+
+## Pass Parameters By Address, Not By Value
 
 Since the functions invoked in this loop are executed one billion times, passing parameters by value to these functions means a copy of those variables are defined in the function's stack frame.  This could be avoided by instead passing a reference to a variable:
 - `const` parameters are passed by reference and cannot be modified
 - `var` parameters are passed by reference, and modifications are maintained when the function is popped off the call stack.
 
-## skip characters when possible
+## Skip Characters When Possible
 
 Given the structure of a line, it is possible to guess how many characters can be skipped, so they are not processed at all.
+We do this when looking for the line-terminating characters, as well as the semicolons separating the station name from its temperature measurement.
 
-## performance observations
+## Performance Observations
 
-Over the several versions that were run on the target machine, the results went down from 8 minutes, 3 minutes, 58 seconds and eventually around 32 seconds.  In order to go faster, the multi-core CPU must be leveraged.
+Over the several iterations that were run on the target machine, the results went down from 8 minutes, 3 minutes, 58 seconds and eventually around 32 seconds.  In order to go faster, multi-core CPU must be leveraged.
 
-# multi-threading
+# Multi-Threading
 
 At a high-level, given an input of size `N` (bytes, not rows) and `K` threads, the input N will be distributed across the K threads, and each thread will operate on the data that has been assigned to it:
 **Data parallelism** is at play.
@@ -274,14 +294,14 @@ Since each thread can operate in complete independence from the other threads, t
 
 Only when all the threads are done with their respective work can their result be merged.
 
-## even data distribution
+## Even Data Distribution
 
 The simplest way to distribute data is for each processor `k = [0 -> K-1]` to process a subset of the data, starting at byte `k * (N / K)`, and of length `N / K`.
 Careful consideration must be taken when handling the boundary between threads, because the boundary may likely occur in the middle of a line: in such a case, both threads handling this boundary will look for the newline character that is immediately after the boundary.
 
 An incorrect boundary handling will result in certain data lines to be either double-processed, or not processed at all.
 
-## merging results
+## Merging Results
 
 When all threads have finished working on the data that was assigned to them, the individual threads' results can be aggregated.
 This is a **K-way merge** operation, but for simplicity, we choose to merge two arrays at a time:
@@ -300,9 +320,9 @@ end;
 
 From here onwards, generating the output from the merged array is no different from the single-threaded implementation.
 
-# optimizations for multi-threading
+# Optimizations For Multi-Threading
 
-## alterations to the custom dictionary
+## Alterations to the Custom Dictionary
 
 When operating with a single-thread, only one array was needed to accumulate stations' statistics. We could choose to keep a single array, but then, it becomes shared memory between threads and would need write-protected locking to avoid race conditions.
 
@@ -321,16 +341,16 @@ both threads would recompute the same piece of data, both threads would write th
 
 This race condition could be prevented by locking, but most of the time, the lock would just cause unnecessary serialization (read slowness).  It is worth remembering that there are only 42,000 weather stations, so given 1 billion rows, the probability of this race condition is negligible, let alone harmless.
 
-## more balanced workload distribution
+## More Balanced Workload Distribution
 
 A simple N / K distribution of data over threads works generally fine.  However, some cores may be busy running some processes from other applications or the operating system.
 
 Does it mean all threads will finish at more-or-less the same time?
 Because if they don't, some threads would be done with their workload and are passively waiting for others to finish.
 
-Such a distribution is also based on the assumption that all cores are equally fast. This is no longer true for Intel's recent generations of CPUs, as these are made of Economy and Performance cores.
+Such a distribution is also based on the assumption that all cores are equally fast. This is no longer true for Intel's recent generations of CPUs, as these consist of Economy and Performance cores.
 
-Instead, theads will process the data in relatively small blocks, and every time a thread finishes the block it was assigned, it is given the **next available block**.
+Instead, threads will process the data in relatively small blocks, and every time a thread finishes the block it was assigned, it is given the **next available block**.
 
 The block distribution must be handled carefully, as threads still need to be wary about mid-line boundaries.  Additionally, two threads might be done with their block at the same time, and cause a race condition while requesting the next block.  As a result, the same block may end up being double-processed.
 
@@ -339,23 +359,26 @@ The race condition is resolved by protecting the block distribution with a `crit
 Such an implementation imposes another decision: what should be the size of those data-blocks?
 Several values were attempted prior to picking one.
 
-## parallel merge
+## Parallel Merge
 
 As the number of threads increases, so does the number of results to be merged.
 One potential optimization would have been to merge the results in parallel, but the execution was already quite fast that such an implementation might not have been significant.
 
 
-# Closing notes
+# Closing Notes
 
-At first, my goal was to reach a 10-seconds implementation, but when Gus informed me that the parallel implementation had reached 6 seconds, it encouraged me to try pushing the boundary further.
+At first, my goal was to reach a 10-seconds implementation, but when Gus informed me that my parallel implementation had reached 6 seconds, it encouraged me to try pushing the boundary further.
 
 More time was probably spent trying to optimize these last few seconds than the rest of the implementation.  
 Definitely more time than I would like to admit :)
 
 Nonetheless, much was learned, and I leave the challenge with still many questions as to why certain optimization attempts did not yield any improvements.
 
-In addition, one must decide for each such optimization, whether it is appropriate to make use of it in a given project / product or team. In the OneBRC challenge, there are no long-term implications, and we can optimize without restraint or compromise.
-However, the same cannot be said for mature, long-lived, production-ready applications where maintainability is key: at this point, one must look at each optimization and decide whether it is worth the readability compromise or not.  At a glance, branchless code is definitely a no-go. Deduplication of code for optimal inlining is probably a second.
+In addition, one must decide for each such optimization, whether it is appropriate for a given project / product or team.
+In the OneBRC challenge, there are no long-term implications, and we can optimize without restraint or compromise.
+
+However, the same cannot be said for mature, long-lived, production-ready applications where maintainability is key: at this point, one must evaluate each optimization and decide whether it is worth the readability compromise or not.
+At a glance, branchless code is definitely a no-go. Deduplication of code for optimal inlining is probably a second.
 
 Of course, there is no universal truth to such decisions, and the choice must be made keeping in mind the project at stake, and the team responsible for its development.
 
