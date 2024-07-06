@@ -3,7 +3,7 @@
 
 
 ## About The Challenge
-Given a file with 1 billion rows (~16 GB) each containing a weather station and a temperature measurement, the goal is to provide the fastest implementation to parse the file, process it and extract some statistics [*(details here)*](https://github.com/ObjectPascal-    Community/1brc-ObjectPascal)
+Given a file with 1 billion rows (~16 GB) each containing a weather station and a temperature measurement, the goal is to provide the fastest implementation to parse the file, process it and extract some statistics [*(details here)*](https://github.com/ObjectPascal-Community/1brc-ObjectPascal)
 
 ## Results Overview
 
